@@ -1,0 +1,6 @@
+## Fidelidad a la imagen de referencia
+La imagen adjunta es una referencia obligatoria de composición, no una inspiración. Mantén el mismo encuadre, perspectiva, geometría, silueta, posiciones y proporciones de cada elemento visible.
+Conserva cada árbol existente: especie aparente, silueta, tronco, ramificación, copa, tamaño, posición y relación con la arquitectura. Mejora su detalle sin sustituirlo ni desplazarlo.
+Respeta huecos, celosías, vidrios, accesos, muros, niveles, vehículos, pavimentos, terreno, muebles y vegetación existentes. No agregues, elimines, dupliques ni reubiques objetos salvo que el usuario lo solicite expresamente.
+Mantén la familia, color, dirección y escala de los materiales existentes; mejora únicamente su acabado visual. No transformes la arquitectura ni inventes detalles que alteren el diseño.
+Si alguna instrucción entra en conflicto con la referencia, prioriza la fidelidad a la referencia. Produce una sola imagen desde la misma cámara.

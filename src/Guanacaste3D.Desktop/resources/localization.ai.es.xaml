@@ -1,0 +1,41 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <!-- Asistente de IA: chat que diseña y calcula con las herramientas del programa. -->
+  <sys:String x:Key="Tool.AiAssistant">Asistente IA</sys:String>
+  <sys:String x:Key="Ai.Title">Asistente de IA</sys:String>
+  <sys:String x:Key="Ai.Provider">Proveedor</sys:String>
+  <sys:String x:Key="Ai.ProviderAnthropic">Claude (Anthropic)</sys:String>
+  <sys:String x:Key="Ai.ProviderOpenAi">OpenAI</sys:String>
+  <sys:String x:Key="Ai.ProviderLocal">Local (Ollama / compatible)</sys:String>
+  <sys:String x:Key="Ai.Model">Modelo</sys:String>
+  <sys:String x:Key="Ai.ApiKey">Clave de API</sys:String>
+  <sys:String x:Key="Ai.ApiKeyStored">Clave guardada cifrada en este equipo. Escribe otra para reemplazarla.</sys:String>
+  <sys:String x:Key="Ai.BaseUrl">Dirección del servidor</sys:String>
+  <sys:String x:Key="Ai.Save">Guardar ajustes</sys:String>
+  <sys:String x:Key="Ai.Saved">Ajustes guardados.</sys:String>
+  <sys:String x:Key="Ai.Send">Enviar</sys:String>
+  <sys:String x:Key="Ai.Stop">Detener</sys:String>
+  <sys:String x:Key="Ai.NewChat">Nueva conversación</sys:String>
+  <sys:String x:Key="Ai.InputHint">Describe qué quieres diseñar o calcular. Enter envía, Mayús+Enter agrega una línea.</sys:String>
+  <sys:String x:Key="Ai.Welcome">Hola. Puedo modelar niveles, muros, puertas, ventanas, losas y columnas, revisar el modelo, calcular cantidades y presupuesto, y exportar. Todo lo que modifico se puede deshacer con Ctrl+Z.</sys:String>
+  <sys:String x:Key="Ai.SetupNeeded">Configura primero un proveedor: elige uno, escribe el modelo y la clave de API, y guarda los ajustes.</sys:String>
+  <sys:String x:Key="Ai.You">Tú</sys:String>
+  <sys:String x:Key="Ai.Assistant">Asistente</sys:String>
+  <sys:String x:Key="Ai.ToolRunning">Ejecutando</sys:String>
+  <sys:String x:Key="Ai.ToolDeclined">Rechazada por el usuario</sys:String>
+  <sys:String x:Key="Ai.Error">Error</sys:String>
+  <sys:String x:Key="Ai.Cancelled">Cancelado.</sys:String>
+  <sys:String x:Key="Ai.ConfirmTitle">Confirmar acción de la IA</sys:String>
+  <sys:String x:Key="Ai.ConfirmText">El asistente quiere ejecutar «{0}» con estos datos:
+
+{1}
+
+¿Permitirlo?</sys:String>
+  <sys:String x:Key="Ai.PriceNotice">Los precios por defecto son de referencia; confirma los precios locales antes de usar un presupuesto.</sys:String>
+  <sys:String x:Key="Status.TagsShown">Etiquetas mostradas en la planta: puertas (P), ventanas (V) y columnas (C).</sys:String>
+  <sys:String x:Key="Status.TagsHidden">Etiquetas ocultas.</sys:String>
+  <sys:String x:Key="Status.AutoDimensioned">Cotas agregadas al nivel: {0}.</sys:String>
+  <sys:String x:Key="Status.AutoDimensionedNone">Este nivel ya tiene todas las cotas automáticas.</sys:String>
+</ResourceDictionary>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Guanacaste 3D mark: isometric volume on the accent gradient, with a sun for the province. -->
+  <defs>
+    <linearGradient id="g3-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3D9BFF"/>
+      <stop offset="1" stop-color="#0059D1"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#g3-bg)"/>
+  <polygon points="128,58 200,98 128,138 56,98" fill="#FFFFFF"/>
+  <polygon points="56,98 128,138 128,218 56,178" fill="#CFE4FF"/>
+  <polygon points="128,138 200,98 200,178 128,218" fill="#8FC1FF"/>
+  <rect x="49" y="144" width="158" height="52" rx="14" fill="#06428F"/>
+  <text x="128" y="182" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="bold" fill="#FFFFFF">G3D</text>
+  <circle cx="196" cy="52" r="14" fill="#FFB020"/>
+</svg>

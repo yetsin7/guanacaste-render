@@ -1,0 +1,63 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <sys:String x:Key="Action.Cancel">Cancelar</sys:String>
+  <sys:String x:Key="Ribbon.WallTools">Modificar | Muros</sys:String>
+  <sys:String x:Key="RibbonGroup.ThreeDNavigation">Navegación 3D</sys:String>
+  <sys:String x:Key="RibbonGroup.ThreeDPresentation">Presentación 3D</sys:String>
+  <sys:String x:Key="RibbonGroup.WallProperties">Propiedades de muro</sys:String>
+  <sys:String x:Key="RibbonGroup.WallConstraints">Restricciones</sys:String>
+  <sys:String x:Key="RibbonGroup.WallProfile">Perfil</sys:String>
+  <sys:String x:Key="RibbonGroup.WallJoins">Uniones</sys:String>
+  <sys:String x:Key="RibbonGroup.WallView">Vistas del muro</sys:String>
+
+  <sys:String x:Key="RibbonCommand.Camera">Cámara</sys:String>
+  <sys:String x:Key="RibbonCommand.Walkthrough">Recorrido</sys:String>
+  <sys:String x:Key="RibbonCommand.Orbit">Órbita</sys:String>
+  <sys:String x:Key="RibbonCommand.Pan">Encuadre</sys:String>
+  <sys:String x:Key="RibbonCommand.Zoom">Zoom</sys:String>
+  <sys:String x:Key="RibbonCommand.ViewCube">Cubo de vistas</sys:String>
+  <sys:String x:Key="RibbonCommand.Perspective">Perspectiva</sys:String>
+  <sys:String x:Key="RibbonCommand.Orthographic">Ortográfica</sys:String>
+  <sys:String x:Key="RibbonCommand.SectionBox">Caja de sección</sys:String>
+  <sys:String x:Key="RibbonCommand.VisualStyle">Estilo visual</sys:String>
+  <sys:String x:Key="RibbonCommand.Shadows">Sombras</sys:String>
+  <sys:String x:Key="RibbonCommand.SunPath">Recorrido solar</sys:String>
+  <sys:String x:Key="RibbonCommand.LockView">Bloquear vista 3D</sys:String>
+  <sys:String x:Key="RibbonCommand.ResetCamera">Restablecer cámara</sys:String>
+
+  <sys:String x:Key="RibbonCommand.WallProperties">Propiedades de muro</sys:String>
+  <sys:String x:Key="RibbonCommand.WallTypes">Tipos de muro</sys:String>
+  <sys:String x:Key="RibbonCommand.AttachTopBase">Enlazar parte superior/base</sys:String>
+  <sys:String x:Key="RibbonCommand.DetachTopBase">Desenlazar parte superior/base</sys:String>
+  <sys:String x:Key="RibbonCommand.AttachTop">Enlazar parte superior</sys:String>
+  <sys:String x:Key="RibbonCommand.AttachBase">Enlazar base</sys:String>
+  <sys:String x:Key="RibbonCommand.DetachAll">Desenlazar todo</sys:String>
+  <sys:String x:Key="RibbonCommand.EditProfile">Editar perfil</sys:String>
+  <sys:String x:Key="RibbonCommand.ResetProfile">Restablecer perfil</sys:String>
+  <sys:String x:Key="RibbonCommand.FlipWall">Voltear muro</sys:String>
+  <sys:String x:Key="RibbonCommand.WallOpenings">Huecos de muro</sys:String>
+  <sys:String x:Key="RibbonCommand.WallJoins">Uniones de muro</sys:String>
+  <sys:String x:Key="RibbonCommand.AllowJoin">Permitir unión</sys:String>
+  <sys:String x:Key="RibbonCommand.DisallowJoin">No permitir unión</sys:String>
+  <sys:String x:Key="RibbonCommand.MiterJoin">Unión a inglete</sys:String>
+  <sys:String x:Key="RibbonCommand.ButtJoin">Unión a tope</sys:String>
+  <sys:String x:Key="RibbonCommand.SquareOff">Encuadrar unión</sys:String>
+
+  <sys:String x:Key="CommandCustomization.Title">Personalizar comandos</sys:String>
+  <sys:String x:Key="CommandCustomization.Description">Elige los comandos de acceso rápido y asigna secuencias de dos a cuatro letras o números.</sys:String>
+  <sys:String x:Key="CommandCustomization.Search">Buscar por comando o espacio de trabajo</sys:String>
+  <sys:String x:Key="CommandCustomization.QuickAccess">Acceso rápido</sys:String>
+  <sys:String x:Key="CommandCustomization.Command">Comando</sys:String>
+  <sys:String x:Key="CommandCustomization.Workspace">Espacio de trabajo</sys:String>
+  <sys:String x:Key="CommandCustomization.Shortcut">Atajo</sys:String>
+  <sys:String x:Key="CommandCustomization.Reset">Restablecer valores</sys:String>
+  <sys:String x:Key="CommandCustomization.InvalidShortcut">El atajo de “{0}” debe contener entre dos y cuatro letras o números.</sys:String>
+  <sys:String x:Key="CommandCustomization.DuplicateShortcut">El atajo “{0}” está asignado a más de un comando.</sys:String>
+  <sys:String x:Key="CommandCustomization.Saved">Los accesos rápidos y atajos se guardaron correctamente.</sys:String>
+  <sys:String x:Key="CommandCustomization.SaveFailed">No fue posible guardar la personalización de comandos.</sys:String>
+  <sys:String x:Key="CommandCustomization.ToolTip">Personalizar accesos rápidos y atajos</sys:String>
+  <sys:String x:Key="CommandCustomization.Sequence">Atajo: {0}</sys:String>
+  <sys:String x:Key="CommandCustomization.PendingSequence">Atajo: {0}…</sys:String>
+  <sys:String x:Key="Transaction.EditWallDimensions">Editar dimensiones del muro</sys:String>
+</ResourceDictionary>

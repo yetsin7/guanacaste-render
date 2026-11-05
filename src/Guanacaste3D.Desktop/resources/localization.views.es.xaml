@@ -1,0 +1,19 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <!-- Callouts y plantillas de vista. -->
+  <sys:String x:Key="Tree.Callouts">Detalles (callouts)</sys:String>
+  <sys:String x:Key="Callout.SelectFirst">Selecciona un elemento en la planta para marcar un detalle a su alrededor.</sys:String>
+  <sys:String x:Key="Callout.NameTitle">Nombre del detalle</sys:String>
+  <sys:String x:Key="Callout.DefaultName">Detalle {0}</sys:String>
+  <sys:String x:Key="Callout.Opened">Detalle abierto: {0}.</sys:String>
+  <sys:String x:Key="Callout.Zoom">Acercar la planta a este detalle</sys:String>
+  <sys:String x:Key="Callout.Delete">Eliminar detalle</sys:String>
+  <sys:String x:Key="ViewTemplate.Delete">Eliminar plantilla</sys:String>
+  <sys:String x:Key="ViewTemplate.Deleted">Plantilla de vista eliminada.</sys:String>
+  <sys:String x:Key="Error.Invalid callout.">Detalle no válido: revisa el nivel, el nombre y que la región mida al menos 0,5 m por lado.</sys:String>
+  <sys:String x:Key="Error.The element has no plan outline to put a callout around.">El elemento no tiene contorno en planta para marcar un detalle a su alrededor.</sys:String>
+  <sys:String x:Key="Status.TileViewsOn">Vistas en mosaico: planta y 3D lado a lado. Pulsa una para activarla; abrir otra vista vuelve a las pestañas.</sys:String>
+  <sys:String x:Key="Status.TileViewsOff">Vistas en pestañas.</sys:String>
+</ResourceDictionary>

@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <!-- AI assistant: a speech bubble with a spark. -->
+ <DrawingImage x:Key="Icon.Assistant">
+  <DrawingImage.Drawing><DrawingGroup>
+   <GeometryDrawing Brush="#EAF0F4" Geometry="M 3,4 H 19 A 1.5,1.5 0 0 1 20.5,5.5 V 15 A 1.5,1.5 0 0 1 19,16.5 H 10 L 6,20.5 V 16.5 H 3 A 1.5,1.5 0 0 1 1.5,15 V 5.5 A 1.5,1.5 0 0 1 3,4 Z">
+    <GeometryDrawing.Pen><Pen Brush="#66717B" Thickness="1" LineJoin="Round"/></GeometryDrawing.Pen>
+   </GeometryDrawing>
+   <GeometryDrawing Brush="#147DC1" Geometry="M 11,6 L 12.2,9 L 15.2,10.2 L 12.2,11.4 L 11,14.4 L 9.8,11.4 L 6.8,10.2 L 9.8,9 Z"/>
+   <GeometryDrawing Brush="#95CCF2" Geometry="M 17,15 L 17.6,16.4 L 19,17 L 17.6,17.6 L 17,19 L 16.4,17.6 L 15,17 L 16.4,16.4 Z"/>
+  </DrawingGroup></DrawingImage.Drawing>
+ </DrawingImage>
+</ResourceDictionary>

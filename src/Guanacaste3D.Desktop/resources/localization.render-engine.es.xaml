@@ -1,0 +1,25 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <!-- Spanish text for validation messages of the render engine's file readers (PNG images, IES photometry). -->
+  <sys:String x:Key="Error.The IES file has no TILT line.">El archivo IES no tiene la línea TILT.</sys:String>
+  <sys:String x:Key="Error.The IES file contains a value that is not a number.">El archivo IES contiene un valor que no es un número.</sys:String>
+  <sys:String x:Key="Error.The IES file ends early.">El archivo IES termina antes de tiempo.</sys:String>
+  <sys:String x:Key="Error.The IES tilt table is not valid.">La tabla de inclinación del IES no es válida.</sys:String>
+  <sys:String x:Key="Error.The IES tilt reference is not supported.">La referencia de inclinación del IES no es compatible.</sys:String>
+  <sys:String x:Key="Error.Only photometric type C IES files are supported.">Solo se admiten archivos IES de fotometría tipo C.</sys:String>
+  <sys:String x:Key="Error.The IES angle table is not valid.">La tabla de ángulos del IES no es válida.</sys:String>
+  <sys:String x:Key="Error.The IES angles are out of order or out of range.">Los ángulos del IES están desordenados o fuera de rango.</sys:String>
+  <sys:String x:Key="Error.The IES candela table has a negative value.">La tabla de candelas del IES tiene un valor negativo.</sys:String>
+  <sys:String x:Key="Error.The image is not a PNG file.">La imagen no es un archivo PNG.</sys:String>
+  <sys:String x:Key="Error.The PNG file is truncated.">El archivo PNG está incompleto.</sys:String>
+  <sys:String x:Key="Error.The PNG file is corrupt.">El archivo PNG está dañado.</sys:String>
+  <sys:String x:Key="Error.Only 8-bit non-interlaced PNG images are supported.">Solo se admiten imágenes PNG de 8 bits sin entrelazado.</sys:String>
+  <sys:String x:Key="Error.This PNG color type is not supported.">Este tipo de color PNG no es compatible.</sys:String>
+  <sys:String x:Key="Error.The PNG dimensions are out of range.">Las dimensiones del PNG están fuera de rango.</sys:String>
+  <sys:String x:Key="Error.The PNG file has no image data.">El archivo PNG no contiene datos de imagen.</sys:String>
+  <sys:String x:Key="Error.The PNG image data is incomplete.">Los datos de imagen del PNG están incompletos.</sys:String>
+  <sys:String x:Key="Error.The PNG uses an unknown scanline filter.">El PNG usa un filtro de líneas desconocido.</sys:String>
+  <sys:String x:Key="Error.Invalid color LUT.">El filtro LUT no es válido. Elige un archivo .cube 3D con resolución de 2 a 64 y valores correctos.</sys:String>
+</ResourceDictionary>

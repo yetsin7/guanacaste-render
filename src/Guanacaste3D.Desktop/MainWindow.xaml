@@ -1,0 +1,472 @@
+<Window x:Class="Guanacaste3D.Desktop.MainWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:controls="clr-namespace:Guanacaste3D.Desktop.Controls"
+  xmlns:app="clr-namespace:Guanacaste3D.Desktop"
+  Title="{DynamicResource App.Name}" Icon="pack://application:,,,/Guanacaste3D.Desktop;component/resources/brand/guanacaste3d-logo.png"
+  Width="1688" Height="900"
+  MinWidth="960" MinHeight="640" FontFamily="Segoe UI" FontSize="12"
+  Background="{DynamicResource ChromeBrush}" Foreground="{DynamicResource PrimaryTextBrush}"
+  WindowStartupLocation="CenterScreen"
+  WindowState="Maximized" PreviewTextInput="MainWindow_PreviewTextInput"
+  PreviewKeyDown="MainWindow_PreviewKeyDown" AllowDrop="True" DragEnter="MainWindow_DragEnter"
+  DragOver="MainWindow_DragEnter" Drop="MainWindow_Drop" StateChanged="MainWindow_StateChanged">
+  <!-- The title bar is drawn by the app so the quick access toolbar can sit beside the caption. -->
+  <WindowChrome.WindowChrome>
+    <WindowChrome CaptionHeight="30" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0"
+                  UseAeroCaptionButtons="False"/>
+  </WindowChrome.WindowChrome>
+  <Border x:Name="WindowFrame" BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1">
+  <Grid>
+  <DockPanel LastChildFill="True">
+    <Border x:Name="MainTitleBar" DockPanel.Dock="Top" Background="{DynamicResource ChromeBrush}" Height="30"
+            MouseLeftButtonDown="MainTitleBar_MouseLeftButtonDown">
+      <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0"
+                    WindowChrome.IsHitTestVisibleInChrome="True">
+          <Button x:Name="ApplicationMenuButton" Click="FileMenuButton_Click"
+                  Style="{StaticResource QuickAccessButtonStyle}" Width="24" Height="24" Margin="0,0,4,0"
+                  ToolTip="{DynamicResource Menu.File}" AutomationProperties.Name="{DynamicResource Menu.File}">
+            <Image Source="{StaticResource Brand.Logo}" Width="20" Height="20"/>
+          </Button>
+          <Button x:Name="WorkspaceToggleButton" Click="ToggleHome_Click"
+                  Style="{StaticResource QuickAccessButtonStyle}" Width="24" Height="24"
+                  ToolTip="Alternar inicio y espacio de trabajo"
+                  AutomationProperties.Name="Alternar inicio y espacio de trabajo">
+            <TextBlock Text="&#xE80F;" FontFamily="{StaticResource GlyphFont}" FontSize="15"/>
+          </Button>
+          <StackPanel x:Name="QuickAccessHost" Orientation="Horizontal"/>
+          <Button Click="CustomizeCommands_Click" Style="{StaticResource QuickAccessButtonStyle}" MinWidth="16"
+                  ToolTip="{DynamicResource CommandCustomization.ToolTip}"
+                  AutomationProperties.Name="{DynamicResource CommandCustomization.ToolTip}">
+            <TextBlock Text="&#xE70D;" FontFamily="{StaticResource GlyphFont}" FontSize="8"/>
+          </Button>
+          <TextBlock x:Name="VersionLabel" Text="{x:Static app:AppInfo.Label}" Margin="12,0,0,0" VerticalAlignment="Center"
+                     Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11" IsHitTestVisible="False"/>
+        </StackPanel>
+        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
+                   Grid.Column="1" Margin="12,0"
+                   Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12" IsHitTestVisible="False"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                   MaxWidth="760"/>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                    WindowChrome.IsHitTestVisibleInChrome="True">
+          <Button Content="&#xE921;" Click="MinimizeWindow_Click" Style="{StaticResource CaptionButtonStyle}"
+                  ToolTip="{DynamicResource Window.Minimize}" AutomationProperties.Name="{DynamicResource Window.Minimize}"/>
+          <Button x:Name="MaximizeButton" Content="&#xE922;" Click="MaximizeWindow_Click"
+                  Style="{StaticResource CaptionButtonStyle}"
+                  ToolTip="{DynamicResource Window.Maximize}" AutomationProperties.Name="{DynamicResource Window.Maximize}"/>
+          <Button Content="&#xE8BB;" Click="CloseWindow_Click" Style="{StaticResource CaptionCloseButtonStyle}"
+                  ToolTip="{DynamicResource Window.Close}" AutomationProperties.Name="{DynamicResource Window.Close}"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+    <TabControl x:Name="RibbonTabControl" DockPanel.Dock="Top" Style="{StaticResource RibbonTabControlStyle}"
+                ItemContainerStyle="{StaticResource RibbonTabItemStyle}"
+                MouseLeftButtonDown="RibbonTabStrip_MouseLeftButtonDown">
+      <TabControl.Tag>
+        <Button x:Name="FileMenuButton" Content="{DynamicResource Menu.File}" Click="FileMenuButton_Click"
+                Style="{StaticResource FileTabButtonStyle}">
+          <Button.ContextMenu>
+            <controls:ApplicationFileMenu x:Name="FileMenu" CommandInvoked="FileMenu_CommandInvoked"/>
+          </Button.ContextMenu>
+        </Button>
+      </TabControl.Tag>
+      <TabItem Header="{DynamicResource Ribbon.Architecture}">
+        <controls:ArchitectureRibbon x:Name="ArchitectureRibbonControl"
+          CommandInvoked="ArchitectureRibbon_CommandInvoked"/>
+      </TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Structure}"><controls:ProfessionalRibbon Workspace="Structure" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Concrete}"><controls:ProfessionalRibbon Workspace="Concrete" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Steel}"><controls:ProfessionalRibbon Workspace="Steel" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Systems}"><controls:ProfessionalRibbon Workspace="Systems" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Insert}"><controls:ProfessionalRibbon Workspace="Insert" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Annotate}"><controls:ProfessionalRibbon Workspace="Annotate" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Analyze}"><controls:ProfessionalRibbon Workspace="Analyze" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.MassAndSite}"><controls:ProfessionalRibbon Workspace="MassAndSite" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Collaborate}"><controls:ProfessionalRibbon Workspace="Collaborate" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.View}"><controls:ProfessionalRibbon Workspace="View" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Manage}"><controls:ProfessionalRibbon Workspace="Manage" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.AddIns}"><controls:ProfessionalRibbon Workspace="AddIns" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <TabItem Header="{DynamicResource Ribbon.Modify}"><controls:ProfessionalRibbon Workspace="Modify" CommandInvoked="ProfessionalRibbon_CommandInvoked"/></TabItem>
+      <!-- Contextual tab: only shown while the wall tool is active, like the green "Modificar | ..." tabs. -->
+      <TabItem x:Name="WallContextTab" Header="{DynamicResource Ribbon.WallTools}" Visibility="Collapsed"
+               Style="{StaticResource ContextualRibbonTabItemStyle}">
+        <controls:ProfessionalRibbon Workspace="Wall" CommandInvoked="ProfessionalRibbon_CommandInvoked"/>
+      </TabItem>
+    </TabControl>
+    <Border x:Name="MainStatusStrip" DockPanel.Dock="Bottom" Background="{DynamicResource RibbonBrush}" Height="24"
+            BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="0,1,0,0">
+      <DockPanel Margin="4,0,8,0">
+        <TextBlock x:Name="ActiveViewText" DockPanel.Dock="Right" Text="{DynamicResource View.Plan}"
+                   Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+        <TextBlock x:Name="StatusText" Text="{DynamicResource Status.Ready}" VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" Margin="0,0,16,0"/>
+      </DockPanel>
+    </Border>
+    <Grid Background="{DynamicResource PanelBorderBrush}">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="350" MinWidth="290" MaxWidth="480"/><ColumnDefinition Width="3"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Grid x:Name="StandardSidebar" Grid.Column="0">
+        <Grid.RowDefinitions><RowDefinition Height="1*" MinHeight="260"/><RowDefinition Height="4"/><RowDefinition Height="1*" MinHeight="220"/></Grid.RowDefinitions>
+        <!-- Properties palette -->
+        <DockPanel Background="{DynamicResource PanelBrush}">
+          <Border DockPanel.Dock="Top" Style="{StaticResource PaletteHeaderBorderStyle}">
+            <Grid>
+              <TextBlock Text="{DynamicResource Properties.Title}" Style="{StaticResource PanelHeaderStyle}"/>
+              <TextBlock Text="&#xE946;" FontFamily="{StaticResource GlyphFont}" FontSize="11"
+                         Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Right"
+                         VerticalAlignment="Center" Margin="0,0,7,0"/>
+            </Grid>
+          </Border>
+          <Border DockPanel.Dock="Top" Style="{StaticResource SidebarSelectionCardStyle}">
+            <Grid Height="66">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="4"/><ColumnDefinition Width="58"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <Border Background="{DynamicResource AccentBrush}" CornerRadius="3,0,0,3"/>
+              <Border Grid.Column="1" Width="44" Height="44" CornerRadius="3" Background="{DynamicResource AccentSoftBrush}"
+                      BorderBrush="#B9DDF2" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Image Source="{StaticResource Icon.Plan}" Margin="8" Stretch="Uniform"/>
+              </Border>
+              <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="3,0,8,0">
+                <TextBlock Text="{DynamicResource Properties.CurrentSelection}" Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="10" FontWeight="SemiBold"/>
+                <TextBlock x:Name="PropertiesActiveViewText" Text="{DynamicResource View.Plan}" FontSize="13"
+                           FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                <TextBlock Text="{DynamicResource Properties.CoordinatedHint}" Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontSize="10" TextTrimming="CharacterEllipsis"/>
+              </StackPanel>
+              <Ellipse Grid.Column="3" Width="7" Height="7" Fill="{DynamicResource AccentBrush}" Margin="0,0,10,0"
+                       VerticalAlignment="Center"/>
+            </Grid>
+          </Border>
+          <Border DockPanel.Dock="Top" Margin="8,0,8,6" Height="30" Background="{DynamicResource SidebarQuietBrush}"
+                  BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="1" CornerRadius="3">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Click="ArchitecturePropertiesEditType_Click" Padding="7,1" Margin="2"
+                      Style="{StaticResource QuickAccessButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                  <Image Source="{StaticResource Icon.Parameters}" Width="15" Height="15" Margin="0,0,4,0"/>
+                  <TextBlock Text="{DynamicResource Properties.EditType}" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <TextBlock Text="{Binding Text, ElementName=PropertiesActiveViewText}" VerticalAlignment="Center"
+                         Margin="8,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+            </DockPanel>
+          </Border>
+          <Border BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="0,1,0,0" Margin="3,0,3,3" Background="White">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+              <StackPanel>
+                <TextBlock Text="{DynamicResource Properties.Identity}" Style="{StaticResource PropertySectionHeaderStyle}"/>
+                <TextBlock x:Name="PropertiesText" Margin="8,6,8,8" TextWrapping="Wrap"
+                           Foreground="{DynamicResource PrimaryTextBrush}" LineHeight="18"/>
+                <Expander x:Name="WallInstanceExpander" Header="{DynamicResource Properties.Instance}" IsExpanded="True" Style="{StaticResource SidebarSectionExpanderStyle}">
+                  <StackPanel TextElement.FontWeight="Normal" Margin="0,3,0,3">
+                    <ContentControl Style="{StaticResource PropertyRowStyle}" Tag="{DynamicResource Properties.Length}">
+                      <DockPanel><CheckBox x:Name="LockLengthCheck" DockPanel.Dock="Right" Content="{DynamicResource Properties.LockFixed}"
+                        ToolTip="{DynamicResource Properties.LockHint}" VerticalAlignment="Center" Margin="4,0,2,0"/>
+                        <TextBox x:Name="PropertyLengthInput" Text="0.00" Style="{StaticResource PropertyValueTextBoxStyle}"/></DockPanel>
+                    </ContentControl>
+                    <ContentControl Style="{StaticResource PropertyRowStyle}" Tag="{DynamicResource Properties.Height}">
+                      <DockPanel><CheckBox x:Name="LockHeightCheck" DockPanel.Dock="Right" Content="{DynamicResource Properties.LockFixed}"
+                        ToolTip="{DynamicResource Properties.LockHint}" VerticalAlignment="Center" Margin="4,0,2,0"/>
+                        <TextBox x:Name="HeightInput" Text="3.00" Style="{StaticResource PropertyValueTextBoxStyle}"/></DockPanel>
+                    </ContentControl>
+                    <ContentControl Style="{StaticResource PropertyRowStyle}" Tag="{DynamicResource Properties.Area}">
+                      <TextBox x:Name="PropertyAreaInput" Text="0.00" Style="{StaticResource PropertyValueTextBoxStyle}"/>
+                    </ContentControl>
+                    <ContentControl Style="{StaticResource PropertyRowStyle}" Tag="{DynamicResource Properties.Finish}">
+                      <ComboBox x:Name="FinishPicker" DisplayMemberPath="Label" SelectedValuePath="Value" BorderBrush="Transparent"/>
+                    </ContentControl>
+                    <ContentControl Style="{StaticResource PropertyRowStyle}" Tag="{DynamicResource Properties.Thickness}">
+                      <DockPanel><CheckBox x:Name="LockThicknessCheck" DockPanel.Dock="Right" Content="{DynamicResource Properties.LockFixed}"
+                        ToolTip="{DynamicResource Properties.LockHint}" VerticalAlignment="Center" Margin="4,0,2,0"/>
+                        <TextBox x:Name="ThicknessInput" Text="0.20" Style="{StaticResource PropertyValueTextBoxStyle}"/></DockPanel>
+                    </ContentControl>
+                    <Button Content="{DynamicResource Properties.ApplyWall}" Click="ApplyProperties_Click"
+                            HorizontalAlignment="Right" Margin="4,5,4,4"/>
+                  </StackPanel>
+                </Expander>
+                <Expander x:Name="WallTransformExpander" Header="{DynamicResource Properties.Transform}" Style="{StaticResource SidebarSectionExpanderStyle}">
+                  <StackPanel TextElement.FontWeight="Normal" Margin="0,3,0,3">
+                    <ContentControl Style="{StaticResource PropertyRowStyle}" Tag="{DynamicResource Properties.MoveXY}">
+                      <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                        <TextBox x:Name="MoveXInput" Text="1.00" Margin="0,0,1,0" Style="{StaticResource PropertyValueTextBoxStyle}"/>
+                        <TextBox x:Name="MoveYInput" Grid.Column="1" Text="0.00" Margin="1,0,0,0" Style="{StaticResource PropertyValueTextBoxStyle}"/>
+                      </Grid>
+                    </ContentControl>
+                    <Button Content="{DynamicResource Properties.MoveCoordinates}" Click="MovePrecise_Click" HorizontalAlignment="Right" Margin="4,4,4,2"/>
+                    <ContentControl Style="{StaticResource PropertyRowStyle}" Tag="{DynamicResource Properties.Rotation}">
+                      <TextBox x:Name="RotationInput" Text="90" Style="{StaticResource PropertyValueTextBoxStyle}"/>
+                    </ContentControl>
+                    <Button Content="{DynamicResource Properties.ApplyRotation}" Click="RotatePrecise_Click" HorizontalAlignment="Right" Margin="4,4,4,4"/>
+                  </StackPanel>
+                </Expander>
+                <Expander x:Name="WallOpeningExpander" Header="{DynamicResource Properties.Opening}" Style="{StaticResource SidebarSectionExpanderStyle}">
+                  <StackPanel TextElement.FontWeight="Normal" Margin="0,3,0,3">
+                    <ContentControl Style="{StaticResource PropertyRowStyle}" Tag="{DynamicResource Properties.OpeningCenterWidth}">
+                      <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                        <TextBox x:Name="OpeningOffsetInput" Margin="0,0,1,0" Style="{StaticResource PropertyValueTextBoxStyle}"/>
+                        <TextBox x:Name="OpeningWidthInput" Grid.Column="1" Margin="1,0,0,0" Style="{StaticResource PropertyValueTextBoxStyle}"/>
+                      </Grid>
+                    </ContentControl>
+                    <ContentControl Style="{StaticResource PropertyRowStyle}" Tag="{DynamicResource Properties.OpeningSillHeight}">
+                      <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                        <TextBox x:Name="OpeningSillInput" Margin="0,0,1,0" Style="{StaticResource PropertyValueTextBoxStyle}"/>
+                        <TextBox x:Name="OpeningHeightInput" Grid.Column="1" Margin="1,0,0,0" Style="{StaticResource PropertyValueTextBoxStyle}"/>
+                      </Grid>
+                    </ContentControl>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="1,4,1,5">
+                      <Button Content="{DynamicResource Properties.RemoveOpening}" Click="RemoveOpening_Click"/>
+                      <Button Content="{DynamicResource Properties.ApplyOpening}" Click="ApplyOpening_Click"/>
+                    </StackPanel>
+                  </StackPanel>
+                </Expander>
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+        </DockPanel>
+        <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" Background="{DynamicResource PanelBorderBrush}"
+                      ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
+        <!-- Project browser palette -->
+        <DockPanel Grid.Row="2" Background="{DynamicResource PanelBrush}">
+          <Border DockPanel.Dock="Top" Style="{StaticResource PaletteHeaderBorderStyle}">
+            <Grid>
+              <TextBlock Text="{DynamicResource Browser.Title}" Style="{StaticResource PanelHeaderStyle}"/>
+              <TextBlock x:Name="ProjectBrowserCountText" Style="{StaticResource SidebarResultTextStyle}"
+                         HorizontalAlignment="Right" Margin="0,0,7,0"/>
+            </Grid>
+          </Border>
+          <Border DockPanel.Dock="Top" Background="{DynamicResource SidebarQuietBrush}" Height="34" Padding="6,0"
+                  BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <Button ToolTip="{DynamicResource Browser.Home}" AutomationProperties.Name="{DynamicResource Browser.Home}" Click="ShowPlan_Click" Style="{StaticResource BrowserToolbarButtonStyle}"><Image Source="{StaticResource Icon.Plan}"/></Button>
+              <Button ToolTip="{DynamicResource Browser.Schedules}" AutomationProperties.Name="{DynamicResource Browser.Schedules}" Click="ShowSchedule_Click" Style="{StaticResource BrowserToolbarButtonStyle}"><Image Source="{StaticResource Icon.Schedule}"/></Button>
+              <Button ToolTip="{DynamicResource Browser.Sheets}" AutomationProperties.Name="{DynamicResource Browser.Sheets}" Click="ShowSheet_Click" Style="{StaticResource BrowserToolbarButtonStyle}"><Image Source="{StaticResource Icon.Sheets}"/></Button>
+              <Separator Width="1" Height="18" Margin="5,0" Background="{DynamicResource PanelBorderBrush}"/>
+              <Button ToolTip="{DynamicResource Browser.AddLevel}" AutomationProperties.Name="{DynamicResource Browser.AddLevel}" Click="AddLevel_Click" Style="{StaticResource BrowserToolbarButtonStyle}"><Image Source="{StaticResource Icon.Level}"/></Button>
+              <Button ToolTip="{DynamicResource Browser.AddSheet}" AutomationProperties.Name="{DynamicResource Browser.AddSheet}" Click="AddSheet_Click" Style="{StaticResource BrowserToolbarButtonStyle}"><Image Source="{StaticResource Icon.Sheets}"/></Button>
+            </StackPanel>
+          </Border>
+          <Border DockPanel.Dock="Top" Background="White" BorderBrush="{DynamicResource PanelBorderBrush}"
+                  BorderThickness="0,0,0,1" Padding="8,7">
+            <StackPanel>
+              <Grid>
+                <Border BorderBrush="{DynamicResource ControlBorderBrush}" BorderThickness="1" Height="30" CornerRadius="3">
+                  <Grid>
+                    <TextBlock Text="&#xE721;" FontFamily="{StaticResource GlyphFont}" FontSize="14"
+                               Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"
+                               Margin="8,0,0,0" IsHitTestVisible="False"/>
+                    <TextBox x:Name="ProjectSearchInput" BorderThickness="0" Background="Transparent" Padding="30,0,30,0"
+                             TextChanged="ProjectSearchInput_TextChanged" AutomationProperties.Name="{DynamicResource Browser.Search}"/>
+                    <TextBlock Text="{DynamicResource Browser.SearchPlaceholder}" Foreground="#8C8C8C" Margin="33,0,30,0"
+                               VerticalAlignment="Center" IsHitTestVisible="False">
+                      <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=ProjectSearchInput}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
+                      </Style></TextBlock.Style>
+                    </TextBlock>
+                    <Button x:Name="ClearProjectSearchButton" Content="&#xE711;" HorizontalAlignment="Right"
+                            Click="ClearProjectSearch_Click" Style="{StaticResource SidebarSearchButtonStyle}"
+                            ToolTip="{DynamicResource Browser.ClearSearch}"
+                            AutomationProperties.Name="{DynamicResource Browser.ClearSearch}"/>
+                  </Grid>
+                </Border>
+              </Grid>
+              <Grid Margin="0,6,0,0">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock Text="{DynamicResource Browser.Scope}" Style="{StaticResource SidebarResultTextStyle}"/>
+                <ComboBox x:Name="ProjectBrowserScopePicker" Grid.Column="1" Width="150" MinHeight="26" FontSize="11"
+                          Padding="6,2,22,2" SelectedIndex="0" SelectionChanged="ProjectBrowserScope_SelectionChanged"
+                          AutomationProperties.Name="{DynamicResource Browser.Scope}">
+                  <ComboBoxItem Content="{DynamicResource Browser.ScopeAll}" Tag="All"/>
+                  <ComboBoxItem Content="{DynamicResource Browser.ScopeViews}" Tag="Views"/>
+                  <ComboBoxItem Content="{DynamicResource Browser.ScopeModel}" Tag="Model"/>
+                  <ComboBoxItem Content="{DynamicResource Browser.ScopeDocumentation}" Tag="Documentation"/>
+                </ComboBox>
+              </Grid>
+            </StackPanel>
+          </Border>
+          <Grid Background="White">
+            <TreeView x:Name="ProjectTree" Padding="5,5,2,8" BorderThickness="0"
+                      SelectedItemChanged="ProjectTree_SelectedItemChanged"/>
+            <StackPanel x:Name="ProjectBrowserEmptyState" Visibility="Collapsed" IsHitTestVisible="False"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+              <TextBlock Text="&#xE721;" FontFamily="{StaticResource GlyphFont}" FontSize="24"
+                         Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+              <TextBlock Text="{DynamicResource Browser.NoResults}" Foreground="{DynamicResource SecondaryTextBrush}"
+                         TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0" MaxWidth="220"/>
+            </StackPanel>
+          </Grid>
+        </DockPanel>
+      </Grid>
+      <GridSplitter x:Name="StandardSidebarSplitter" Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource PanelBorderBrush}"
+                    ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+      <Grid x:Name="StandardWorkspace" Grid.Column="2" Background="{DynamicResource CanvasBrush}">
+        <DockPanel>
+          <!-- Options bar for the active placement tool. -->
+          <Border x:Name="WallOptionsBar" DockPanel.Dock="Top" Visibility="Collapsed"
+                  Background="{DynamicResource ContextualBarBrush}" BorderBrush="{DynamicResource PanelBorderBrush}"
+                  BorderThickness="0,0,0,1" Padding="6,3">
+            <ScrollViewer Style="{StaticResource RibbonScrollViewerStyle}">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{DynamicResource WallOptions.Title}"
+                           Foreground="{DynamicResource ContextualTabTextBrush}" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                <TextBlock Text="{DynamicResource WallOptions.DrawMode}" Style="{StaticResource OptionLabelStyle}"/>
+                <RadioButton x:Name="WallLineMode" Content="{DynamicResource WallOptions.Line}" GroupName="WallDrawMode"
+                             IsChecked="True" VerticalAlignment="Center" Margin="3,0,8,0"
+                             Checked="WallOptions_Changed"/>
+                <RadioButton x:Name="WallRectangleMode" Content="{DynamicResource WallOptions.Rectangle}" GroupName="WallDrawMode"
+                             VerticalAlignment="Center" Margin="3,0,8,0" Checked="WallOptions_Changed"/>
+                <RadioButton x:Name="WallArcMode" Content="{DynamicResource WallOptions.Arc}" GroupName="WallDrawMode"
+                             VerticalAlignment="Center" Margin="3,0,14,0" Checked="WallOptions_Changed"/>
+                <TextBlock Text="{DynamicResource WallOptions.Height}" Style="{StaticResource OptionLabelStyle}"/>
+                <TextBox x:Name="WallHeightInput" Text="3.00" Width="54" VerticalAlignment="Center" Margin="4,0,12,0"
+                         TextChanged="WallOptions_Changed"/>
+                <TextBlock Text="{DynamicResource WallOptions.Length}" Style="{StaticResource OptionLabelStyle}"/>
+                <TextBox x:Name="WallLengthInput" Width="70" VerticalAlignment="Center" Margin="4,0,3,0"
+                         PreviewTextInput="WallLengthInput_PreviewTextInput"
+                         TextChanged="WallLengthInput_TextChanged" KeyDown="WallLengthInput_KeyDown"/>
+                <Button Content="{DynamicResource WallOptions.PlaceLength}" Click="PlaceWallByLength_Click"
+                        Style="{StaticResource ContextualButtonStyle}" Margin="0,0,12,0"/>
+                <TextBlock Text="{DynamicResource WallOptions.LocationLine}" Style="{StaticResource OptionLabelStyle}"/>
+                <ComboBox x:Name="WallLocationLinePicker" Width="142" SelectedIndex="0" VerticalAlignment="Center"
+                          Margin="4,0,0,0" SelectionChanged="WallOptions_Changed">
+                  <ComboBoxItem Content="{DynamicResource WallOptions.Centerline}" Tag="Center"/>
+                  <ComboBoxItem Content="{DynamicResource WallOptions.ExteriorFace}" Tag="Exterior"/>
+                  <ComboBoxItem Content="{DynamicResource WallOptions.InteriorFace}" Tag="Interior"/>
+                </ComboBox>
+                <TextBlock Text="{DynamicResource WallOptions.Offset}" Style="{StaticResource OptionLabelStyle}" Margin="12,0,0,0"/>
+                <TextBox x:Name="WallOffsetInput" Text="0.00" Width="54" VerticalAlignment="Center" Margin="4,0,12,0"
+                         TextChanged="WallOptions_Changed"/>
+                <CheckBox x:Name="WallChainCheck" Content="{DynamicResource WallOptions.Chain}" IsChecked="True"
+                          VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <CheckBox x:Name="WallOrthogonalCheck" Content="{DynamicResource WallOptions.Orthogonal}" IsChecked="False"
+                          VerticalAlignment="Center" Margin="0,0,12,0" Checked="WallOptions_Changed" Unchecked="WallOptions_Changed"/>
+                <CheckBox x:Name="WallObjectSnapCheck" Content="{DynamicResource WallOptions.ObjectSnap}" IsChecked="True"
+                          VerticalAlignment="Center" Margin="0,0,12,0" Checked="WallOptions_Changed" Unchecked="WallOptions_Changed"/>
+                <Button Content="{DynamicResource WallOptions.Finish}" Click="FinishWallTool_Click"
+                        Style="{StaticResource ContextualButtonStyle}"/>
+                <Button Content="{DynamicResource WallOptions.Cancel}" Click="CancelWallTool_Click"
+                        Style="{StaticResource ContextualButtonStyle}"/>
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+          <Border DockPanel.Dock="Top" Background="{DynamicResource RibbonBrush}" BorderBrush="{DynamicResource PanelBorderBrush}"
+                  BorderThickness="0,0,0,1" Padding="6,3">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="{DynamicResource Workspace.ActiveLevel}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+              <ComboBox x:Name="LevelPicker" Width="175" SelectionChanged="LevelPicker_SelectionChanged"/>
+              <CheckBox x:Name="SnapGridCheck" Content="{DynamicResource Workspace.Snap}" IsChecked="True"
+                        Margin="14,0,6,0" VerticalAlignment="Center"/>
+              <CheckBox x:Name="ShowGridCheck" Content="{DynamicResource Workspace.Grid}" IsChecked="True"
+                        Margin="6,0" VerticalAlignment="Center" Checked="GridVisibility_Changed" Unchecked="GridVisibility_Changed"/>
+              <TextBlock Text="{DynamicResource Workspace.Shortcuts}" Foreground="{DynamicResource SecondaryTextBrush}"
+                         VerticalAlignment="Center" Margin="14,0,0,0"/>
+            </StackPanel>
+          </Border>
+          <Border x:Name="ViewShortcutBar" DockPanel.Dock="Top" Background="#F7F8FA"
+                  BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="0,0,0,1" Padding="8,5">
+            <DockPanel LastChildFill="True">
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="8,0,0,0">
+                <Button x:Name="EditPlanRangeButton" Content="{DynamicResource ViewRange.Button}"
+                        Click="EditPlanRange_Click" Padding="10,4" Margin="0,0,5,0"
+                        ToolTip="{DynamicResource ViewRange.ButtonHint}"/>
+                <Button Content="&#xE710;" FontFamily="{StaticResource GlyphFont}" FontSize="12" Width="30"
+                        Click="AddElevationView_Click" ToolTip="{DynamicResource Elevation.Add}"/>
+              </StackPanel>
+              <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="ViewShortcutButtons" Orientation="Horizontal"/>
+              </ScrollViewer>
+            </DockPanel>
+          </Border>
+          <!-- View control bar along the bottom edge of the drawing area. -->
+          <Border DockPanel.Dock="Bottom" Background="{DynamicResource ViewControlBarBrush}" Height="22"
+                  BorderBrush="{DynamicResource PanelBorderBrush}" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" Margin="10,0">
+              <TextBlock x:Name="ScaleText" Text="{DynamicResource Status.Scale}" VerticalAlignment="Center"
+                         FontSize="11" Margin="12,0,14,0"/>
+              <Button Click="FitPlan_Click" Style="{StaticResource BrowserToolbarButtonStyle}" Height="20" MinHeight="20"
+                      Width="22" Padding="2" ToolTip="{DynamicResource Action.Fit}"
+                      AutomationProperties.Name="{DynamicResource Action.Fit}">
+                <TextBlock Text="&#xE9A6;" FontFamily="{StaticResource GlyphFont}" FontSize="12"/>
+              </Button>
+              <CheckBox x:Name="ElectricalPlanVisibility" Content="{DynamicResource PlanVisibility.Electrical}" IsChecked="True"
+                        Margin="12,0,0,0" VerticalAlignment="Center" Checked="PlanLayerVisibility_Changed" Unchecked="PlanLayerVisibility_Changed"/>
+              <CheckBox x:Name="PlumbingPlanVisibility" Content="{DynamicResource PlanVisibility.Plumbing}" IsChecked="True"
+                        Margin="12,0,0,0" VerticalAlignment="Center" Checked="PlanLayerVisibility_Changed" Unchecked="PlanLayerVisibility_Changed"/>
+            </StackPanel>
+          </Border>
+          <TabControl x:Name="ViewTabs" Style="{StaticResource WorkspaceTabControlStyle}"
+                      ItemContainerStyle="{StaticResource WorkspaceTabItemStyle}"
+                      SelectionChanged="ViewTabs_SelectionChanged">
+            <TabItem Header="{DynamicResource View.Plan}" Tag="{StaticResource Icon.Plan}">
+              <Canvas x:Name="PlanCanvas" Background="White" ClipToBounds="True" Focusable="True"
+                      PreviewMouseDown="PlanCanvas_PreviewMouseDown" PreviewMouseUp="PlanCanvas_PreviewMouseUp"
+                      MouseLeftButtonDown="PlanCanvas_MouseLeftButtonDown"
+                      MouseLeftButtonUp="PlanCanvas_MouseLeftButtonUp"
+                      MouseRightButtonDown="PlanCanvas_MouseRightButtonDown"
+                      MouseMove="PlanCanvas_MouseMove" MouseLeave="PlanCanvas_MouseLeave"
+                      PreviewMouseWheel="PlanCanvas_MouseWheel" SizeChanged="PlanCanvas_SizeChanged"/>
+            </TabItem>
+            <TabItem Header="{DynamicResource View.Model3D}" Tag="{StaticResource Icon.Cube}">
+              <Grid>
+                <Border x:Name="ModelSurface" Background="White" Margin="0,0,0,36">
+                  <Viewport3D x:Name="ModelViewport" ClipToBounds="True" SizeChanged="ModelViewport_SizeChanged"/>
+                </Border>
+                <Canvas x:Name="ModelOverlay" IsHitTestVisible="False" ClipToBounds="True" Margin="0,0,0,36"/>
+                <controls:ModelNavigation x:Name="ViewNavigation" HorizontalAlignment="Right"
+                    VerticalAlignment="Top" Margin="0,16,18,40"/>
+                <controls:ModelViewToolbar x:Name="ModelToolbar" VerticalAlignment="Bottom" Margin="0"
+                    StyleChanged="ViewStyle_Changed" ResetRequested="ResetOrbit_Click" RenderRequested="StartRender_Click"/>
+              </Grid>
+            </TabItem>
+            <TabItem Header="{DynamicResource View.Schedule}" Tag="{StaticResource Icon.Schedule}">
+              <DataGrid x:Name="ScheduleGrid" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                        GridLinesVisibility="All" HorizontalGridLinesBrush="#D9D9D9" VerticalGridLinesBrush="#D9D9D9"
+                        HeadersVisibility="Column" Margin="12" Background="White" BorderBrush="{DynamicResource PanelBorderBrush}">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="{DynamicResource Schedule.Category}" Binding="{Binding Category}" Width="*"/>
+                  <DataGridTextColumn Header="{DynamicResource Schedule.Number}" Binding="{Binding Number}" Width="*"/>
+                  <DataGridTextColumn Header="{DynamicResource Schedule.Name}" Binding="{Binding Name}" Width="2*"/>
+                  <DataGridTextColumn Header="{DynamicResource Schedule.Level}" Binding="{Binding Level}" Width="*"/>
+                  <DataGridTextColumn Header="{DynamicResource Schedule.Quantity}" Binding="{Binding Quantity, StringFormat=0.##}" Width="*"/>
+                  <DataGridTextColumn Header="{DynamicResource Schedule.Unit}" Binding="{Binding Unit}" Width="*"/>
+                </DataGrid.Columns>
+              </DataGrid>
+            </TabItem>
+            <TabItem Header="{DynamicResource View.Sheet}" Tag="{StaticResource Icon.Sheet}">
+              <Grid Background="#E6E6E6">
+                <Viewbox Stretch="Uniform" Margin="28">
+                  <Canvas x:Name="SheetCanvas" Width="1120" Height="792" Background="White"/>
+                </Viewbox>
+              </Grid>
+            </TabItem>
+            <TabItem Header="{DynamicResource View.Elevation}" Tag="{StaticResource Icon.Elevation}">
+              <Canvas x:Name="ElevationCanvas" Background="White" ClipToBounds="True"
+                      SizeChanged="OrthographicCanvas_SizeChanged"/>
+            </TabItem>
+            <TabItem Header="{DynamicResource View.Section}" Tag="{StaticResource Icon.Section}">
+              <Canvas x:Name="SectionCanvas" Background="White" ClipToBounds="True"
+                      SizeChanged="OrthographicCanvas_SizeChanged"/>
+            </TabItem>
+            <TabItem Header="{DynamicResource View.Render}" Tag="{StaticResource Icon.Render}">
+              <Grid/>
+            </TabItem>
+          </TabControl>
+        </DockPanel>
+      </Grid>
+      <controls:RenderPanel x:Name="RenderPanelControl" Grid.Column="0" Grid.ColumnSpan="3"
+                            Panel.ZIndex="10" Visibility="Collapsed"/>
+    </Grid>
+  </DockPanel>
+  <!-- The return action sits below the persistent window title bar. -->
+  <Button x:Name="RenderReturn3DButton" Content="↩  3D" AutomationProperties.Name="{DynamicResource View.Model3D}"
+          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,40,22,0" MinWidth="102" Height="42"
+          Padding="16,8" FontSize="15" FontWeight="SemiBold" Panel.ZIndex="35"
+          Background="#142B38" Foreground="#FFFFFF" BorderBrush="#6BC7B9" BorderThickness="1"
+          Visibility="Collapsed" Click="RenderReturn3D_Click"
+          WindowChrome.IsHitTestVisibleInChrome="True"/>
+  <!-- The Home screen covers the workspace below the title bar until a project is chosen. -->
+  <controls:StartScreen x:Name="StartScreenControl" Margin="0,30,0,0" Visibility="Collapsed"/>
+  </Grid>
+  </Border>
+</Window>

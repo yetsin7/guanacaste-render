@@ -1,0 +1,55 @@
+            <ContextMenu x:Class="Guanacaste3D.Desktop.Controls.ApplicationFileMenu"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Placement="Bottom" MinWidth="320" Opened="ApplicationMenu_Opened">
+              <MenuItem Header="{DynamicResource Action.Home}" Click="Command_Click" Tag="Home"/>
+              <MenuItem Header="{DynamicResource Action.NewProject}" Click="Command_Click" Tag="New"/>
+              <MenuItem Header="{DynamicResource Action.OpenProject}" Click="Command_Click" Tag="Open"/>
+              <MenuItem x:Name="RecentProjectsMenu" Header="Documentos recientes"/>
+              <MenuItem Header="{DynamicResource Action.OpenSample}" Click="Command_Click" Tag="OpenSample"/>
+              <MenuItem Header="{DynamicResource Action.NewArchitecturalMetric}" Click="Command_Click" Tag="NewArchitecturalMetric"/>
+              <MenuItem Header="{DynamicResource Action.OpenModernHouse}" Click="Command_Click" Tag="OpenModernHouse"/>
+              <MenuItem Header="{DynamicResource Action.OpenBreezeBlockHouse}" Click="Command_Click" Tag="OpenBreezeBlockHouse"/>
+              <MenuItem Header="{DynamicResource Action.NewFromTemplate}" Click="Command_Click" Tag="NewFromTemplate"/>
+              <Separator/>
+              <MenuItem Header="{DynamicResource Action.Save}" Click="Command_Click" Tag="Save"/>
+              <MenuItem Header="{DynamicResource Action.SaveAs}" Click="Command_Click" Tag="SaveAs"/>
+              <MenuItem Header="{DynamicResource Action.SaveAsTemplate}" Click="Command_Click" Tag="SaveAsTemplate"/>
+              <Separator/>
+              <MenuItem Header="{DynamicResource Action.ImportFamily}" Click="Command_Click" Tag="ImportFamily"/>
+              <MenuItem Header="{DynamicResource Action.SaveFamily}" Click="Command_Click" Tag="SaveFamily"/>
+              <Separator/>
+              <MenuItem Header="{DynamicResource Action.ImportModel}" Click="Command_Click" Tag="ImportModel"/>
+              <MenuItem Header="{DynamicResource Action.LinkedModels}" Click="Command_Click" Tag="LinkedModels"/>
+              <Separator/>
+              <MenuItem Header="{DynamicResource Action.ExportQuantities}" Click="Command_Click" Tag="ExportQuantities"/>
+              <MenuItem Header="{DynamicResource Action.ExportDxf}" Click="Command_Click" Tag="ExportDxf"/>
+              <MenuItem Header="{DynamicResource Action.ExportPdf}" Click="Command_Click" Tag="ExportPdf"/>
+              <MenuItem Header="{DynamicResource Action.ExportIfc}" Click="Command_Click" Tag="ExportIfc"/>
+              <MenuItem Header="{DynamicResource Action.ExportRenderProject}" Click="Command_Click" Tag="ExportRenderProject"/>
+              <MenuItem Header="{DynamicResource Action.ExportModel3D}" Click="Command_Click" Tag="ExportModel3D"/>
+              <Separator/>
+              <MenuItem Header="{DynamicResource Menu.Edit}">
+                <MenuItem Header="{DynamicResource Action.Undo}" Click="Command_Click" Tag="Undo"/>
+                <MenuItem Header="{DynamicResource Action.Redo}" Click="Command_Click" Tag="Redo"/>
+                <MenuItem Header="{DynamicResource Action.Delete}" Click="Command_Click" Tag="Delete"/>
+                <MenuItem Header="{DynamicResource Action.Duplicate}" Click="Command_Click" Tag="Duplicate"/>
+                <MenuItem Header="{DynamicResource Action.Move}" Click="Command_Click" Tag="Move"/>
+                <MenuItem Header="{DynamicResource Action.Rotate}" Click="Command_Click" Tag="Rotate"/>
+              </MenuItem>
+              <MenuItem Header="{DynamicResource Menu.View}">
+                <MenuItem Header="{DynamicResource Tool.Plan}" Click="Command_Click" Tag="ShowPlan"/>
+                <MenuItem Header="{DynamicResource Tool.Elevation}" Click="Command_Click" Tag="ShowElevation"/>
+                <MenuItem Header="{DynamicResource Tool.Section}" Click="Command_Click" Tag="ShowSection"/>
+                <MenuItem Header="{DynamicResource Tool.Schedule}" Click="Command_Click" Tag="ShowSchedule"/>
+                <MenuItem Header="{DynamicResource Tool.Sheets}" Click="Command_Click" Tag="ShowSheet"/>
+                <MenuItem Header="{DynamicResource Tool.Render}" Click="Command_Click" Tag="ShowRender"/>
+                <Separator/>
+                <MenuItem Header="{DynamicResource Action.Fit}" Click="Command_Click" Tag="FitPlan"/>
+              </MenuItem>
+              <MenuItem Header="{DynamicResource Menu.Help}">
+                <MenuItem Header="{DynamicResource Action.About}" Click="Command_Click" Tag="About"/>
+              </MenuItem>
+              <Separator/>
+              <MenuItem Header="Opciones..." Click="Command_Click" Tag="Options"/>
+              <MenuItem Header="{DynamicResource Action.Exit}" Click="Command_Click" Tag="Exit"/>
+            </ContextMenu>

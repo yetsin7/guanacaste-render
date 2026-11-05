@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Revit add-in that writes a Revit project as a Guanacaste exchange file (.g3dx). Guanacaste 3D starts Revit with
+    this add-in to import .rvt files, and Revit users can also run it from the "Guanacaste 3D" ribbon tab. It is built
+    only where Revit is installed, because it compiles against Revit's own API assemblies.
+  -->
+  <PropertyGroup>
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2027</RevitVersion>
+    <RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:\Program Files\Autodesk\Revit $(RevitVersion)</RevitInstallDir>
+    <!-- Revit 2027 runs on .NET 10; Revit 2025 and 2026 on .NET 8. -->
+    <TargetFramework Condition="'$(RevitVersion)' &gt;= '2027'">net10.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(RevitVersion)' &lt; '2027'">net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>Guanacaste3D.RevitBridge</AssemblyName>
+    <Version>1.0.1</Version>
+    <RootNamespace>Guanacaste3D.RevitBridge</RootNamespace>
+    <OutputPath>bin\$(Configuration)\Revit$(RevitVersion)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../shared/exchange-thumbnail.cs" Link="exchange-thumbnail.cs" />
+    <!-- Revit owns its dependency graph; only its public API assemblies are compile references. -->
+    <Reference Include="RevitAPI" ExternallyResolved="true"><HintPath>$(RevitInstallDir)\RevitAPI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="RevitAPIUI" ExternallyResolved="true"><HintPath>$(RevitInstallDir)\RevitAPIUI.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Ribbon icons: the Guanacaste cube with an export or open arrow. -->
+    <EmbeddedResource Include="resources\*.png" LogicalName="Guanacaste3D.RevitBridge.resources.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
