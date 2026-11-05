@@ -170,7 +170,8 @@ public partial class RenderPanel
         var session = _session;
         session.PhaseChanged += phase => Dispatcher.BeginInvoke(() =>
         {
-            if (_rendering) StatusText.Text = UiText.Get(phase == "Render.Preparing" ? "RenderPanel.PreparingScene" : "RenderPanel.RenderingSimple");
+            if (_rendering && session == _session && !session.IsPaused)
+                StatusText.Text = UiText.Get(phase == "Render.Preparing" ? "RenderPanel.PreparingScene" : "RenderPanel.RenderingSimple");
         });
         session.FrameReady += frame => Dispatcher.BeginInvoke(DispatcherPriority.Render, () =>
         {
@@ -178,7 +179,7 @@ public partial class RenderPanel
             if (_showingFinal) Show(frame);
             RenderProgress.Value = Math.Clamp(frame.Progress, 0, 1);
             _estimatedRemaining = frame.Remaining;
-            if (!frame.IsFinal)
+            if (_rendering && !session.IsPaused && !frame.IsFinal)
                 StatusText.Text = (_batchLabel is null ? "" : _batchLabel + " · ") + UiText.Get("RenderPanel.RenderingSimple");
         });
 
@@ -259,11 +260,13 @@ public partial class RenderPanel
         {
             _session.Resume();
             PauseButton.Content = UiText.Get("RenderPanel.Pause");
+            StatusText.Text = UiText.Get("RenderPanel.RenderingSimple");
         }
         else
         {
             _session.Pause();
             PauseButton.Content = UiText.Get("RenderPanel.Resume");
+            StatusText.Text = UiText.Get("RenderPanel.RenderingPaused");
         }
     }
 
