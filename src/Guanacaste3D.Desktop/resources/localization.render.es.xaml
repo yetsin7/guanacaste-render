@@ -435,4 +435,6 @@
   <sys:String x:Key="RenderTool.Undo">Deshacer</sys:String>
   <sys:String x:Key="RenderTool.Effects">Efectos de imagen</sys:String>
   <sys:String x:Key="RenderTool.Theater">Mostrar u ocultar paneles</sys:String>
+  <sys:String x:Key="RenderPanel.ProgressLabel">Progreso de renderizado</sys:String>
+  <sys:String x:Key="RenderPanel.RenderingPaused">Renderizado en pausa</sys:String>
 </ResourceDictionary>

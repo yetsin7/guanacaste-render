@@ -1170,8 +1170,14 @@
                   Content="{DynamicResource RenderPanel.Render}"/>
           <StackPanel x:Name="RenderProgressPanel" DockPanel.Dock="Right" Width="285" Margin="16,0,0,0"
                       Visibility="Collapsed">
-            <ProgressBar x:Name="RenderProgress" Height="12" Minimum="0" Maximum="1"
-                         VerticalAlignment="Center"/>
+            <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <ProgressBar x:Name="RenderProgress" Height="10" Minimum="0" Maximum="1" Foreground="#42C9B0"
+                           AutomationProperties.Name="{DynamicResource RenderPanel.ProgressLabel}" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Margin="10,0,0,0" Foreground="#EAF5F3" FontSize="12" FontWeight="SemiBold"
+                         Text="{Binding Value, ElementName=RenderProgress, StringFormat={}{0:P0}}"
+                         AutomationProperties.Name="{DynamicResource RenderPanel.ProgressLabel}"/>
+            </Grid>
             <Grid Margin="0,5,0,0">
               <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
               <TextBlock x:Name="RenderElapsedText" Text="00:00:00" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="11.5"
