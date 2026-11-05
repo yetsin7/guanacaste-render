@@ -1,0 +1,24 @@
+<Window x:Class="Guanacaste3D.Desktop.ElevationViewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource Elevation.NewTitle}" Width="430" Height="300" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="{DynamicResource AppBackgroundBrush}">
+  <Grid Margin="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <TextBlock Text="{DynamicResource Elevation.Name}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+    <TextBox x:Name="NameBox" Grid.Row="1" Margin="0,5,0,14" MaxLength="120"/>
+    <TextBlock Grid.Row="2" Text="{DynamicResource Elevation.Orientation}"
+               Foreground="{DynamicResource SecondaryTextBrush}"/>
+    <ComboBox x:Name="OrientationPicker" Grid.Row="3" Margin="0,5,0,18" VerticalAlignment="Top" SelectedIndex="0"/>
+    <DockPanel Grid.Row="4">
+      <TextBlock x:Name="ValidationText" Foreground="#B42318" VerticalAlignment="Center" TextWrapping="Wrap"/>
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+        <Button Content="{DynamicResource Dialog.Cancel}" IsCancel="True" MinWidth="86" Margin="0,0,6,0"/>
+        <Button Content="{DynamicResource Dialog.Accept}" IsDefault="True" MinWidth="86" Click="Accept_Click"/>
+      </StackPanel>
+    </DockPanel>
+  </Grid>
+</Window>

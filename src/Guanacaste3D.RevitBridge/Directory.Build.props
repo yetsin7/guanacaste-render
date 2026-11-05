@@ -1,0 +1,7 @@
+<Project>
+  <!-- Each Revit version restores and compiles into its own folder, since they target different .NET versions. -->
+  <PropertyGroup>
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2027</RevitVersion>
+    <BaseIntermediateOutputPath>obj\Revit$(RevitVersion)\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

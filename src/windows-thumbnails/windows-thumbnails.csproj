@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableComHosting>true</EnableComHosting>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Guanacaste3D.Thumbnails</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../shared/exchange-thumbnail.cs" Link="exchange-thumbnail.cs" />
+    <ProjectReference Include="../Guanacaste3D.Core/Guanacaste3D.Core.csproj" />
+  </ItemGroup>
+</Project>

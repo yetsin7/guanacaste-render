@@ -1,0 +1,10 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <sys:String x:Key="Splash.Step.Model">Cargando librerías de modelo y geometría</sys:String>
+  <sys:String x:Key="Splash.Step.Interface">Cargando interfaz, herramientas y estilos</sys:String>
+  <sys:String x:Key="Splash.Step.Workspace">Preparando vistas 2D y 3D</sys:String>
+  <sys:String x:Key="Splash.Step.Ready">Listo</sys:String>
+  <sys:String x:Key="Splash.Version">Versión {0}</sys:String>
+</ResourceDictionary>

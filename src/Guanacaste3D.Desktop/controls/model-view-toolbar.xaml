@@ -1,0 +1,53 @@
+<UserControl x:Class="Guanacaste3D.Desktop.Controls.ModelViewToolbar"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" SizeChanged="Toolbar_SizeChanged">
+ <UserControl.Resources>
+  <Style x:Key="ViewIconButton" TargetType="Button">
+   <Setter Property="MinWidth" Value="0"/><Setter Property="Width" Value="28"/><Setter Property="Height" Value="26"/>
+   <Setter Property="Margin" Value="1,0"/><Setter Property="Padding" Value="0"/>
+   <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/><Setter Property="FontSize" Value="16"/>
+   <Setter Property="Foreground" Value="#5C7480"/><Setter Property="Background" Value="Transparent"/>
+   <Setter Property="BorderThickness" Value="0"/><Setter Property="Focusable" Value="False"/>
+  </Style>
+ </UserControl.Resources>
+ <Border Background="#F3F4F5" BorderBrush="#CDD2D7" BorderThickness="0,1,0,0" Padding="5,2">
+  <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+   <StackPanel Orientation="Horizontal">
+    <TextBlock x:Name="NavigationHint" Text="{DynamicResource Navigation.ModelHint}" Visibility="Collapsed"/>
+    <Button x:Name="ProjectionButton" Content="{DynamicResource Navigation.Perspective}" Tag="Projection" Click="Menu_Click"
+     ToolTip="{DynamicResource Navigation.ProjectionHint}" Padding="8,0" MinWidth="0" FontSize="11"/>
+    <Button x:Name="DisplayStyleButton" Style="{StaticResource ViewIconButton}" Tag="Styles" Click="Menu_Click"
+     ToolTip="{DynamicResource Display.Style}" AutomationProperties.Name="{DynamicResource Display.Style}"><Image Source="{StaticResource NavigationIcon.Style}" Width="19" Height="19"/></Button>
+    <Button Style="{StaticResource ViewIconButton}" Content="&#xE80A;" Tag="Detail" Click="Menu_Click"
+     ToolTip="{DynamicResource Display.Detail}" AutomationProperties.Name="{DynamicResource Display.Detail}"/>
+    <Button Style="{StaticResource ViewIconButton}" Content="&#xE713;" Tag="Graphics" Click="Action_Click"
+     ToolTip="{DynamicResource Display.Graphics}" AutomationProperties.Name="{DynamicResource Display.Graphics}"/>
+    <Button x:Name="SunButton" Style="{StaticResource ViewIconButton}" Tag="Sun" Click="Menu_Click"
+     ToolTip="{DynamicResource Display.Sun}" AutomationProperties.Name="{DynamicResource Display.Sun}"><Image Source="{StaticResource NavigationIcon.Sun}" Width="19" Height="19"/></Button>
+    <Button x:Name="ShadowsButton" Style="{StaticResource ViewIconButton}" Content="&#xE708;" Tag="Shadows" Click="Action_Click"
+     ToolTip="{DynamicResource Display.Shadows}" AutomationProperties.Name="{DynamicResource Display.Shadows}"/>
+    <Button x:Name="CropButton" Style="{StaticResource ViewIconButton}" Content="&#xE7A8;" Tag="Crop" Click="Menu_Click"
+     ToolTip="{DynamicResource Display.Crop}" AutomationProperties.Name="{DynamicResource Display.Crop}"/>
+    <Button Style="{StaticResource ViewIconButton}" Content="&#xE7B3;" Tag="CropBoundary" Click="Action_Click"
+     ToolTip="{DynamicResource Display.CropBoundary}" AutomationProperties.Name="{DynamicResource Display.CropBoundary}"/>
+    <Button x:Name="LockButton" Style="{StaticResource ViewIconButton}" Content="&#xE785;" Tag="Lock" Click="Action_Click"
+     ToolTip="{DynamicResource Display.Lock}" AutomationProperties.Name="{DynamicResource Display.Lock}"/>
+    <Button x:Name="TemporaryButton" Style="{StaticResource ViewIconButton}" Tag="Temporary" Click="Menu_Click"
+     ToolTip="{DynamicResource Display.Temporary}" AutomationProperties.Name="{DynamicResource Display.Temporary}"><Image Source="{StaticResource NavigationIcon.Temporary}" Width="19" Height="19"/></Button>
+    <Button x:Name="RevealButton" Style="{StaticResource ViewIconButton}" Tag="Reveal" Click="Action_Click"
+     ToolTip="{DynamicResource Display.Reveal}" AutomationProperties.Name="{DynamicResource Display.Reveal}"><Image Source="{StaticResource NavigationIcon.Reveal}" Width="19" Height="19"/></Button>
+    <Button Style="{StaticResource ViewIconButton}" Content="&#xE7F4;" Tag="NavigationBar" Click="Action_Click"
+     ToolTip="{DynamicResource Navigation.ShowBar}" AutomationProperties.Name="{DynamicResource Navigation.ShowBar}"/>
+    <Border Width="1" Background="#D1D5D9" Margin="5,2"/>
+    <CheckBox x:Name="EdgeSwitch" Content="{DynamicResource View3D.Edges}" IsChecked="True" VerticalAlignment="Center"
+     Margin="5,0,8,0" Checked="Style_Changed" Unchecked="Style_Changed"/>
+    <CheckBox x:Name="ThickLinesSwitch" Content="{DynamicResource View3D.LineWeights}" IsChecked="True" VerticalAlignment="Center"
+     ToolTip="{DynamicResource View3D.LineWeightsTip}" Margin="0,0,8,0" Checked="Style_Changed" Unchecked="Style_Changed"/>
+    <CheckBox x:Name="ServiceSwitch" Content="{DynamicResource View3D.XRay}" IsChecked="False" VerticalAlignment="Center"
+     ToolTip="{DynamicResource View3D.XRayTip}" Margin="0,0,8,0" Checked="Style_Changed" Unchecked="Style_Changed"/>
+    <Button Content="{DynamicResource Model.ResetCamera}" Click="Reset_Click" Margin="0,0,6,0"/>
+    <Button Content="{DynamicResource Render.Start}" Click="Render_Click"/>
+   </StackPanel>
+  </ScrollViewer>
+ </Border>
+</UserControl>

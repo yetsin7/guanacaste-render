@@ -1,0 +1,40 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- The active selection is the sidebar's signature instrument: one context rail, one icon and concise metadata. -->
+  <Style x:Key="SidebarSelectionCardStyle" TargetType="Border">
+    <Setter Property="Background" Value="{DynamicResource SidebarCardBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PanelBorderBrush}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="3"/>
+    <Setter Property="Margin" Value="8,8,8,4"/>
+    <Setter Property="Padding" Value="0"/>
+  </Style>
+
+  <Style x:Key="SidebarSectionExpanderStyle" TargetType="Expander">
+    <Setter Property="Background" Value="White"/>
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource PropertyGridLineBrush}"/>
+    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    <Setter Property="Padding" Value="4,3"/>
+  </Style>
+
+  <Style x:Key="SidebarSearchButtonStyle" TargetType="Button" BasedOn="{StaticResource QuickAccessButtonStyle}">
+    <Setter Property="Width" Value="26"/>
+    <Setter Property="Height" Value="26"/>
+    <Setter Property="MinHeight" Value="26"/>
+    <Setter Property="FontFamily" Value="{DynamicResource GlyphFont}"/>
+    <Setter Property="FontSize" Value="10"/>
+    <Setter Property="Padding" Value="2"/>
+  </Style>
+
+  <Style x:Key="SidebarResultTextStyle" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+  </Style>
+</ResourceDictionary>

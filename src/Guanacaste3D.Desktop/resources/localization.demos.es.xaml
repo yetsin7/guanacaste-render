@@ -1,0 +1,18 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <sys:String x:Key="Demo.Caption">Demostración</sys:String>
+  <sys:String x:Key="Demo.Hint">Clic para usar · Esc para cancelar</sys:String>
+  <sys:String x:Key="Demo.Show">Ver demostración de la herramienta</sys:String>
+  <sys:String x:Key="Demo.Wall">Haz clic para fijar el inicio y otra vez para el final. Los muros se encadenan y sus esquinas se unen solas. Escribe un número para dar la longitud exacta.</sys:String>
+  <sys:String x:Key="Demo.Door">La puerta queda pegada al cursor. Acércala a un muro: se aloja sola, abre su vano y se coloca al hacer clic.</sys:String>
+  <sys:String x:Key="Demo.Window">La ventana sigue al cursor y se aloja en el muro más cercano con su antepecho. Clic para colocarla.</sys:String>
+  <sys:String x:Key="Demo.Column">El pilar sigue al cursor y se ajusta a la rejilla. Clic para colocarlo; puedes seguir colocando más.</sys:String>
+  <sys:String x:Key="Demo.Line">Clic en el punto inicial y clic en el final. La vista previa muestra el elemento antes de crearlo.</sys:String>
+  <sys:String x:Key="Demo.Rectangle">Clic en una esquina y clic en la esquina opuesta para trazar el contorno.</sys:String>
+  <sys:String x:Key="Demo.Move">Selecciona un elemento y arrástralo; las cotas temporales muestran la distancia mientras se mueve.</sys:String>
+  <sys:String x:Key="Demo.View">Haz clic en el botón: la vista cambia o se crea en el momento y queda abierta en una pestaña.</sys:String>
+  <sys:String x:Key="Demo.Panel">Haz clic en el botón para abrir su cuadro de opciones. Ajusta los valores y acepta para aplicarlos al proyecto.</sys:String>
+  <sys:String x:Key="Demo.Dimension">Toca el número de una cota temporal, escribe la nueva distancia y pulsa Enter: el elemento se mueve. La flecha la convierte en cota permanente.</sys:String>
+</ResourceDictionary>

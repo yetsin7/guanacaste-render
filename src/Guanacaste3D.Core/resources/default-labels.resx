@@ -1,0 +1,42 @@
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="LevelName" xml:space="preserve"><value>Nivel {0}</value></data>
+  <data name="SheetName" xml:space="preserve"><value>Lámina {0}</value></data>
+  <data name="SheetFamily" xml:space="preserve"><value>Lámina arquitectónica</value></data>
+  <data name="ExampleProject" xml:space="preserve"><value>PROYECTO ARQUITECTÓNICO</value></data>
+  <data name="ExamplePlan" xml:space="preserve"><value>PLANTA DE MUROS PERIMETRALES</value></data>
+  <data name="ExampleElevations" xml:space="preserve"><value>ALZADOS ARQUITECTÓNICOS</value></data>
+  <data name="ExampleDescription" xml:space="preserve"><value>Muros, cotas y ejes del perímetro.</value></data>
+  <data name="ExampleSubtitle" xml:space="preserve"><value>PERÍMETRO Y CUBIERTA</value></data>
+  <data name="ExampleNote" xml:space="preserve"><value>Cotas expresadas en metros.</value></data>
+  <data name="AreaTable.Title" xml:space="preserve"><value>Cuadro de áreas</value></data>
+  <data name="AreaTable.Number" xml:space="preserve"><value>N.º</value></data>
+  <data name="AreaTable.Room" xml:space="preserve"><value>Espacio</value></data>
+  <data name="AreaTable.Area" xml:space="preserve"><value>Área</value></data>
+  <data name="AreaTable.LevelTotal" xml:space="preserve"><value>Subtotal del nivel</value></data>
+  <data name="AreaTable.Total" xml:space="preserve"><value>Total construido</value></data>
+  <data name="Location.Title" xml:space="preserve"><value>Localización</value></data>
+  <data name="Location.Lot" xml:space="preserve"><value>LOTE</value></data>
+  <data name="Location.Street" xml:space="preserve"><value>Calle</value></data>
+  <data name="ScheduleColumn.Mark" xml:space="preserve"><value>Marca</value></data>
+  <data name="ScheduleColumn.Name" xml:space="preserve"><value>Nombre</value></data>
+  <data name="ScheduleColumn.Level" xml:space="preserve"><value>Nivel</value></data>
+  <data name="ScheduleColumn.Length" xml:space="preserve"><value>Longitud</value></data>
+  <data name="ScheduleColumn.Height" xml:space="preserve"><value>Altura</value></data>
+  <data name="ScheduleColumn.Thickness" xml:space="preserve"><value>Espesor</value></data>
+  <data name="ScheduleColumn.NetVolume" xml:space="preserve"><value>Volumen neto</value></data>
+  <data name="ScheduleColumn.Width" xml:space="preserve"><value>Ancho</value></data>
+  <data name="ScheduleColumn.Sill" xml:space="preserve"><value>Antepecho</value></data>
+  <data name="ScheduleColumn.Host" xml:space="preserve"><value>Muro anfitrión</value></data>
+  <data name="ScheduleColumn.Area" xml:space="preserve"><value>Área</value></data>
+  <data name="ScheduleColumn.Elevation" xml:space="preserve"><value>Elevación</value></data>
+  <data name="ScheduleColumn.PaperSize" xml:space="preserve"><value>Formato</value></data>
+  <data name="ScheduleColumn.TopConstraint" xml:space="preserve"><value>Restricción superior</value></data>
+  <data name="ScheduleColumn.TopOffset" xml:space="preserve"><value>Desfase superior</value></data>
+  <data name="ScheduleColumn.Count" xml:space="preserve"><value>Cantidad</value></data>
+  <data name="ScheduleColumn.Yes" xml:space="preserve"><value>Sí</value></data>
+  <data name="ScheduleColumn.No" xml:space="preserve"><value>No</value></data>
+</root>

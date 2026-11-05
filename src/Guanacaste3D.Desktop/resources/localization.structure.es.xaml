@@ -1,0 +1,64 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+  <sys:String x:Key="Entity.Beam">Viga</sys:String>
+  <sys:String x:Key="Entity.Brace">Arriostre</sys:String>
+  <sys:String x:Key="Entity.Truss">Cercha</sys:String>
+  <sys:String x:Key="Entity.WallFoundation">Cimentación corrida</sys:String>
+  <sys:String x:Key="Entity.IsolatedFoundation">Zapata aislada</sys:String>
+  <sys:String x:Key="Entity.Component">Componente estructural</sys:String>
+  <sys:String x:Key="Entity.Connection">Conexión</sys:String>
+  <sys:String x:Key="Entity.ModelLine">Línea de modelo</sys:String>
+  <sys:String x:Key="Status.StructuralPoint">{0}: haz clic en la ubicación.</sys:String>
+  <sys:String x:Key="Status.StructuralFirstPoint">{0}: selecciona el primer punto.</sys:String>
+  <sys:String x:Key="Status.StructuralSecondPoint">{0}: selecciona el segundo punto.</sys:String>
+  <sys:String x:Key="Status.StructuralFirstCorner">Sistema de vigas: selecciona la primera esquina.</sys:String>
+  <sys:String x:Key="Status.StructuralSecondCorner">Sistema de vigas: selecciona la esquina opuesta.</sys:String>
+  <sys:String x:Key="Status.StructuralCreated">{0} creado.</sys:String>
+  <sys:String x:Key="Status.BeamSystemCreated">Sistema de vigas: {0} vigas creadas.</sys:String>
+  <sys:String x:Key="Status.ConnectionsCreated">Conexiones creadas: {0}.</sys:String>
+  <sys:String x:Key="Status.ConnectionsNone">No hay nudos sin conexión en este nivel.</sys:String>
+  <sys:String x:Key="Properties.StairSummary">{0}
+Altura total {1:0.000} m · {2} contrahuellas
+Contrahuella {3:0.000} m · ancho {4:0.00} m
+Tramos {5} · huellas {6:0.000}–{7:0.000} m
+Desfase {8:0.00} m</sys:String>
+  <sys:String x:Key="Properties.SpiralStairSummary">{0}
+Altura total {1:0.000} m · {2} contrahuellas
+Contrahuella {3:0.000} m · diámetro {4:0.00} m
+Desfase {5:0.00} m</sys:String>
+  <sys:String x:Key="Properties.StructuralSummary">{0}
+Sección {1:0.00} × {2:0.00} m
+Desfase {3:0.00} m
+Longitud {4:0.00} m</sys:String>
+  <sys:String x:Key="Transaction.AddStructuralElement">Crear elemento estructural</sys:String>
+  <sys:String x:Key="Transaction.DuplicateStructuralElement">Duplicar elemento estructural</sys:String>
+  <sys:String x:Key="Transaction.RotateElement">Girar elemento</sys:String>
+  <sys:String x:Key="Transaction.RemoveStructuralElement">Eliminar elemento estructural</sys:String>
+  <sys:String x:Key="Transaction.MoveStructuralElement">Mover elemento estructural</sys:String>
+  <sys:String x:Key="Transaction.AddBeamSystem">Crear sistema de vigas</sys:String>
+  <sys:String x:Key="Transaction.AddConnections">Crear conexiones</sys:String>
+  <sys:String x:Key="Entity.Opening">Abertura</sys:String>
+  <sys:String x:Key="Entity.Shaft">Hueco vertical</sys:String>
+  <sys:String x:Key="Entity.ModelText">Texto de modelo</sys:String>
+  <sys:String x:Key="Status.OpeningFirstCorner">Abertura: selecciona la primera esquina.</sys:String>
+  <sys:String x:Key="Status.OpeningSecondCorner">Abertura: selecciona la esquina opuesta.</sys:String>
+  <sys:String x:Key="Status.OpeningNoFloor">La abertura debe quedar completamente dentro de una losa de este nivel.</sys:String>
+  <sys:String x:Key="Status.ShaftNoFloor">El hueco debe quedar completamente dentro de las losas que atraviesa.</sys:String>
+  <sys:String x:Key="Status.ModelGroupFirstCorner">Grupo de modelo: selecciona la primera esquina.</sys:String>
+  <sys:String x:Key="Status.ModelGroupSecondCorner">Grupo de modelo: selecciona la esquina opuesta.</sys:String>
+  <sys:String x:Key="Status.ModelGroupCreated">Grupo de modelo creado con {0} elementos.</sys:String>
+  <sys:String x:Key="Status.ModelGroupNeedsTwo">El grupo necesita al menos dos elementos completamente dentro del rectángulo.</sys:String>
+  <sys:String x:Key="Status.ModelTextCancelled">Texto de modelo cancelado.</sys:String>
+  <sys:String x:Key="Prompt.ModelText.Title">Texto de modelo</sys:String>
+  <sys:String x:Key="Prompt.ModelText.Label">Texto a colocar en el plano:</sys:String>
+  <sys:String x:Key="Prompt.Accept">Aceptar</sys:String>
+  <sys:String x:Key="Prompt.Cancel">Cancelar</sys:String>
+  <sys:String x:Key="Transaction.AddModelText">Crear texto de modelo</sys:String>
+  <sys:String x:Key="Transaction.AddStructuralGroup">Crear grupo de modelo</sys:String>
+  <sys:String x:Key="Entity.Dormer">Buhardilla</sys:String>
+  <sys:String x:Key="Status.DormerFirstCorner">Buhardilla: selecciona la primera esquina.</sys:String>
+  <sys:String x:Key="Status.DormerSecondCorner">Buhardilla: selecciona la esquina opuesta.</sys:String>
+  <sys:String x:Key="Status.DormerNoRoof">La buhardilla debe quedar completamente dentro de una cubierta de este nivel. Crea la cubierta con el botón Cubierta de Arquitectura.</sys:String>
+  <sys:String x:Key="Transaction.AddDormer">Crear buhardilla</sys:String>
+</ResourceDictionary>
