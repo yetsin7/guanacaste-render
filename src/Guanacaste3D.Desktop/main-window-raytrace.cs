@@ -73,13 +73,20 @@ public partial class MainWindow
     }
 
     /// <summary>Adapts the window to what the render panel asks of its host.</summary>
-    private sealed class RenderSource(MainWindow window) : IRenderSource
+    private sealed partial class RenderSource(MainWindow window) : IRenderSource
     {
         public string ExecuteSceneCommand(string command)
         {
             var args = new RoutedEventArgs();
             switch (command)
             {
+                case "open": window.Open_Click(window, args); window.EnterRenderWorkspace(); break;
+                case "save": window.Save_Click(window, args); break;
+                case "save-as": window.SaveAs_Click(window, args); break;
+                case "sample":
+                    if (window.ConfirmDiscard()) window.OpenBreezeBlockHouse();
+                    window.EnterRenderWorkspace();
+                    break;
                 case "import": window.ImportModel_Click(window, args); break;
                 case "rotate": window.Rotate_Click(window, args); break;
                 case "delete": window.Delete_Click(window, args); break;

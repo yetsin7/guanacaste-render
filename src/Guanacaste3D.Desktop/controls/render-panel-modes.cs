@@ -12,6 +12,7 @@ namespace Guanacaste3D.Desktop.Controls;
 /// <summary>The three things the Render workspace produces, as in Lumion's Photo, Movie and Panorama modes.</summary>
 internal enum RenderMode
 {
+    Build,
     Photo,
     Movie,
     Panorama
@@ -96,6 +97,10 @@ public partial class RenderPanel
         if (_rendering || _batchRunning || _renderingTour) mode = _mode;
         var panoramaChanged = (mode == RenderMode.Panorama) != PanoramaMode;
         _mode = mode;
+        SceneToolsBar.Margin = new Thickness(12, 0, 12, mode == RenderMode.Build ? 76 : 196);
+        SceneInspector.Margin = new Thickness(18, 60, 0, mode == RenderMode.Build ? 152 : 272);
+        foreach (var rail in new[] { StudioBuildModeButton, StudioPhotoModeButton, StudioMovieModeButton, StudioPanoramaModeButton })
+            rail.Background = rail.Tag?.ToString() == mode.ToString() ? RailActive : RailInactive;
         PhotoStrip.Visibility = mode == RenderMode.Photo ? Visibility.Visible : Visibility.Collapsed;
         if (_movieStrip is not null) _movieStrip.Visibility = mode == RenderMode.Movie ? Visibility.Visible : Visibility.Collapsed;
         if (_panoramaStrip is not null) _panoramaStrip.Visibility = mode == RenderMode.Panorama ? Visibility.Visible : Visibility.Collapsed;
@@ -116,6 +121,7 @@ public partial class RenderPanel
     private Border BuildPanoramaStrip()
     {
         var button = PrimaryBarButton("", "Renderizar panorama");
+        button.VerticalAlignment = VerticalAlignment.Center;
         button.Click += (_, e) => RenderButton_Click(button, e);
         var grid = new Grid { Margin = new Thickness(16, 0, 16, 0) };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -131,8 +137,8 @@ public partial class RenderPanel
         grid.Children.Add(button);
         return new Border
         {
-            Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 41),
-            Height = 124, Background = Frozen(Color.FromArgb(0xF2, 0x0F, 0x1B, 0x26)), BorderBrush = Frozen(Color.FromRgb(0x38, 0x50, 0x5A)),
+            Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 62),
+            Height = 124, Background = Frozen(Color.FromArgb(0xF2, 0x21, 0x22, 0x26)), BorderBrush = Frozen(Color.FromRgb(0x38, 0x50, 0x5A)),
             BorderThickness = new Thickness(0, 1, 0, 0), Child = grid
         };
     }
@@ -176,7 +182,7 @@ public partial class RenderPanel
         Button? layersButton = null;
         layersButton = Small("", "Capas", "Hace aparecer o desaparecer niveles del edificio en un momento de la película",
             (_, _) => ShowLayersMenu(layersButton!), out _);
-        var left = new WrapPanel { Width = 420, Margin = new Thickness(14, 12, 6, 0) };
+        var left = new WrapPanel { Margin = new Thickness(8, 8, 0, 0) };
         left.Children.Add(play);
         left.Children.Add(add);
         left.Children.Add(fromPhotos);
@@ -187,7 +193,7 @@ public partial class RenderPanel
         left.Children.Add(Small("", "Árboles y rocas", "Esparce árboles, plantas y rocas en un círculo alrededor del punto que mira la vista",
             (_, _) => ShowScatterWindow(), out _));
 
-        _timeText = new TextBlock { Foreground = Frozen(Color.FromRgb(0x8F, 0xA6, 0xB9)), FontSize = 11.5, Margin = new Thickness(0, 10, 0, 4) };
+        _timeText = new TextBlock { Foreground = Frozen(Color.FromRgb(0x8F, 0xA6, 0xB9)), FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 10, 0, 4) };
         _timeline = new Canvas { Height = 74, Background = Brushes.Transparent, ClipToBounds = true };
         _timeline.MouseLeftButtonDown += Timeline_MouseDown;
         _timeline.MouseMove += Timeline_MouseMove;
@@ -216,15 +222,15 @@ public partial class RenderPanel
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.Children.Add(left);
+        grid.Children.Add(new ScrollViewer { Width = 225, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = left });
         Grid.SetColumn(center, 1);
         grid.Children.Add(center);
         Grid.SetColumn(right, 2);
         grid.Children.Add(right);
         return new Border
         {
-            Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 41),
-            Height = 124, Background = Frozen(Color.FromArgb(0xF2, 0x0F, 0x1B, 0x26)), BorderBrush = Frozen(Color.FromRgb(0x38, 0x50, 0x5A)),
+            Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 0, 62),
+            Height = 124, Background = Frozen(Color.FromArgb(0xF2, 0x21, 0x22, 0x26)), BorderBrush = Frozen(Color.FromRgb(0x38, 0x50, 0x5A)),
             BorderThickness = new Thickness(0, 1, 0, 0), Child = grid
         };
     }

@@ -123,7 +123,7 @@ static class RenderPeopleChecks
         // Cars: the shipped sedan and coupé drive a route, turn smoothly at corners and keep their smooth normals turned with them.
         string? root = null;
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            if (File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx"))) { root = directory.FullName; break; }
+            if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx")))) { root = directory.FullName; break; }
         if (root is not null)
         {
             var carFiles = new[] { "sedan-car", "coupe-car-silver" };

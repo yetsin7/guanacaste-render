@@ -18,6 +18,10 @@ internal sealed class ScatterDialog : Window
     private readonly Func<ActorPoint?> _pointUnderView;
     private readonly Func<MassPlacementFamily, IReadOnlyList<ComponentPlacement>, double, string> _place;
     private readonly ComboBox _family = new() { MinHeight = 30 };
+    private readonly ComboBox _layout = new() { MinHeight = 32 };
+    private readonly Slider _direction = new() { Minimum = 0, Maximum = 360, Value = 0, TickFrequency = 15 };
+    private readonly CheckBox _randomRotation = new() { Content = "Dirección aleatoria", IsChecked = true, Margin = new Thickness(0, 10, 0, 0) };
+    private readonly TextBlock _extentLabel = Label("Radio del grupo (m)");
     private readonly TextBox _radius = new() { MinHeight = 30, Text = "12", VerticalContentAlignment = VerticalAlignment.Center };
     private readonly TextBox _spacing = new() { MinHeight = 30, VerticalContentAlignment = VerticalAlignment.Center };
     private readonly Slider _variation = new() { Minimum = 0, Maximum = 50, Value = 20, TickFrequency = 5, IsSnapToTickEnabled = true };
@@ -31,7 +35,7 @@ internal sealed class ScatterDialog : Window
         _families = families;
         _pointUnderView = pointUnderView;
         _place = place;
-        Title = "Árboles y rocas";
+        Title = "Colocación de objetos";
         Width = 430;
         SizeToContent = SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.Manual;
@@ -41,11 +45,10 @@ internal sealed class ScatterDialog : Window
         SetResourceReference(ForegroundProperty, "PrimaryTextBrush");
 
         var root = new StackPanel { Margin = new Thickness(18, 14, 18, 14) };
-        root.Children.Add(new TextBlock { Text = "Árboles y rocas", FontSize = 18, FontWeight = FontWeights.SemiBold });
+        root.Children.Add(new TextBlock { Text = "Colocación de objetos", FontSize = 18, FontWeight = FontWeights.SemiBold });
         root.Children.Add(new TextBlock
         {
-            Text = "Mira al suelo donde quieras el grupo y pulsa «Esparcir aquí»: se reparten en un círculo alrededor de ese punto, cada uno girado y de un " +
-                   "tamaño un poco distinto. Se pueden deshacer de una vez.",
+            Text = "Mira al suelo donde quieras colocar los objetos. Elige grupo o línea y ajusta la distribución. Toda la colocación se deshace con Ctrl+Z.",
             TextWrapping = TextWrapping.Wrap, Opacity = 0.75, FontSize = 12, Margin = new Thickness(0, 4, 0, 8)
         });
         root.Children.Add(Label("Qué esparcir"));
@@ -53,10 +56,22 @@ internal sealed class ScatterDialog : Window
         _family.SelectedIndex = families.Count > 0 ? 0 : -1;
         _family.SelectionChanged += (_, _) => SuggestSpacing();
         root.Children.Add(_family);
-        root.Children.Add(Label("Radio del círculo (m)"));
+        root.Children.Add(Label("Modo de colocación"));
+        _layout.Items.Add("Grupo · área circular");
+        _layout.Items.Add("Línea · separación uniforme");
+        _layout.SelectedIndex = 0;
+        _layout.SelectionChanged += (_, _) => _extentLabel.Text = _layout.SelectedIndex == 1 ? "Longitud de la línea (m)" : "Radio del grupo (m)";
+        root.Children.Add(_layout);
+        root.Children.Add(_extentLabel);
         root.Children.Add(_radius);
         root.Children.Add(Label("Separación entre uno y otro (m)"));
         root.Children.Add(_spacing);
+        root.Children.Add(Label("Dirección de la línea (°)"));
+        var directionText = new TextBlock { Text = "0°", Opacity = .75 };
+        _direction.ValueChanged += (_, _) => directionText.Text = $"{_direction.Value:0}°";
+        root.Children.Add(_direction);
+        root.Children.Add(directionText);
+        root.Children.Add(_randomRotation);
         root.Children.Add(Label("Variación de tamaño"));
         _variation.ValueChanged += (_, _) => _variationText.Text = $"±{_variation.Value:0} %";
         _variationText.Text = $"±{_variation.Value:0} %";
@@ -95,10 +110,16 @@ internal sealed class ScatterDialog : Window
         if (_pointUnderView() is not { } centre) { _message.Text = "Mira hacia el suelo: no hay nada bajo el centro de la vista."; return; }
         try
         {
-            var placements = MassPlacement.InArea(Circle(centre, radius), new MassPlacementOptions
+            var options = new MassPlacementOptions
             {
-                Spacing = spacing, ScaleVariation = _variation.Value / 100, RandomRotation = true, Seed = _seed++
-            });
+                Spacing = spacing, ScaleVariation = _variation.Value / 100, RandomRotation = _randomRotation.IsChecked == true, Seed = _seed++
+            };
+            var radians = _direction.Value * Math.PI / 180;
+            var dx = Math.Cos(radians) * radius / 2;
+            var dy = Math.Sin(radians) * radius / 2;
+            var placements = _layout.SelectedIndex == 1
+                ? MassPlacement.AlongPath([new(centre.X - dx, centre.Y - dy), new(centre.X + dx, centre.Y + dy)], options)
+                : MassPlacement.InArea(Circle(centre, radius), options);
             _message.Text = placements.Count == 0 ? "No cupo ninguno: agranda el radio o acerca la separación." :
                 _place(_families[_family.SelectedIndex], placements, centre.Z);
         }

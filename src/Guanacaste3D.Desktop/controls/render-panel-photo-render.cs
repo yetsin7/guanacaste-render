@@ -99,7 +99,12 @@ public partial class RenderPanel
                     if (_lastFinal is not null) break;
                     await Task.Delay(500);
                 }
-                if (_batchCancel || _lastFinal is null) continue;
+                if (_batchCancel) break;
+                if (_lastFinal is null)
+                {
+                    failure = StatusText.Text;
+                    continue;
+                }
                 var extension = options.Jpeg ? ".jpg" : ".png";
                 var path = UniquePath(folder, SafeName($"{source.ProjectName} - {index + 1:00} {name}"), extension);
                 BitmapEncoder encoder = options.Jpeg ? new JpegBitmapEncoder { QualityLevel = 95 } : new PngBitmapEncoder();
@@ -133,7 +138,7 @@ public partial class RenderPanel
             RefreshPhotos();
         }
         StatusText.Text = failure is not null
-            ? $"No se pudo guardar el render: {failure}"
+            ? $"No se completó el render: {failure}"
             : _batchCancel
                 ? $"Render detenido. {saved.Count} imagen(es) guardada(s) en {folder}"
                 : saved.Count == 0

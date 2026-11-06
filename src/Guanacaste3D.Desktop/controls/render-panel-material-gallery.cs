@@ -37,7 +37,7 @@ public partial class RenderPanel
         foreach (var (category, label) in RenderTextureLibrary.Categories)
             GalleryTargetPicker.Items.Add(new ComboBoxItem { Content = Text(label), Tag = category });
         GalleryTargetPicker.SelectedItem = GalleryTargetPicker.Items.OfType<ComboBoxItem>()
-            .FirstOrDefault(item => item.Tag is SurfaceKind kind && kind == SurfaceKind.Bark)
+            .FirstOrDefault(item => item.Tag is SurfaceKind kind && kind == SurfaceKind.Wall)
             ?? GalleryTargetPicker.Items.OfType<ComboBoxItem>().FirstOrDefault();
         _galleryReady = true;
         // The library opens expanded; thumbnails can only be decoded once the control is on screen.
@@ -146,7 +146,7 @@ public partial class RenderPanel
             var key = texture.Key;
             var picture = new Image
             {
-                Width = 132, Height = 84, Stretch = Stretch.UniformToFill,
+                Width = 112, Height = 84, Stretch = Stretch.UniformToFill,
                 HorizontalAlignment = HorizontalAlignment.Center
             };
             var placeholder = new TextBlock
@@ -155,7 +155,7 @@ public partial class RenderPanel
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
                 FontSize = 11, IsHitTestVisible = false
             };
-            var pictureFrame = new Grid { Width = 132, Height = 84, Background = new SolidColorBrush(Color.FromRgb(38, 56, 72)) };
+            var pictureFrame = new Grid { Width = 112, Height = 84, Background = new SolidColorBrush(Color.FromRgb(38, 56, 72)) };
             pictureFrame.Children.Add(placeholder);
             pictureFrame.Children.Add(picture);
             var label = new TextBlock
@@ -170,7 +170,7 @@ public partial class RenderPanel
             content.Children.Add(label);
             var button = new Button
             {
-                Tag = key, Content = content, Width = 149, MinHeight = 145,
+                Tag = key, Content = content, Width = 128, MinHeight = 120,
                 Padding = new Thickness(5, 5, 5, 6),
                 Margin = new Thickness(3, 3, 3, 3), BorderThickness = new Thickness(2),
                 BorderBrush = GalleryNormalBorder, Background = GalleryTileBackground,

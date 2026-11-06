@@ -176,8 +176,10 @@ public sealed partial class DocumentSession
     }
 
     /// <summary>Translates a structural element by a metric offset without changing its section. Group members move together.</summary>
-    public void MoveStructuralElement(Guid id, double deltaX, double deltaY)
+    public void MoveStructuralElement(Guid id, double deltaX, double deltaY, double deltaZ = 0)
     {
+        if (!double.IsFinite(deltaX) || !double.IsFinite(deltaY) || !double.IsFinite(deltaZ))
+            throw new InvalidDataException("The displacement must be finite.");
         var element = Document.StructuralElements.FirstOrDefault(candidate => candidate.Id == id);
         if (element is null) return;
         var groupId = element.GroupId;
@@ -193,7 +195,8 @@ public sealed partial class DocumentSession
                 document.StructuralElements[index] = existing with
                 {
                     Start = new Point2(existing.Start.X + deltaX, existing.Start.Y + deltaY),
-                    End = new Point2(existing.End.X + deltaX, existing.End.Y + deltaY)
+                    End = new Point2(existing.End.X + deltaX, existing.End.Y + deltaY),
+                    Offset = existing.Offset + deltaZ
                 };
                 var translated = document.StructuralElements[index];
                 if (translated.Kind is StructuralElementKind.Opening or StructuralElementKind.Shaft &&

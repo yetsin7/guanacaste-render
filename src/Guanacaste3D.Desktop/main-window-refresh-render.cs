@@ -22,6 +22,14 @@ public partial class MainWindow
             _activeLevelId = _session.Document.Levels[0].Id;
         if (!_session.Document.Walls.Any(wall => wall.Id == _selectedWallId)) _selectedWallId = null;
         if (!_session.Document.Openings.Any(opening => opening.Id == _selectedOpeningId)) _selectedOpeningId = null;
+        if (App.RenderOnly)
+        {
+            // The standalone renderer never displays BIM plans, schedules or their property editors.
+            // Invalidate the shared scene once; rebuilding hidden views multiplied the work of every material edit.
+            MarkSceneDirty();
+            UpdateModelSelection(true);
+            return;
+        }
         RefreshLevelPicker();
         RefreshViewShortcuts();
         RefreshTree();

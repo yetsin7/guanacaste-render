@@ -1,2 +1,10 @@
 bin/
 obj/
+artifacts/
+release/
+*-tests.log
+build-studio.log
+artifacts-publish.log
+
+artifacts-*.log
+*_wpftmp.csproj

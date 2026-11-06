@@ -174,6 +174,8 @@ internal static partial class InteractionChecks
                 var movieText = System.Text.Encoding.Latin1.GetString(movieBytes);
                 Check(movieTask.IsCompletedSuccessfully && movieBytes.Length > 3000 && movieText.Substring(4, 4) == "ftyp" && movieText.Contains("moov") && movieText.Contains("avc1"),
                     $"A movie renders from the camera path into an .mp4 file ({movieBytes.Length} bytes): {movieStatus}");
+                Directory.CreateDirectory("artifacts/studio-checks");
+                File.Copy(movieFile, "artifacts/studio-checks/sample-tour.mp4", overwrite: true);
                 Check(!((TextBlock)panel.FindName("StatusText")).Text.Contains("No se pudo", StringComparison.Ordinal) && panel.FindName("RenderTourButton") is Button { IsEnabled: true },
                     "After the movie the panel is back to normal and says nothing went wrong");
             }

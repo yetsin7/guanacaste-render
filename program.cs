@@ -7,6 +7,11 @@ internal static class Program
     [STAThread]
     private static void Main()
     {
+        var state = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GuanacasteRender");
+        if (Environment.GetEnvironmentVariable("G3D_RECOVERY_DIR") is null)
+            Environment.SetEnvironmentVariable("G3D_RECOVERY_DIR", System.IO.Path.Combine(state, "recovery"));
+        if (Environment.GetEnvironmentVariable("G3D_LOG_DIR") is null)
+            Environment.SetEnvironmentVariable("G3D_LOG_DIR", System.IO.Path.Combine(state, "logs"));
         Guanacaste3D.Desktop.App.RenderOnly = true;
         var application = new Guanacaste3D.Desktop.App();
         application.InitializeComponent();

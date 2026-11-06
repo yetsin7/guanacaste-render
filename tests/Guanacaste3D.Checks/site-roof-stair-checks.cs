@@ -81,7 +81,7 @@ static class SiteRoofStairChecks
         // A shipped rock is a planting, so it stands on the slope it is put on, not at the level's floor.
         string? repository = null;
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            if (File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx"))) { repository = directory.FullName; break; }
+            if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx")))) { repository = directory.FullName; break; }
         if (repository is not null)
         {
             var rock = NativeDocumentStore.LoadFamily(Path.Combine(repository, "src", "Guanacaste3D.Desktop", "resources", "families", "rock-medium.g3df"));

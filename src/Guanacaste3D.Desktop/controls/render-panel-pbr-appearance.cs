@@ -87,7 +87,7 @@ public partial class RenderPanel
 
     private void GalleryAppearanceValue_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (_settingGalleryAppearance) return;
+        if (!_galleryReady || _settingGalleryAppearance) return;
         UpdateGalleryAppearanceLabels();
         ScheduleGalleryApply();
     }

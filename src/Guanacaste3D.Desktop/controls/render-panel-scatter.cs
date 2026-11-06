@@ -31,6 +31,9 @@ public partial class RenderPanel
         {
             Owner = Window.GetWindow(this)
         };
+        _scatterWindow.Resources.MergedDictionaries.Add(Resources);
+        _scatterWindow.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(32, 33, 36));
+        _scatterWindow.Foreground = System.Windows.Media.Brushes.White;
         if (_scatterWindow.Owner is { } owner)
         {
             _scatterWindow.Left = owner.Left + Math.Max(0, owner.ActualWidth - 470);

@@ -15,6 +15,7 @@
     <ApplicationIcon>resources\brand\guanacaste3d.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="desktop-interaction-checks" />
     <AssemblyMetadata Include="ReleaseDate" Value="$(ReleaseDate)" />
   </ItemGroup>
   <ItemGroup>

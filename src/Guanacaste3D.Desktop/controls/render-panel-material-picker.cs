@@ -56,6 +56,7 @@ public partial class RenderPanel
             },
             Reset: () => GalleryResetAppearance_Click(this, new RoutedEventArgs()));
         _materialPicker = new MaterialPickerWindow(MaterialPickerItems(), host) { Owner = Window.GetWindow(this) };
+        _materialPicker.Resources.MergedDictionaries.Add(Resources);
         _materialPicker.Show();
     }
 }

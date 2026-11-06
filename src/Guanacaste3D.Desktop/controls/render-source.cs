@@ -17,6 +17,13 @@ namespace Guanacaste3D.Desktop.Controls;
 /// <summary>What the render panel needs from the window that hosts it.</summary>
 internal interface IRenderSource
 {
+    bool HasScene => true;
+    bool CanMoveSelection => false;
+    bool CanElevateSelection => false;
+    string MoveSelection(double x, double y, double z) => "Selecciona un objeto para moverlo.";
+    IReadOnlyList<RenderSceneItem> SceneItems() => [];
+    void SelectSceneItem(Guid id) { }
+    void SetSceneItemVisible(Guid id, bool visible) { }
     string ExecuteSceneCommand(string command) => "La acción no está disponible en esta vista.";
     /// <summary>The camera shared with the 3D view, so both always show the same place.</summary>
     NavigationCamera Camera { get; }
@@ -133,3 +140,6 @@ internal interface IRenderSource
     /// <summary>Whether the render uses neutral study materials instead of project assignments.</summary>
     bool ClayMode { get; set; }
 }
+
+/// <summary>A native scene object, grouped by level and category in the render inspector.</summary>
+internal sealed record RenderSceneItem(Guid Id, string Name, string Category, string Layer, bool Visible);

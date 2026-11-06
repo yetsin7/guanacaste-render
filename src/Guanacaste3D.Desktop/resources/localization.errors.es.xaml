@@ -484,4 +484,5 @@
   <sys:String x:Key="Error.The IES file is too large.">El archivo IES supera el tamaño permitido.</sys:String>
   <sys:String x:Key="Error.The IES photometric table is too large.">La tabla fotométrica IES supera el límite permitido.</sys:String>
   <sys:String x:Key="Error.The IES candela table contains an invalid intensity.">La tabla de candelas IES contiene una intensidad no válida.</sys:String>
+  <sys:String x:Key="Error.The displacement must be finite.">El desplazamiento debe tener valores numéricos finitos.</sys:String>
 </ResourceDictionary>

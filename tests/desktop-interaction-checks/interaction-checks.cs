@@ -28,9 +28,17 @@ internal static partial class InteractionChecks
         Environment.SetEnvironmentVariable("G3D_RECOVERY_DIR", Path.Combine(scratch, "recovery"));
         Environment.SetEnvironmentVariable("G3D_LOG_DIR", Path.Combine(scratch, "logs"));
         Environment.SetEnvironmentVariable("G3D_NO_EXPLORER", "1");
+        App.RenderOnly = Environment.GetEnvironmentVariable("G3D_ONLY") == "studio";
         var application = new App();
         application.InitializeComponent();
+        SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(application.Dispatcher));
         application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        if (App.RenderOnly)
+        {
+            RenderStudioChecks();
+            Console.WriteLine("Desktop interaction checks passed (Guanacaste Render studio).");
+            return 0;
+        }
         // G3D_ONLY=cobogo runs just the checks on the breeze-block house, which is what a quick loop needs.
         if (Environment.GetEnvironmentVariable("G3D_ONLY") == "cobogo")
         {

@@ -21,7 +21,7 @@ public partial class App : Application
         var splash = new SplashWindow();
         splash.Show();
 
-        Core.Import.Revit.RevitBridgeRunner.RecordApplicationPath(Environment.ProcessPath);
+        if (!RenderOnly) Core.Import.Revit.RevitBridgeRunner.RecordApplicationPath(Environment.ProcessPath);
         await ReportStepAsync(splash, 0, "Splash.Step.Model");
         // Core model and geometry code is pure computation, so it warms up off the UI thread.
         await Task.Run(StartupWarmup.LoadModelLibraries);

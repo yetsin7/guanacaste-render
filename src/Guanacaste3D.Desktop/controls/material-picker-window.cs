@@ -25,12 +25,17 @@ internal sealed record PickerHost(Func<IReadOnlyList<string>> Surfaces, Func<int
 /// </summary>
 internal sealed class MaterialPickerWindow : Window
 {
-    private const int BallSize = 112;
+    private const int BallSize = 64;
+    private const int PageSize = 24;
+    private int _page;
+    private readonly TextBlock _pageText = new() { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+    private readonly Button _previous = new() { Content = "‹", Padding = new Thickness(12, 4, 12, 4) };
+    private readonly Button _next = new() { Content = "›", Padding = new Thickness(12, 4, 12, 4) };
     private static readonly (string Id, string Name)[] Categories =
     [
         ("all", "Todos"), ("metal", "Metales"), ("plastic", "Plásticos y cauchos"), ("mineral", "Superficies minerales"), ("natural", "Superficies naturales"),
         ("wood", "Madera"), ("glass", "Vidrio y espejos"), ("paint", "Pinturas y estucos"), ("floor", "Pisos y azulejos"), ("fabric", "Telas y cuero"),
-        ("other", "Otros acabados"), ("photo", "Texturas fotográficas")
+        ("water", "Agua"), ("other", "Otros acabados"), ("photo", "Texturas fotográficas")
     ];
 
     private static readonly string[] Tints =
@@ -66,115 +71,114 @@ internal sealed class MaterialPickerWindow : Window
         _items = items;
         _host = host;
         Title = "Biblioteca de materiales";
-        Width = 1020;
-        Height = 700;
-        MinWidth = 760;
+        Width = 460;
+        Height = 740;
+        MinWidth = 420;
         MinHeight = 520;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
         // The same dark palette as the Render studio, set outright so the text is always readable on it.
-        Background = new SolidColorBrush(Color.FromRgb(0x1B, 0x2A, 0x3A));
+        Background = new SolidColorBrush(Color.FromRgb(0x20, 0x21, 0x24));
         Foreground = new SolidColorBrush(Color.FromRgb(0xF0, 0xF6, 0xFB));
         _categories.Foreground = Foreground;
+        ScrollViewer.SetHorizontalScrollBarVisibility(_categories, ScrollBarVisibility.Disabled);
+        ScrollViewer.SetVerticalScrollBarVisibility(_categories, ScrollBarVisibility.Disabled);
 
-        var layout = new Grid { Margin = new Thickness(14) };
-        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(210) });
-        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        layout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-        var side = new DockPanel { Margin = new Thickness(0, 0, 12, 0) };
-        DockPanel.SetDock(_search, Dock.Top);
-        side.Children.Add(_search);
-        foreach (var (id, name) in Categories)
-            _categories.Items.Add(new ListBoxItem { Tag = id, Content = $"{name}  ·  {Count(id)}", Padding = new Thickness(10, 7, 10, 7), FontSize = 13 });
+        var layout = new DockPanel { Margin = new Thickness(16) };
+        var tabs = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 14) };
+        var libraryTab = new Button { Content = "▦  Biblioteca", Padding = new Thickness(16, 10, 16, 10) };
+        var settingsTab = new Button { Content = "✎  Ajustes", Padding = new Thickness(16, 10, 16, 10), Margin = new Thickness(6, 0, 0, 0) };
+        tabs.Children.Add(libraryTab); tabs.Children.Add(settingsTab);
+        DockPanel.SetDock(tabs, Dock.Top); layout.Children.Add(tabs);
+        var surfaceRow = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+        surfaceRow.Children.Add(new TextBlock { Text = "Superficie", Foreground = Foreground, Margin = new Thickness(0, 0, 0, 5) });
+        foreach (var name in _host.Surfaces()) _surface.Items.Add(name);
+        _surface.SelectionChanged += (_, _) =>
+        {
+            if (_loading || _surface.SelectedIndex < 0) return;
+            FlushAppearance();
+            _host.SetSurface(_surface.SelectedIndex); SyncSliders(); Highlight();
+        };
+        surfaceRow.Children.Add(_surface); surfaceRow.Children.Add(_target);
+        DockPanel.SetDock(surfaceRow, Dock.Top); layout.Children.Add(surfaceRow);
+        var pages = new Grid();
+        var library = new DockPanel();
+        DockPanel.SetDock(_search, Dock.Top); library.Children.Add(_search);
+        var wrap = new FrameworkElementFactory(typeof(WrapPanel));
+        _categories.ItemsPanel = new ItemsPanelTemplate(wrap);
+        var glyphs = new[] { "▦", "◇", "◉", "▧", "♧", "▥", "◈", "◐", "▤", "▨", "≈", "○", "▣" };
+        for (var index = 0; index < Categories.Length; index++)
+        {
+            var (id, name) = Categories[index];
+            var category = new ListBoxItem { Tag = id, Content = glyphs[index], ToolTip = name + " · " + Count(id),
+                Width = 58, Height = 40, FontSize = 23, HorizontalContentAlignment = HorizontalAlignment.Center, Foreground = Foreground };
+            System.Windows.Automation.AutomationProperties.SetName(category, name);
+            _categories.Items.Add(category);
+        }
         _categories.SelectedIndex = 0;
-        side.Children.Add(_categories);
-        layout.Children.Add(side);
-
-        var scroller = new ScrollViewer { Content = _tiles, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-        Grid.SetColumn(scroller, 1);
-        layout.Children.Add(scroller);
-
-        var controls = BuildControls();
-        Grid.SetRow(controls, 1);
-        Grid.SetColumnSpan(controls, 2);
-        layout.Children.Add(controls);
+        DockPanel.SetDock(_categories, Dock.Top); library.Children.Add(_categories);
+        var pager = new DockPanel { Margin = new Thickness(0, 8, 0, 0) };
+        DockPanel.SetDock(_previous, Dock.Left); DockPanel.SetDock(_next, Dock.Right);
+        pager.Children.Add(_previous); pager.Children.Add(_next); pager.Children.Add(_pageText);
+        DockPanel.SetDock(pager, Dock.Bottom); library.Children.Add(pager);
+        _previous.Click += (_, _) => { _page = Math.Max(0, _page - 1); Refresh(); };
+        _next.Click += (_, _) => { _page++; Refresh(); };
+        library.Children.Add(new ScrollViewer { Content = _tiles, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled });
+        var settings = new ScrollViewer { Content = BuildControls(), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Visibility = Visibility.Collapsed };
+        pages.Children.Add(library); pages.Children.Add(settings); layout.Children.Add(pages);
+        void Switch(bool editing)
+        {
+            library.Visibility = editing ? Visibility.Collapsed : Visibility.Visible;
+            settings.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
+            libraryTab.Background = new SolidColorBrush(editing ? Color.FromRgb(40, 42, 46) : Color.FromRgb(52, 95, 145));
+            settingsTab.Background = new SolidColorBrush(editing ? Color.FromRgb(52, 95, 145) : Color.FromRgb(40, 42, 46));
+        }
+        libraryTab.Click += (_, _) => Switch(false); settingsTab.Click += (_, _) => Switch(true); Switch(false);
         Content = layout;
 
-        _search.TextChanged += (_, _) => Refresh();
-        _categories.SelectionChanged += (_, _) => Refresh();
-        _debounce.Tick += (_, _) => { _debounce.Stop(); _host.Adjust(1 - _gloss.Value, _metal.Value, _relief.Value, _size.Value, _tint); };
-        Closed += (_, _) => { _debounce.Stop(); _revision++; };
+        _search.TextChanged += (_, _) => { _page = 0; Refresh(); };
+        _categories.SelectionChanged += (_, _) => { _page = 0; Refresh(); };
+        _debounce.Tick += (_, _) => { _debounce.Stop(); _host.Adjust(_gloss.Value, _metal.Value, _relief.Value, _size.Value, _tint); };
+        Closed += (_, _) => { FlushAppearance(); _revision++; };
         Loaded += (_, _) => { SyncSliders(); Refresh(); };
         Activated += (_, _) => { SyncSliders(); Highlight(); };
     }
 
     private int Count(string id) => id == "all" ? _items.Count : _items.Count(item => item.Category == id);
 
+    private void FlushAppearance()
+    {
+        if (!_debounce.IsEnabled) return;
+        _debounce.Stop();
+        _host.Adjust(_gloss.Value, _metal.Value, _relief.Value, _size.Value, _tint);
+    }
+
     private FrameworkElement BuildControls()
     {
-        var panel = new Border
+        var stack = new StackPanel { Margin = new Thickness(2, 8, 6, 8) };
+        stack.Children.Add(new TextBlock { Text = "Color", Foreground = Foreground, Margin = new Thickness(0, 0, 0, 8) });
+        stack.Children.Add(_swatches);
+        stack.Children.Add(new TextBlock { Text = "Textura · selecciona una miniatura en Biblioteca", Foreground = Foreground,
+            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 14, 0, 16) });
+        foreach (var (label, control) in new[] { ("Escala de mapa (m)", _size), ("Relieve", _relief), ("Rugosidad", _gloss), ("Metálico", _metal) })
         {
-            Margin = new Thickness(0, 10, 0, 0), Padding = new Thickness(14, 10, 14, 10), CornerRadius = new CornerRadius(8),
-            Background = new SolidColorBrush(Color.FromRgb(0x1F, 0x30, 0x42)), BorderBrush = new SolidColorBrush(Color.FromRgb(0x3E, 0x53, 0x65)), BorderThickness = new Thickness(1)
-        };
-        var grid = new Grid();
-        for (var i = 0; i < 4; i++) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.4, GridUnitType.Star) });
-        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        var header = new StackPanel { Orientation = Orientation.Horizontal };
-        header.Children.Add(new TextBlock { Text = "Aplicar a: ", Opacity = 0.7, Margin = new Thickness(0, 0, 4, 6), VerticalAlignment = VerticalAlignment.Center });
-        foreach (var name in _host.Surfaces()) _surface.Items.Add(name);
-        _surface.SelectionChanged += (_, _) =>
-        {
-            if (_loading || _surface.SelectedIndex < 0) return;
-            _host.SetSurface(_surface.SelectedIndex);
-            SyncSliders();
-            Highlight();
-        };
-        header.Children.Add(_surface);
-        header.Children.Add(_target);
-        Grid.SetColumnSpan(header, 5);
-        grid.Children.Add(header);
-        var sliders = new (string Label, string Hint, Slider Control)[]
-        {
-            ("Brillo", "De mate a espejo", _gloss), ("Metálico", "Cuánto parece metal", _metal), ("Relieve", "Profundidad de la textura", _relief), ("Tamaño (m)", "Medida real de una repetición", _size)
-        };
-        for (var i = 0; i < sliders.Length; i++)
-        {
-            var (label, hint, control) = sliders[i];
-            var cell = new StackPanel { Margin = new Thickness(0, 0, 14, 0), ToolTip = hint };
-            var value = new TextBlock { Opacity = 0.8, HorizontalAlignment = HorizontalAlignment.Right };
-            var row = new DockPanel();
-            DockPanel.SetDock(value, Dock.Right);
-            row.Children.Add(value);
-            row.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold });
-            cell.Children.Add(row);
-            cell.Children.Add(control);
+            var value = new TextBlock { Foreground = Foreground, HorizontalAlignment = HorizontalAlignment.Right };
+            var row = new DockPanel { Margin = new Thickness(0, 10, 0, 5) };
+            DockPanel.SetDock(value, Dock.Right); row.Children.Add(value);
+            row.Children.Add(new TextBlock { Text = label, Foreground = Foreground });
+            stack.Children.Add(row); stack.Children.Add(control);
+            System.Windows.Automation.AutomationProperties.SetName(control, label);
             control.ValueChanged += (_, _) =>
             {
-                value.Text = control == _size ? $"{control.Value:0.0#}" : $"{control.Value:0%}";
+                value.Text = control == _size ? $"{control.Value:0.0#} m" : $"{control.Value:0%}";
                 if (_loading) return;
-                _debounce.Stop();
-                _debounce.Start();
+                _debounce.Stop(); _debounce.Start();
             };
-            Grid.SetRow(cell, 1);
-            Grid.SetColumn(cell, i);
-            grid.Children.Add(cell);
         }
-        var colour = new StackPanel();
-        colour.Children.Add(new TextBlock { Text = "Color", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 4) });
-        colour.Children.Add(_swatches);
-        var reset = new Button { Content = "Restablecer", Padding = new Thickness(10, 3, 10, 3), HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 2, 0, 0) };
+        var reset = new Button { Content = "Restablecer material", Padding = new Thickness(12, 8, 12, 8), Margin = new Thickness(0, 20, 0, 0) };
         reset.Click += (_, _) => { _host.Reset(); SyncSliders(); };
-        colour.Children.Add(reset);
-        Grid.SetRow(colour, 1);
-        Grid.SetColumn(colour, 4);
-        grid.Children.Add(colour);
-        panel.Child = grid;
-        return panel;
+        stack.Children.Add(reset);
+        return stack;
     }
 
     private void BuildSwatches()
@@ -207,7 +211,7 @@ internal sealed class MaterialPickerWindow : Window
         try
         {
             var (roughness, metallic, relief, size, tint) = _host.Appearance();
-            _gloss.Value = 1 - roughness;
+            _gloss.Value = roughness;
             _metal.Value = metallic;
             _relief.Value = relief;
             _size.Value = Math.Clamp(size, _size.Minimum, _size.Maximum);
@@ -225,7 +229,7 @@ internal sealed class MaterialPickerWindow : Window
         var category = (_categories.SelectedItem as ListBoxItem)?.Tag as string ?? "all";
         var query = _search.Text.Trim();
         return _items.Where(item => (category == "all" || item.Category == category) &&
-                                    (query.Length == 0 || item.Label.Contains(query, StringComparison.CurrentCultureIgnoreCase)));
+                                    MaterialCatalogSearch.Matches(query, item.Label, item.Category));
     }
 
     private void Refresh()
@@ -233,7 +237,12 @@ internal sealed class MaterialPickerWindow : Window
         var revision = ++_revision;
         _tiles.Children.Clear();
         _tileOf.Clear();
-        foreach (var item in Visible())
+        var matches = Visible().ToArray();
+        var pages = Math.Max(1, (matches.Length + PageSize - 1) / PageSize);
+        _page = Math.Clamp(_page, 0, pages - 1);
+        _pageText.Text = matches.Length == 0 ? "Sin resultados" : $"{matches.Length} materiales · {_page + 1} / {pages}";
+        _previous.IsEnabled = _page > 0; _next.IsEnabled = _page + 1 < pages;
+        foreach (var item in matches.Skip(_page * PageSize).Take(PageSize))
         {
             var picture = new Image { Width = BallSize, Height = BallSize, Stretch = Stretch.Uniform };
             RenderOptions.SetBitmapScalingMode(picture, BitmapScalingMode.HighQuality);
@@ -247,11 +256,11 @@ internal sealed class MaterialPickerWindow : Window
             stack.Children.Add(label);
             var tile = new Border
             {
-                Child = stack, Margin = new Thickness(4), Padding = new Thickness(4, 6, 4, 6), CornerRadius = new CornerRadius(8), Cursor = Cursors.Hand,
+                Child = stack, Margin = new Thickness(4), Padding = new Thickness(4, 6, 4, 6), CornerRadius = new CornerRadius(2), Cursor = Cursors.Hand,
                 Background = new SolidColorBrush(Color.FromRgb(0x14, 0x1E, 0x2A)), BorderThickness = new Thickness(2),
                 BorderBrush = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x4A)), ToolTip = item.Label
             };
-            tile.MouseLeftButtonUp += (_, _) => { _host.Apply(item); SyncSliders(); Highlight(); };
+            tile.MouseLeftButtonUp += (_, _) => { _debounce.Stop(); _host.Apply(item); SyncSliders(); Highlight(); };
             tile.MouseEnter += (_, _) => { if (tile.BorderBrush is SolidColorBrush { Color.G: not 0xDA }) tile.BorderBrush = new SolidColorBrush(Color.FromRgb(0x5A, 0x78, 0x90)); };
             tile.MouseLeave += (_, _) => Highlight();
             _tiles.Children.Add(tile);
@@ -277,11 +286,16 @@ internal sealed class MaterialPickerWindow : Window
     {
         BitmapSource? ball;
         await _gate.WaitAsync();
-        try { ball = await Task.Run(() => MakeBall(item)); }
+        try { if (revision != _revision) return; ball = await Task.Run(() => MakeBall(item)); }
         finally { _gate.Release(); }
         if (ball is null) return;
-        _balls[item.Key] = ball;
-        if (revision == _revision) view.Source = ball;
+        await Dispatcher.InvokeAsync(() =>
+        {
+            if (revision != _revision || !IsLoaded) return;
+            if (_balls.Count >= 64) _balls.Remove(_balls.Keys.First());
+            _balls[item.Key] = ball;
+            view.Source = ball;
+        });
     }
 
     private static BitmapSource? MakeBall(PickerItem item)
@@ -311,7 +325,11 @@ internal sealed class MaterialPickerWindow : Window
         {
             image.BeginInit();
             image.CacheOption = BitmapCacheOption.OnLoad;
-            image.DecodePixelWidth = 192;
+            var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+            var frame = decoder.Frames[0];
+            stream.Position = 0;
+            if (frame.PixelWidth >= frame.PixelHeight) image.DecodePixelWidth = 192;
+            else image.DecodePixelHeight = 192;
             image.StreamSource = stream;
             image.EndInit();
         }
@@ -336,7 +354,7 @@ internal sealed class MaterialPickerWindow : Window
     }
 
     /// <summary>The picker's category for a preset of the library.</summary>
-    internal static string CategoryOf(MaterialPreset preset) => preset.Group switch
+    internal static string CategoryOf(MaterialPreset preset) => preset.Id is "pool-water" or "dark-water" ? "water" : preset.Group switch
     {
         MaterialFamily.Metal => "metal",
         MaterialFamily.Plastic => "plastic",

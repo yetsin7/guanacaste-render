@@ -56,6 +56,7 @@ public partial class RenderPanel : UserControl
         FillOceanPicker();
         InitializeRenderModeRail();
         InitializeLooks();
+        InitializeStudio();
         InitializeMaterialGallery();
         SunDatePicker.SelectedDate = DateTime.Today;
         _ready = true;
@@ -95,6 +96,8 @@ public partial class RenderPanel : UserControl
         source.SceneChanged += () => Dispatcher.BeginInvoke(RefreshInteractiveScene);
         source.SceneChanged += () => Dispatcher.BeginInvoke(RefreshMaterialRows);
         source.SceneChanged += () => Dispatcher.BeginInvoke(RefreshRenderScenes);
+        source.SceneChanged += () => Dispatcher.BeginInvoke(RefreshStudio);
+        RefreshStudio();
         RefreshMaterialRows();
         RefreshRenderScenes();
         RefreshPhotos();

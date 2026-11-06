@@ -21,14 +21,15 @@ public static class AppInfo
 
     private static AppVersion ReadVersion()
     {
-        var assembly = typeof(AppInfo).Assembly;
+        var assembly = App.RenderOnly ? Assembly.GetEntryAssembly() ?? typeof(AppInfo).Assembly : typeof(AppInfo).Assembly;
         var text = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         return AppVersion.TryParse(text, out var version) ? version : default;
     }
 
     private static DateOnly? ReadReleaseDate()
     {
-        var text = typeof(AppInfo).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+        var assembly = App.RenderOnly ? Assembly.GetEntryAssembly() ?? typeof(AppInfo).Assembly : typeof(AppInfo).Assembly;
+        var text = assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
             .FirstOrDefault(item => item.Key == "ReleaseDate")?.Value;
         return DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
     }

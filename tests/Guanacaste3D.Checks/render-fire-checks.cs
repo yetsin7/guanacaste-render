@@ -70,7 +70,7 @@ static class RenderFireChecks
         var rockMaterial = MaterialLibrary.ForKind(SurfaceKind.Rock);
         string? repository = null;
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            if (File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx"))) { repository = directory.FullName; break; }
+            if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx")))) { repository = directory.FullName; break; }
         var families = repository is null ? new List<FamilyMesh.Decoded>() : new[] { "rock-small", "rock-medium", "rock-large", "rock-flat" }.Select(name =>
             NativeDocumentStore.LoadFamily(Path.Combine(repository, "src", "Guanacaste3D.Desktop", "resources", "families", name + ".g3df")).Mesh!.Decode()).ToList();
         check(rockMaterial.Name == "Roca" && rockMaterial.Roughness > 0.85f && families.Count == 4 && families.All(rock => rock.Kinds.All(kind => kind == SurfaceKind.Rock) &&

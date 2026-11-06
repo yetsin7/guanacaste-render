@@ -7,11 +7,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>GuanacasteRender</AssemblyName>
     <Product>Guanacaste Render</Product>
+    <Version>1.0.1</Version>
+    <ApplicationIcon>src\Guanacaste3D.Desktop\resources\brand\guanacaste3d.ico</ApplicationIcon>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableDefaultPageItems>false</EnableDefaultPageItems>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
   </PropertyGroup>
   <ItemGroup>
+    <AssemblyMetadata Include="ReleaseDate" Value="2026-11-06" />
+    <RuntimeHostConfigurationOption Include="System.GC.LOHThreshold" Value="8388608" />
     <Compile Include="program.cs" />
     <ProjectReference Include="src/Guanacaste3D.Desktop/Guanacaste3D.Desktop.csproj" />
   </ItemGroup>

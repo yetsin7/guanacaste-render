@@ -50,7 +50,7 @@ static class LocalizationChecks
     private static string? FindRepositoryRoot()
     {
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            if (File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx"))) return directory.FullName;
+            if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx")))) return directory.FullName;
         return null;
     }
 }

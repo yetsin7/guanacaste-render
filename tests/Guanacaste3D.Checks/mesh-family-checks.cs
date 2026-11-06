@@ -144,7 +144,7 @@ static class MeshFamilyChecks
     {
         string? root = null;
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            if (File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx"))) { root = directory.FullName; break; }
+            if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx")))) { root = directory.FullName; break; }
         if (root is null) return;
         var resources = Path.Combine(root, "src", "Guanacaste3D.Desktop", "resources");
         var families = Directory.GetFiles(Path.Combine(resources, "families"), "*.g3df").Select(NativeDocumentStore.LoadFamily).ToArray();

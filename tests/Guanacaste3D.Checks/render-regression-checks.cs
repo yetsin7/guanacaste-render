@@ -139,7 +139,7 @@ static class RenderRegressionChecks
             return explicitFolder;
         }
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
-            if (File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx")))
+            if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx"))))
             {
                 var folder = Path.Combine(directory.FullName, "tests", "Guanacaste3D.Checks", "golden");
                 Directory.CreateDirectory(folder);

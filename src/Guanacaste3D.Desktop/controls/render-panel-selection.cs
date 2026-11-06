@@ -17,11 +17,13 @@ public partial class RenderPanel
     /// <summary>Draws transient selection guides over the preview without changing the rendered or exported pixels.</summary>
     internal void ShowSelection(IReadOnlyList<EdgeSegment> edges)
     {
+        _studioSelectionEdges = edges;
+        DrawTransformGizmo();
         SelectionOverlay.Children.Clear();
         if (_source is null || !IsVisible || ImageHost.ActualWidth <= 0 || ImageHost.ActualHeight <= 0) return;
         var width = (float)ImageHost.ActualWidth;
         var height = (float)ImageHost.ActualHeight;
-        var brush = new SolidColorBrush(Color.FromArgb(165, 56, 157, 242));
+        var brush = new SolidColorBrush(Color.FromArgb(210, 105, 220, 132));
         brush.Freeze();
         foreach (var edge in edges)
         {

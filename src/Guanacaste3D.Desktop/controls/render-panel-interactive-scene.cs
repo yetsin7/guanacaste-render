@@ -71,6 +71,11 @@ public partial class RenderPanel
         InteractiveViewport.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
         FinalImageBorder.Visibility = interactive ? Visibility.Collapsed : Visibility.Visible;
         InteractiveHintCard.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
+        TransformGizmo.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
+        SelectionOverlay.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
+        SceneToolsBar.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
+        SceneInspectorButton.Visibility = interactive ? Visibility.Visible : Visibility.Collapsed;
+        if (!interactive) SceneInspector.Visibility = Visibility.Collapsed;
         if (interactive) UpdateInteractiveCamera();
     }
 }

@@ -7,8 +7,8 @@ namespace Guanacaste3D.Desktop.Controls;
 /// <summary>Independent renderer-only navigation; the BIM ribbon is never repurposed.</summary>
 public partial class RenderPanel
 {
-    private static readonly Brush RailActive = new SolidColorBrush(Color.FromRgb(22, 125, 119));
-    private static readonly Brush RailInactive = new SolidColorBrush(Color.FromRgb(28, 37, 45));
+    private static readonly Brush RailActive = new SolidColorBrush(Color.FromRgb(52, 95, 145));
+    private static readonly Brush RailInactive = new SolidColorBrush(Color.FromRgb(28, 29, 32));
     private static readonly Brush RailActiveText = new SolidColorBrush(Color.FromRgb(255, 255, 255));
     private static readonly Brush RailInactiveText = new SolidColorBrush(Color.FromRgb(221, 235, 245));
 
