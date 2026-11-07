@@ -1,3 +1,4 @@
+
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,8 +11,9 @@ public partial class RenderPanel
     private static readonly Brush RailActive = new SolidColorBrush(Color.FromRgb(52, 95, 145));
     private static readonly Brush RailInactive = new SolidColorBrush(Color.FromRgb(28, 29, 32));
     private static readonly Brush RailActiveText = new SolidColorBrush(Color.FromRgb(255, 255, 255));
-    private static readonly Brush RailInactiveText = new SolidColorBrush(Color.FromRgb(221, 235, 245));
+    private static readonly Brush RailInactiveText = new SolidColorBrush(Color.FromRgb(201, 201, 205));
 
+    /// <summary>Connects the compact studio rail to the existing settings sections.</summary>
     private void InitializeRenderModeRail()
     {
         SectionTabs.SelectionChanged += (_, e) =>
@@ -22,6 +24,7 @@ public partial class RenderPanel
         UpdateRenderRailSelection();
     }
 
+    /// <summary>Opens the settings section identified by the selected rail button.</summary>
     private void RenderRail_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: string tag } && int.TryParse(tag, out var index) &&
@@ -29,6 +32,7 @@ public partial class RenderPanel
             SectionTabs.SelectedIndex = index;
     }
 
+    /// <summary>Synchronizes rail emphasis with the active settings section.</summary>
     private void UpdateRenderRailSelection()
     {
         if (RenderModeRail is null || SectionTabs is null) return;

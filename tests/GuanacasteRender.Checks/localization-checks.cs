@@ -17,7 +17,7 @@ static class LocalizationChecks
             Console.WriteLine("INFO: repository sources not found; localization checks skipped.");
             return;
         }
-        var resources = Path.Combine(root, "src", "Guanacaste3D.Desktop", "resources");
+        var resources = Path.Combine(root, "src", "GuanacasteRender.Desktop", "resources");
         var keyPattern = new Regex("x:Key=\"([^\"]+)\"");
         var perFile = Directory.GetFiles(resources, "localization*.xaml")
             .ToDictionary(file => Path.GetFileName(file)!, file => keyPattern.Matches(File.ReadAllText(file))
@@ -28,7 +28,7 @@ static class LocalizationChecks
             (duplicates.Length == 0 ? "" : ": " + string.Join(", ", duplicates)));
 
         var keys = perFile.SelectMany(pair => pair.Value).ToHashSet(StringComparer.Ordinal);
-        var core = Directory.GetFiles(Path.Combine(root, "src", "Guanacaste3D.Core"), "*.cs", SearchOption.AllDirectories)
+        var core = Directory.GetFiles(Path.Combine(root, "src", "GuanacasteRender.Core"), "*.cs", SearchOption.AllDirectories)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
             .Select(File.ReadAllText).ToArray();
         var transactions = core.SelectMany(source => Regex.Matches(source, "\"(Transaction\\.[A-Za-z]+)\"")

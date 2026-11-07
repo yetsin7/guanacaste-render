@@ -12,6 +12,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../shared/exchange-thumbnail.cs" Link="exchange-thumbnail.cs" />
-    <ProjectReference Include="../Guanacaste3D.Core/Guanacaste3D.Core.csproj" />
+    <ProjectReference Include="../GuanacasteRender.Core/GuanacasteRender.Core.csproj" />
   </ItemGroup>
 </Project>

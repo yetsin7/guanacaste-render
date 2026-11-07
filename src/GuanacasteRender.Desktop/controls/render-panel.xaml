@@ -4,16 +4,16 @@
   Background="#1C1D20" Foreground="#EAF0F6" Focusable="False" FontSize="13">
   <UserControl.Resources><ResourceDictionary><ResourceDictionary.MergedDictionaries><ResourceDictionary Source="studio-theme.xaml"/></ResourceDictionary.MergedDictionaries>
     <Style x:Key="PanelTitle" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="#F1F5F9"/>
-      <Setter Property="FontWeight" Value="SemiBold"/><Setter Property="FontSize" Value="14"/>
-      <Setter Property="Margin" Value="0,0,0,6"/>
+      <Setter Property="Foreground" Value="#F5F5F6"/>
+      <Setter Property="FontWeight" Value="SemiBold"/><Setter Property="FontSize" Value="13"/>
+      <Setter Property="Margin" Value="0,0,0,10"/>
     </Style>
     <Style x:Key="PanelLabel" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="#E3EDF0"/>
-      <Setter Property="FontSize" Value="12"/><Setter Property="Margin" Value="0,10,0,4"/>
+      <Setter Property="Foreground" Value="#C5C5C9"/>
+      <Setter Property="FontSize" Value="12"/><Setter Property="Margin" Value="0,12,0,5"/>
     </Style>
     <Style x:Key="PanelHint" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="#D2DFE4"/>
+      <Setter Property="Foreground" Value="{StaticResource StudioMutedTextBrush}"/>
       <Setter Property="FontSize" Value="12"/><Setter Property="TextWrapping" Value="Wrap"/>
       <Setter Property="LineHeight" Value="17"/>
     </Style>
@@ -36,7 +36,7 @@
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
         <Grid SnapsToDevicePixels="True">
           <Border x:Name="ButtonSurface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}">
             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}" RecognizesAccessKey="True"/>
           </Border>
@@ -46,7 +46,7 @@
         <ControlTemplate.Triggers>
           <Trigger Property="IsMouseOver" Value="True">
             <Setter TargetName="Veil" Property="Opacity" Value="0.14"/>
-            <Setter TargetName="ButtonSurface" Property="BorderBrush" Value="#7FB4D6"/>
+            <Setter TargetName="ButtonSurface" Property="BorderBrush" Value="#6AADE4"/>
           </Trigger>
           <Trigger Property="IsKeyboardFocused" Value="True">
             <Setter TargetName="ButtonSurface" Property="BorderBrush" Value="#E3EDF0"/>
@@ -174,7 +174,7 @@
       <Setter Property="Cursor" Value="Hand"/>
       <Style.Triggers>
         <Trigger Property="IsMouseOver" Value="True">
-          <Setter Property="Background" Value="#244255"/>
+          <Setter Property="Background" Value="#2A2A2E"/>
           <Setter Property="Foreground" Value="#FFFFFF"/>
         </Trigger>
       </Style.Triggers>
@@ -189,7 +189,7 @@
       <Setter Property="MinHeight" Value="36"/><Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
         <Border x:Name="ButtonChrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}">
           <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
         <ControlTemplate.Triggers>
@@ -209,6 +209,17 @@
       <Setter Property="Foreground" Value="White"/><Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="Margin" Value="0"/>
     </Style>
+    <Style x:Key="OutputPresetTile" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+      <Setter Property="Background" Value="#343438"/>
+      <Setter Property="BorderBrush" Value="#45454A"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Foreground" Value="#F3F3F5"/>
+      <Setter Property="MinHeight" Value="58"/>
+      <Setter Property="Margin" Value="3"/>
+      <Setter Property="Padding" Value="10,8"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
     <Style x:Key="SceneToolButton" TargetType="Button" BasedOn="{StaticResource ViewportToolButton}">
       <Setter Property="Width" Value="64"/><Setter Property="Height" Value="58"/><Setter Property="MinHeight" Value="0"/>
       <Setter Property="Margin" Value="1"/><Setter Property="Padding" Value="3"/><Setter Property="Background" Value="#292C32"/>
@@ -218,7 +229,7 @@
           <StackPanel VerticalAlignment="Center"><ContentPresenter HorizontalAlignment="Center"/><TextBlock Text="{Binding Path=(AutomationProperties.ItemType), RelativeSource={RelativeSource TemplatedParent}}" FontFamily="Segoe UI" FontSize="10" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
         </Border>
         <ControlTemplate.Triggers>
-          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Background" Value="#356C86"/></Trigger>
+          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Background" Value="#3C3C41"/></Trigger>
           <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#FFFFFF"/></Trigger>
           <Trigger Property="IsPressed" Value="True"><Setter TargetName="Chrome" Property="Background" Value="#4688A4"/></Trigger>
           <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
@@ -231,7 +242,7 @@
       <Setter Property="Padding" Value="8,7"/><Setter Property="MinHeight" Value="34"/><Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToggleButton">
         <Border x:Name="SwitchChrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" Padding="{TemplateBinding Padding}">
           <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
         <ControlTemplate.Triggers>
@@ -381,6 +392,41 @@
           </TabItem.Header>
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,8,0,4">
+              <Border Style="{StaticResource SettingsCard}" Padding="0" ClipToBounds="True">
+                <Grid Height="132">
+                  <Grid.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                      <GradientStop Color="#4F7295" Offset="0"/>
+                      <GradientStop Color="#9BB7C6" Offset="0.62"/>
+                      <GradientStop Color="#303034" Offset="0.63"/>
+                      <GradientStop Color="#242427" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Grid.Background>
+                  <Ellipse Width="36" Height="36" HorizontalAlignment="Right" VerticalAlignment="Top"
+                           Margin="0,17,24,0" Fill="#FFE29B" Opacity="0.96">
+                    <Ellipse.Effect><DropShadowEffect Color="#FFE29B" BlurRadius="22" ShadowDepth="0" Opacity="0.7"/></Ellipse.Effect>
+                  </Ellipse>
+                  <TextBlock Text="{Binding SelectedItem.Content, ElementName=ScenarioPicker}" Foreground="White"
+                             FontSize="14" FontWeight="SemiBold" Margin="14,12,60,0" VerticalAlignment="Top"/>
+                  <Grid VerticalAlignment="Bottom" Background="#D9222225" Height="50">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="12,7,4,4">
+                      <TextBlock Text="{DynamicResource RenderPanel.Hour}" Foreground="#A7A7AC" FontSize="10"/>
+                      <TextBlock Text="{Binding Value, ElementName=HourSlider, StringFormat={}{0:0.0} h}" Foreground="White" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="8,7,4,4">
+                      <TextBlock Text="{DynamicResource RenderPanel.Clouds}" Foreground="#A7A7AC" FontSize="10"/>
+                      <TextBlock Text="{Binding Value, ElementName=CloudSlider, StringFormat={}{0:0} %}" Foreground="White" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Margin="8,7,8,4">
+                      <TextBlock Text="{DynamicResource RenderPanel.SkyPreset}" Foreground="#A7A7AC" FontSize="10" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding SelectedItem.Content, ElementName=SkyPicker}" Foreground="White" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                  </Grid>
+                </Grid>
+              </Border>
               <Border Style="{StaticResource SettingsCard}">
                 <StackPanel>
                   <TextBlock Style="{StaticResource PanelTitle}" Text="{DynamicResource RenderPanel.Scene}"/>
@@ -888,12 +934,12 @@
                           <TextBlock Text="{DynamicResource RenderGallery.Appearance}" FontWeight="SemiBold"
                                      Foreground="White" FontSize="14" Margin="0,0,0,8"/>
                           <TextBlock x:Name="GalleryAppearanceName" Text="{DynamicResource RenderGallery.NoMaterial}"
-                                     TextWrapping="Wrap" Foreground="#ABC3D1" FontSize="11" Margin="0,0,0,8"/>
+                                     TextWrapping="Wrap" Foreground="#B8B8BD" FontSize="11" Margin="0,0,0,8"/>
                           <!-- A stylised ball that answers the sliders at once; the real result is in the render. -->
                           <Image x:Name="GalleryPreviewSphere" Width="72" Height="72" Margin="0,2,0,12" HorizontalAlignment="Center"
                                  RenderOptions.BitmapScalingMode="HighQuality" ToolTip="Vista previa del material (aproximada)"/>
                           <DockPanel>
-                            <TextBlock x:Name="GalleryRoughnessValue" DockPanel.Dock="Right" Foreground="#70DAC9"
+                            <TextBlock x:Name="GalleryRoughnessValue" DockPanel.Dock="Right" Foreground="#62B5F6"
                                        Text="0.70" Width="45" TextAlignment="Right"/>
                             <TextBlock Text="{DynamicResource RenderGallery.Roughness}" Foreground="#EDF5FA"/>
                           </DockPanel>
@@ -901,7 +947,7 @@
                                   SmallChange="0.01" TickFrequency="0.01" Margin="0,2,0,10"
                                   ValueChanged="GalleryAppearanceValue_Changed"/>
                           <DockPanel>
-                            <TextBlock x:Name="GalleryMetallicValue" DockPanel.Dock="Right" Foreground="#70DAC9"
+                            <TextBlock x:Name="GalleryMetallicValue" DockPanel.Dock="Right" Foreground="#62B5F6"
                                        Text="0.00" Width="45" TextAlignment="Right"/>
                             <TextBlock Text="{DynamicResource RenderGallery.Metallic}" Foreground="#EDF5FA"/>
                           </DockPanel>
@@ -909,7 +955,7 @@
                                   SmallChange="0.01" TickFrequency="0.01" Margin="0,2,0,10"
                                   ValueChanged="GalleryAppearanceValue_Changed"/>
                           <DockPanel>
-                            <TextBlock x:Name="GalleryReliefValue" DockPanel.Dock="Right" Foreground="#70DAC9"
+                            <TextBlock x:Name="GalleryReliefValue" DockPanel.Dock="Right" Foreground="#62B5F6"
                                        Text="0.30" Width="45" TextAlignment="Right"/>
                             <TextBlock Text="{DynamicResource RenderGallery.Relief}" Foreground="#EDF5FA"/>
                           </DockPanel>
@@ -917,7 +963,7 @@
                                   SmallChange="0.01" TickFrequency="0.01" Margin="0,2,0,8"
                                   ValueChanged="GalleryAppearanceValue_Changed"/>
                           <DockPanel>
-                            <TextBlock x:Name="GalleryScaleValue" DockPanel.Dock="Right" Foreground="#70DAC9"
+                            <TextBlock x:Name="GalleryScaleValue" DockPanel.Dock="Right" Foreground="#62B5F6"
                                        Text="1.00 m" Width="55" TextAlignment="Right"/>
                             <TextBlock Text="Escala de mapa" Foreground="#EDF5FA"
                                        ToolTip="Metros que cubre una copia de la imagen."/>
@@ -932,7 +978,7 @@
                             <Button x:Name="GalleryApplyAppearanceButton"
                                     Content="{DynamicResource RenderGallery.Apply}"
                                     Click="GalleryApplyAppearance_Click" Padding="11,7"
-                                    Background="#246E68" Foreground="White" Margin="0,0,7,5"/>
+                                    Background="{StaticResource StudioAccentBrush}" Foreground="White" Margin="0,0,7,5"/>
                             <Button x:Name="GalleryResetAppearanceButton"
                                     Content="{DynamicResource RenderGallery.Reset}"
                                     Click="GalleryResetAppearance_Click" Padding="11,7" Margin="0,0,0,5"/>
@@ -1021,14 +1067,26 @@
                     <ComboBoxItem Content="{DynamicResource RenderPanel.High}" Tag="High"/>
                     <ComboBoxItem Content="{DynamicResource RenderPanel.Final}" Tag="Final"/>
                   </ComboBox>
-                  <TextBlock Style="{StaticResource PanelLabel}" Text="{DynamicResource RenderPanel.Size}"/>
-                  <ComboBox x:Name="SizePicker" SelectedIndex="0" SelectionChanged="Quality_Changed">
+                   <TextBlock Style="{StaticResource PanelLabel}" Text="{DynamicResource RenderPanel.Size}"/>
+                   <ComboBox x:Name="SizePicker" SelectedIndex="0" SelectionChanged="SizePicker_SelectionChanged" Visibility="Collapsed">
                     <ComboBoxItem Content="{DynamicResource RenderPanel.SizeView}" Tag="0x0"/>
                     <ComboBoxItem Content="{DynamicResource RenderPanel.SizeHd}" Tag="1280x720"/>
                     <ComboBoxItem Content="{DynamicResource RenderPanel.SizeFullHd}" Tag="1920x1080"/>
                     <ComboBoxItem Content="{DynamicResource RenderPanel.SizeQhd}" Tag="2560x1440"/>
                     <ComboBoxItem Content="{DynamicResource RenderPanel.SizeUhd}" Tag="3840x2160"/>
                   </ComboBox>
+                   <UniformGrid x:Name="OutputPresetGrid" Columns="2" Margin="-3,0,-3,4" Loaded="OutputPresetGrid_Loaded">
+                     <Button Tag="0x0" Click="OutputPreset_Click" Style="{StaticResource OutputPresetTile}"
+                             Content="{DynamicResource RenderPanel.SizeView}"/>
+                     <Button Tag="1280x720" Click="OutputPreset_Click" Style="{StaticResource OutputPresetTile}"
+                             Content="{DynamicResource RenderPanel.SizeHd}"/>
+                     <Button Tag="1920x1080" Click="OutputPreset_Click" Style="{StaticResource OutputPresetTile}"
+                             Content="{DynamicResource RenderPanel.SizeFullHd}"/>
+                     <Button Tag="2560x1440" Click="OutputPreset_Click" Style="{StaticResource OutputPresetTile}"
+                             Content="{DynamicResource RenderPanel.SizeQhd}"/>
+                     <Button Tag="3840x2160" Click="OutputPreset_Click" Style="{StaticResource OutputPresetTile}"
+                             Content="{DynamicResource RenderPanel.SizeUhd}"/>
+                   </UniformGrid>
                   <TextBlock Style="{StaticResource PanelLabel}" Text="{DynamicResource RenderPanel.BucketSize}" Margin="0,12,0,4"/>
                   <ComboBox x:Name="BucketSizePicker" SelectedIndex="0" ToolTip="{DynamicResource RenderPanel.BucketSizeHint}">
                     <ComboBoxItem Content="{DynamicResource RenderPanel.BucketAuto}" Tag="0"/>
@@ -1084,15 +1142,15 @@
           AllowDrop="True" DragOver="MaterialDragOver" Drop="MaterialDrop">
       <Grid.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-          <GradientStop Color="#91C5DF" Offset="0"/><GradientStop Color="#DCECF0" Offset="1"/>
+          <GradientStop Color="#303238" Offset="0"/><GradientStop Color="#191A1D" Offset="1"/>
         </LinearGradientBrush>
       </Grid.Background>
       <Viewport3D x:Name="InteractiveViewport" IsHitTestVisible="False" ClipToBounds="True"/>
       <!-- A still of the viewport with the active style and filters applied; hidden the moment the camera moves. -->
       <Image x:Name="StyledPreviewImage" Stretch="Fill" IsHitTestVisible="False" Visibility="Collapsed"
              RenderOptions.BitmapScalingMode="HighQuality"/>
-      <Border x:Name="FinalImageBorder" Visibility="Collapsed" Margin="28,24,28,176" Background="#F9FBFD" BorderBrush="#4A6579" BorderThickness="1" CornerRadius="0" Padding="8">
-        <Border.Effect><DropShadowEffect Color="#475569" BlurRadius="24" ShadowDepth="4" Opacity="0.22"/></Border.Effect>
+      <Border x:Name="FinalImageBorder" Visibility="Collapsed" Margin="30,22,30,176" Background="#111113" BorderBrush="#45454A" BorderThickness="1" CornerRadius="2" Padding="8">
+        <Border.Effect><DropShadowEffect Color="#000000" BlurRadius="28" ShadowDepth="5" Opacity="0.42"/></Border.Effect>
         <Image x:Name="PreviewImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" Focusable="False"/>
       </Border>
       <Canvas x:Name="SelectionOverlay" IsHitTestVisible="False" ClipToBounds="True"/>
@@ -1193,7 +1251,7 @@
             <StackPanel x:Name="FxCategoryList" Margin="4,1,2,0"/>
 
           </ScrollViewer>
-          <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#465C66">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" Background="#28282B">
             <UniformGrid x:Name="FxTiles" Columns="3" VerticalAlignment="Top"/>
           </ScrollViewer>
         </DockPanel>
@@ -1258,7 +1316,7 @@
                 <TextBlock Text="Nueva foto" VerticalAlignment="Center"/>
               </StackPanel>
             </Button>
-            <CheckBox x:Name="StylePreviewCheck" IsChecked="True" Margin="0,9,0,0" Foreground="#C9D8E4" FontSize="11.5"
+            <CheckBox x:Name="StylePreviewCheck" IsChecked="True" Margin="0,9,0,0" Foreground="#B8B8BD" FontSize="11.5"
                       Content="Ver estilo en vivo" Checked="StylePreview_Changed" Unchecked="StylePreview_Changed"
                       ToolTip="Muestra el estilo y los filtros sobre la vista cuando dejas de mover la cámara."/>
           </StackPanel>
@@ -1266,7 +1324,7 @@
             <StackPanel x:Name="PhotoCards" Orientation="Horizontal" VerticalAlignment="Center"/>
           </ScrollViewer>
           <TextBlock x:Name="PhotoEmptyHint" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="6,0,0,0"
-                     Foreground="#8FA6B9" FontSize="12" TextWrapping="Wrap" MaxWidth="420" IsHitTestVisible="False"
+                     Foreground="#919197" FontSize="12" TextWrapping="Wrap" MaxWidth="420" IsHitTestVisible="False"
                      Text="Navega hasta un buen encuadre y pulsa «Nueva foto». Cada foto guarda su cámara, estilo y filtros."/>
           <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="10,0,16,0" Width="126">
             <Button x:Name="RenderPhotosButton" Click="RenderPhotos_Click" Style="{StaticResource RenderPrimaryButton}" MinHeight="44"
@@ -1276,7 +1334,7 @@
                 <TextBlock Text="Renderizar…" VerticalAlignment="Center"/>
               </StackPanel>
             </Button>
-            <TextBlock x:Name="PhotoCountText" Foreground="#8FA6B9" FontSize="11" Margin="0,7,0,0" TextAlignment="Center"/>
+            <TextBlock x:Name="PhotoCountText" Foreground="#919197" FontSize="11" Margin="0,7,0,0" TextAlignment="Center"/>
           </StackPanel>
         </Grid>
       </Border>
@@ -1307,8 +1365,8 @@
             </Grid>
           </StackPanel>
           <TextBlock Text="&#xE9D9;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center"
-                     Foreground="{DynamicResource AccentBrush}" Margin="0,0,10,0"/>
-          <TextBlock x:Name="StatusText" Foreground="#D7E8E7" FontSize="12"
+                     Foreground="{StaticResource StudioAccentBrush}" Margin="0,0,10,0"/>
+          <TextBlock x:Name="StatusText" Foreground="#D6D6D9" FontSize="12"
                      TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Text="{DynamicResource RenderPanel.Idle}"/>
         </DockPanel>
       </Border>

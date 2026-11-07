@@ -3,7 +3,7 @@ using Guanacaste3D.Core.Rendering;
 
 // Quality-versus-time benchmark of the renderer. Every row is the error of an image against a
 // converged reference produced by the same algorithm, so techniques can be compared fairly.
-//   dotnet run -c Release --project tests/Guanacaste3D.RenderBench -- [--out folder] [--width 480] [--ref 1024]
+//   dotnet run -c Release --project tests/GuanacasteRender.RenderBench -- [--out folder] [--width 480] [--ref 1024]
 var options = Enumerable.Range(0, Math.Max(0, args.Length - 1))
     .Where(index => args[index].StartsWith("--", StringComparison.Ordinal) && !args[index + 1].StartsWith("--", StringComparison.Ordinal))
     .ToDictionary(index => args[index], index => args[index + 1]);

@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <AssemblyName>Guanacaste3D.Checks</AssemblyName>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ServerGarbageCollector>false</ServerGarbageCollector>
-    <TieredPGO>true</TieredPGO>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Guanacaste3D.Core/Guanacaste3D.Core.csproj" />
+    <ProjectReference Include="../../src/GuanacasteRender.Core/GuanacasteRender.Core.csproj" />
+    <ProjectReference Include="../../src/GuanacasteRender.Agent/GuanacasteRender.Agent.csproj" />
   </ItemGroup>
 </Project>

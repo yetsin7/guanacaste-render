@@ -72,7 +72,7 @@ static class RenderFireChecks
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
             if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx")))) { repository = directory.FullName; break; }
         var families = repository is null ? new List<FamilyMesh.Decoded>() : new[] { "rock-small", "rock-medium", "rock-large", "rock-flat" }.Select(name =>
-            NativeDocumentStore.LoadFamily(Path.Combine(repository, "src", "Guanacaste3D.Desktop", "resources", "families", name + ".g3df")).Mesh!.Decode()).ToList();
+            NativeDocumentStore.LoadFamily(Path.Combine(repository, "src", "GuanacasteRender.Desktop", "resources", "families", name + ".g3df")).Mesh!.Decode()).ToList();
         check(rockMaterial.Name == "Roca" && rockMaterial.Roughness > 0.85f && families.Count == 4 && families.All(rock => rock.Kinds.All(kind => kind == SurfaceKind.Rock) &&
               rock.TriangleCount >= 500 && Math.Abs(rock.Min.Z) < 0.1f && rock.Size.Z > 0.2f && rock.Size.Z < rock.Size.X) && families[0].Size.X < families[2].Size.X / 2,
             "Rocks have a grey, rough surface of their own, and the four shipped ones are faceted stones that sit on the ground, from a pebble to a boulder");

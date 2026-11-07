@@ -59,7 +59,7 @@ static class RenderFxChecks
     {
         for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)
         {
-            var candidate = Path.Combine(folder.FullName, "src", "Guanacaste3D.Desktop", "controls", "render-panel.xaml");
+            var candidate = Path.Combine(folder.FullName, "src", "GuanacasteRender.Desktop", "controls", "render-panel.xaml");
             if (File.Exists(candidate)) return candidate;
         }
         return null;

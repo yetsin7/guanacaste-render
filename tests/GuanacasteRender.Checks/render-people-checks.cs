@@ -129,7 +129,7 @@ static class RenderPeopleChecks
             var carFiles = new[] { "sedan-car", "coupe-car-silver" };
             var meshes = new Dictionary<int, FamilyMesh.Decoded?>();
             FamilyMesh.Decoded? Model(int model) => meshes.TryGetValue(model, out var decoded) ? decoded : meshes[model] =
-                NativeDocumentStore.LoadFamily(Path.Combine(root, "src", "Guanacaste3D.Desktop", "resources", "families", carFiles[model] + ".g3df")).Mesh!.Decode();
+                NativeDocumentStore.LoadFamily(Path.Combine(root, "src", "GuanacasteRender.Desktop", "resources", "families", carFiles[model] + ".g3df")).Mesh!.Decode();
             Actor Car(int look, params ActorPoint[] route) => new(Guid.NewGuid(), "Coche", look, 8, false, 0, route, ActorKind.Car);
             var drive = Car(2, new ActorPoint(0, 0, 0), new ActorPoint(40, 0, 0));
             check(ActorRig.From([drive]) is null && ActorRig.From([drive, standingAtOrigin]) is { Count: 1 },

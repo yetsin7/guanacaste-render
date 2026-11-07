@@ -19,8 +19,8 @@
     <AssemblyMetadata Include="ReleaseDate" Value="$(ReleaseDate)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../Guanacaste3D.Core/Guanacaste3D.Core.csproj" />
-    <ProjectReference Include="../Guanacaste3D.Agent/Guanacaste3D.Agent.csproj" />
+    <ProjectReference Include="../GuanacasteRender.Core/GuanacasteRender.Core.csproj" />
+    <ProjectReference Include="../GuanacasteRender.Agent/GuanacasteRender.Agent.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- Per-frame picture buffers (a few MB) are short-lived; keeping them out of the large-object heap lets cheap
@@ -54,13 +54,13 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- Its own output folder: Revit loads the installed copy in its Addins folder, so nothing here stays locked. -->
-    <RevitBridgeOutput>$(MSBuildThisFileDirectory)..\Guanacaste3D.RevitBridge\bin\$(Configuration)\desktop\</RevitBridgeOutput>
+    <RevitBridgeOutput>$(MSBuildThisFileDirectory)..\GuanacasteRender.RevitBridge\bin\$(Configuration)\desktop\</RevitBridgeOutput>
   </PropertyGroup>
   <Target Name="BuildRevitBridge" AfterTargets="Build">
-    <MSBuild Projects="..\Guanacaste3D.RevitBridge\Guanacaste3D.RevitBridge.csproj" Targets="Restore"
+    <MSBuild Projects="..\GuanacasteRender.RevitBridge\GuanacasteRender.RevitBridge.csproj" Targets="Restore"
              Properties="Configuration=$(Configuration);RevitVersion=%(RevitBridgeVersion.Identity);RestoreStage=1"
              Condition="Exists('$(ProgramW6432)\Autodesk\Revit %(RevitBridgeVersion.Identity)\RevitAPI.dll')" />
-    <MSBuild Projects="..\Guanacaste3D.RevitBridge\Guanacaste3D.RevitBridge.csproj" ContinueOnError="true"
+    <MSBuild Projects="..\GuanacasteRender.RevitBridge\GuanacasteRender.RevitBridge.csproj" ContinueOnError="true"
              Properties="Configuration=$(Configuration);RevitVersion=%(RevitBridgeVersion.Identity);OutputPath=$(RevitBridgeOutput)Revit%(RevitBridgeVersion.Identity)\"
              Condition="Exists('$(ProgramW6432)\Autodesk\Revit %(RevitBridgeVersion.Identity)\RevitAPI.dll')" />
     <Copy SourceFiles="$(RevitBridgeOutput)Revit%(RevitBridgeVersion.Identity)\Guanacaste3D.RevitBridge.dll"

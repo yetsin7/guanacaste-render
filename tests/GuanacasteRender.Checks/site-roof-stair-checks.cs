@@ -84,7 +84,7 @@ static class SiteRoofStairChecks
             if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx")))) { repository = directory.FullName; break; }
         if (repository is not null)
         {
-            var rock = NativeDocumentStore.LoadFamily(Path.Combine(repository, "src", "Guanacaste3D.Desktop", "resources", "families", "rock-medium.g3df"));
+            var rock = NativeDocumentStore.LoadFamily(Path.Combine(repository, "src", "GuanacasteRender.Desktop", "resources", "families", "rock-medium.g3df"));
             var rocks = new DocumentSession(BuildingDocument.Create("Rocks"));
             var rocksLevel = rocks.Document.Levels[0].Id;
             var rocksSite = rocks.AddSlabFromPreset(rocksLevel, [new(0, 0), new(40, 0), new(40, 30), new(0, 30)], preset, rocks.SlabElevation(rocksLevel, preset));

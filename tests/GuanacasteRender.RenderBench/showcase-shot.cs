@@ -110,7 +110,7 @@ static class ShowcaseShot
     private static BenchmarkScene Cobogo()
     {
         // The detailed tree and car families ship with the desktop application; the bench reads them from its sources.
-        var folder = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Guanacaste3D.Desktop", "resources", "families");
+        var folder = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "GuanacasteRender.Desktop", "resources", "families");
         var families = Directory.Exists(folder)
             ? Directory.GetFiles(folder, "*.g3df").Select(Guanacaste3D.Core.NativeDocumentStore.LoadFamily).ToArray()
             : [];

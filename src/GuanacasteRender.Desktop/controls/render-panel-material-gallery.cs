@@ -28,9 +28,9 @@ public partial class RenderPanel
     private readonly Queue<string> _galleryPreviewOrder = new();
     private readonly SemaphoreSlim _galleryDecodeGate = new(2, 2);
     private CancellationTokenSource _galleryLoadCancellation = new();
-    private static readonly Brush GalleryNormalBorder = new SolidColorBrush(Color.FromRgb(65, 84, 102));
-    private static readonly Brush GallerySelectedBorder = new SolidColorBrush(Color.FromRgb(107, 215, 197));
-    private static readonly Brush GalleryTileBackground = new SolidColorBrush(Color.FromRgb(31, 47, 64));
+    private static readonly Brush GalleryNormalBorder = new SolidColorBrush(Color.FromRgb(69, 69, 74));
+    private static readonly Brush GallerySelectedBorder = new SolidColorBrush(Color.FromRgb(22, 119, 200));
+    private static readonly Brush GalleryTileBackground = new SolidColorBrush(Color.FromRgb(42, 42, 46));
 
     private void InitializeMaterialGallery()
     {

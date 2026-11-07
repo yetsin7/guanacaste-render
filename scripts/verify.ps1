@@ -6,7 +6,7 @@ try {
     dotnet build guanacaste-render.csproj -c Release -v minimal
     if ($LASTEXITCODE -ne 0) { throw 'Falló la compilación.' }
     # Keep render suites sequential: concurrent ray tracing can legitimately trigger the memory watchdog.
-    dotnet run --project tests/Guanacaste3D.Checks -c Release
+    dotnet run --project tests/GuanacasteRender.Checks -c Release
     if ($LASTEXITCODE -ne 0) { throw 'Fallaron las pruebas del motor.' }
     $env:G3D_ONLY = 'studio'
     dotnet run --project tests/desktop-interaction-checks -c Release

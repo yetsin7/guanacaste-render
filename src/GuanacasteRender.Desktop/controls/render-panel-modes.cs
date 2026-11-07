@@ -86,8 +86,8 @@ public partial class RenderPanel
         return new Border
         {
             VerticalAlignment = VerticalAlignment.Bottom, HorizontalAlignment = HorizontalAlignment.Left,
-            Margin = new Thickness(4), CornerRadius = new CornerRadius(9), Padding = new Thickness(2),
-            Background = Frozen(Color.FromArgb(0xEC, 0x0F, 0x1B, 0x26)), BorderBrush = CardBorderIdle, BorderThickness = new Thickness(1),
+            Margin = new Thickness(4), CornerRadius = new CornerRadius(3), Padding = new Thickness(2),
+            Background = Frozen(Color.FromArgb(0xF2, 0x1F, 0x1F, 0x22)), BorderBrush = Frozen(Color.FromRgb(0x47, 0x47, 0x4C)), BorderThickness = new Thickness(1),
             Child = row
         };
     }

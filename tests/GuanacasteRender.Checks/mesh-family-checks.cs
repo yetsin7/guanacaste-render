@@ -146,7 +146,7 @@ static class MeshFamilyChecks
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
             if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx")))) { root = directory.FullName; break; }
         if (root is null) return;
-        var resources = Path.Combine(root, "src", "Guanacaste3D.Desktop", "resources");
+        var resources = Path.Combine(root, "src", "GuanacasteRender.Desktop", "resources");
         var families = Directory.GetFiles(Path.Combine(resources, "families"), "*.g3df").Select(NativeDocumentStore.LoadFamily).ToArray();
         check(new[] { BreezeBlockHouseShowcase.TreeFamily, BreezeBlockHouseShowcase.SedanFamily, BreezeBlockHouseShowcase.CoupeFamily }
                 .All(name => families.Any(family => family.Name == name && family.Metadata.GetValueOrDefault("License") == "CC0-1.0")),

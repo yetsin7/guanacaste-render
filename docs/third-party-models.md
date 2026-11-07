@@ -1,6 +1,6 @@
 # Third-party 3D models
 
-The detailed mesh families in `src/Guanacaste3D.Desktop/resources/families/` were converted from public-domain
+The detailed mesh families in `src/GuanacasteRender.Desktop/resources/families/` were converted from public-domain
 (CC0 1.0) models. CC0 needs no attribution; the sources are listed so the conversion can be repeated.
 
 | Family file | Family name | Source | License |

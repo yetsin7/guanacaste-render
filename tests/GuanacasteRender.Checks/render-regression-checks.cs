@@ -4,7 +4,7 @@ using Guanacaste3D.Core.Rendering;
 /// <summary>
 /// Visual regression tests. Deterministic scenes are rendered and compared with stored reference images using PSNR, SSIM,
 /// color difference and the share of pixels outside tolerance, so an unintended change to the look of a render is caught
-/// even when no number in the code changed. References live in tests/Guanacaste3D.Checks/golden and are refreshed on
+/// even when no number in the code changed. References live in tests/GuanacasteRender.Checks/golden and are refreshed on
 /// purpose with the environment variable G3_UPDATE_GOLDEN=1 after a change that is meant to alter the picture.
 /// </summary>
 static class RenderRegressionChecks
@@ -141,7 +141,7 @@ static class RenderRegressionChecks
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
             if ((File.Exists(Path.Combine(directory.FullName, "guanacaste-render.csproj")) || File.Exists(Path.Combine(directory.FullName, "Guanacaste3D.slnx"))))
             {
-                var folder = Path.Combine(directory.FullName, "tests", "Guanacaste3D.Checks", "golden");
+                var folder = Path.Combine(directory.FullName, "tests", "GuanacasteRender.Checks", "golden");
                 Directory.CreateDirectory(folder);
                 return folder;
             }
