@@ -77,6 +77,7 @@ public partial class MainWindow
     {
         public string ExecuteSceneCommand(string command)
         {
+            if (!CanExecuteSceneCommand(command)) return "Esta acción no está disponible para la selección actual.";
             var args = new RoutedEventArgs();
             switch (command)
             {
@@ -90,7 +91,8 @@ public partial class MainWindow
                 case "import": window.ImportModel_Click(window, args); break;
                 case "rotate": window.Rotate_Click(window, args); break;
                 case "delete": window.Delete_Click(window, args); break;
-                case "undo": window.Undo_Click(window, args); break;
+                case "undo": window.Undo_Click(window, args); return "Última acción deshecha.";
+                case "redo": window.Redo_Click(window, args); return "Acción restaurada.";
                 case "duplicate":
                     if (window._selectedStructuralId is Guid id)
                     {

@@ -100,6 +100,7 @@ public partial class RenderPanel
         var source = _source;
         var sceneVersion = source.SceneVersion;
         _renderStarting = true;
+        RefreshStudioActions();
         StatusText.Text = UiText.Get("RenderPanel.PreparingScene");
         RenderButton.IsEnabled = false;
         RenderScene? scene;
@@ -120,6 +121,7 @@ public partial class RenderPanel
         finally
         {
             _renderStarting = false;
+            RefreshStudioActions();
             RenderButton.IsEnabled = true;
         }
         // Never render a scene belonging to a project or geometry version that was replaced while loading.
@@ -240,6 +242,7 @@ public partial class RenderPanel
     private void SetRendering(bool rendering)
     {
         _rendering = rendering;
+        RefreshStudioActions();
         RenderButton.Content = UiText.Get(rendering ? "RenderPanel.Stop" : "RenderPanel.Render");
         PauseButton.IsEnabled = rendering;
         PauseButton.Content = UiText.Get("RenderPanel.Pause");

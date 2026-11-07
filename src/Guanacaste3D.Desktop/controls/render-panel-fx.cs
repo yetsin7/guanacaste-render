@@ -338,8 +338,8 @@ public partial class RenderPanel
     private static ImageSource EffectThumbnail(FxEffect effect)
     {
         var index = Array.IndexOf(ReferenceEffectIds, effect.Id);
-        if (index < 0) return new BitmapImage(new Uri("pack://application:,,,/resources/samples/casa-del-cobogo.png"));
-        var reference = new BitmapImage(new Uri("pack://application:,,,/resources/render-reference/effects.png"));
+        if (index < 0) return new BitmapImage(new Uri("pack://application:,,,/Guanacaste3D.Desktop;component/resources/samples/casa-del-cobogo.png"));
+        var reference = new BitmapImage(new Uri("pack://application:,,,/Guanacaste3D.Desktop;component/resources/render-reference/effects.png"));
         // Only the illustrative photograph is used; names and state remain live controls.
         return new CroppedBitmap(reference, new Int32Rect(150 + index % 3 * 162, 63 + index / 3 * 96, 160, 57));
 
@@ -371,6 +371,7 @@ public partial class RenderPanel
             });
         var card = new Button
         {
+            IsEnabled = !effect.Planned,
             Content = tile, Padding = new Thickness(0), Margin = new Thickness(0), Cursor = Cursors.Hand,
             ToolTip = effect.Description, BorderThickness = new Thickness(0, 0, 1, 1), BorderBrush = new SolidColorBrush(Color.FromRgb(0x83, 0x92, 0x97))
 
@@ -528,5 +529,9 @@ public partial class RenderPanel
         PhotoStrip.Visibility = !entering && _mode == RenderMode.Photo ? Visibility.Visible : Visibility.Collapsed;
         OutputModeHost.IsEnabled = !entering;
         TheaterText.Text = entering ? "Mostrar paneles" : "Teatro";
+        TheaterButton.ToolTip = entering ? "Mostrar paneles · Esc" : "Ampliar vista · ocultar paneles";
+        TheaterButton.Background = entering ? RailActive : RailInactive;
+        SceneToolsBar.Margin = new Thickness(12, 0, 12, entering || _mode == RenderMode.Build ? 76 : 196);
+        UpdateStudioOverlayLayout();
     }
 }

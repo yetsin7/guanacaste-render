@@ -8,8 +8,10 @@ public partial class RenderPanel
     {
         if (sender is System.Windows.Controls.Button { Tag: string command } && _source is not null)
         {
+            if (StudioBusy) { StatusText.Text = "Espera a que termine el render o pulsa Detener."; return; }
             try { StatusText.Text = _source.ExecuteSceneCommand(command); }
-            catch (System.IO.InvalidDataException error) { StatusText.Text = error.Message; }
+            catch (System.IO.InvalidDataException error) { StatusText.Text = LocalizedErrors.Translate(error.Message); }
+            RefreshStudioActions();
         }
     }
     /// <summary>Rotates around the selected element or project center using the shared model camera.</summary>

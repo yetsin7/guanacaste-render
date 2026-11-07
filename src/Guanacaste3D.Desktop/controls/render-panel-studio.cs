@@ -12,6 +12,43 @@ public partial class RenderPanel
     private bool _skyLibraryBuilt;
     private bool _updatingSceneCategories;
     private readonly HashSet<string> _collapsedSceneGroups = [];
+    private readonly Dictionary<Guid, Button> _sceneRowButtons = [];
+    private bool StudioBusy => _renderStarting || _rendering || _renderingTour || _batchRunning;
+
+    private void RefreshStudioActions()
+    {
+        if (_source is null || SceneToolItems is null) return;
+        var busy = StudioBusy;
+        ProjectCommands.IsEnabled = SectionTabs.IsEnabled = SceneToolItems.IsEnabled = !busy;
+        SceneInspector.IsEnabled = !busy;
+        ModeOverlayHost.IsEnabled = PhotoStrip.IsEnabled = !busy;
+        TransformGizmo.IsHitTestVisible = !busy;
+        foreach (var window in new Window?[] { _materialPicker, _scatterWindow, _peopleWindow, _fireWindow })
+            if (window is { IsLoaded: true }) window.IsEnabled = !busy;
+        foreach (var button in SceneToolItems.Children.OfType<Button>())
+        {
+            if (button.Tag is string command) button.IsEnabled = _source.CanExecuteSceneCommand(command);
+            ToolTipService.SetShowOnDisabled(button, true);
+        }
+        MoveGizmoButton.IsEnabled = _source.CanMoveSelection;
+        NewPhotoButton.IsEnabled = !busy && _source.HasScene;
+        RenderPhotosButton.IsEnabled = !busy && _source.HasScene;
+        foreach (var button in new[] { StudioBuildModeButton, StudioPhotoModeButton, StudioMovieModeButton, StudioPanoramaModeButton })
+            button.IsEnabled = !busy;
+        foreach (var (_, button) in _modeButtons) button.IsEnabled = !busy;
+        var selected = _source.SelectedSceneItemId;
+        var item = selected is null ? null : _source.SceneItems().FirstOrDefault(x => x.Id == selected);
+        SceneSelectionText.Text = item is null ? "Selecciona un objeto para mover, girar, duplicar o eliminar" : $"{item.Name}  ·  {item.Layer}";
+        foreach (var (id, button) in _sceneRowButtons)
+            button.Background = id == selected ? RailActive : Brushes.Transparent;
+        UpdateStudioOverlayLayout();
+    }
+
+    private void UpdateStudioOverlayLayout()
+    {
+        if (SceneInspector is null || SceneToolsBar is null) return;
+        SceneInspector.Margin = new Thickness(18, 60, 0, SceneToolsBar.Margin.Bottom + SceneToolsBar.ActualHeight + 12);
+    }
 
     private void StudioMode_Click(object sender, RoutedEventArgs e)
     {
@@ -29,13 +66,18 @@ public partial class RenderPanel
 
     private void InitializeStudio()
     {
+        SceneToolsBar.SizeChanged += (_, _) => UpdateStudioOverlayLayout();
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key != Key.Escape) return;
-            if (SkyLibrary.Visibility == Visibility.Visible)
+            if (FxPicker.Visibility == Visibility.Visible)
+            { CloseFxPicker(); e.Handled = true; }
+            else if (SkyLibrary.Visibility == Visibility.Visible)
             { SkyLibrary.Visibility = Visibility.Collapsed; e.Handled = true; }
             else if (SceneInspector.Visibility == Visibility.Visible)
             { SceneInspector.Visibility = Visibility.Collapsed; SceneInspectorButton.Focus(); e.Handled = true; }
+            else if (_settingsWidthBeforeTheater is not null)
+            { Theater_Click(TheaterButton, new RoutedEventArgs()); e.Handled = true; }
         };
     }
 
@@ -43,6 +85,7 @@ public partial class RenderPanel
     {
         if (_source is null) return;
         StudioProjectText.Text = _source.ProjectName;
+        RefreshStudioActions();
         // Linked imports also have geometry, even when they do not expose native editable objects.
         StudioWelcome.Visibility = _source.HasScene ? Visibility.Collapsed : Visibility.Visible;
         if (SceneInspector.Visibility == Visibility.Visible) RefreshSceneInspector();
@@ -102,6 +145,7 @@ public partial class RenderPanel
         var matches = items.Where(x => (category is null || x.Category == category) &&
             MaterialCatalogSearch.Matches(query, x.Name, x.Category, x.Layer)).ToArray();
         SceneItemsPanel.Children.Clear();
+        _sceneRowButtons.Clear();
         // Bound UI creation for large BIM imports; searching narrows the complete catalog before the cap.
         foreach (var group in matches.Take(250).GroupBy(x => (x.Layer, x.Category)))
         {
@@ -123,10 +167,11 @@ public partial class RenderPanel
                 {
                     Content = new TextBlock { Text = item.Name, TextTrimming = TextTrimming.CharacterEllipsis },
                     HorizontalContentAlignment = HorizontalAlignment.Left, Padding = new Thickness(7, 6, 7, 6),
-                    Background = Brushes.Transparent, BorderThickness = new Thickness(0),
+                    Background = item.Id == _source.SelectedSceneItemId ? RailActive : Brushes.Transparent, BorderThickness = new Thickness(0),
                     ToolTip = item.Name + " · " + item.Layer, Tag = item.Id
                 };
                 AutomationProperties.SetName(select, "Seleccionar " + item.Name);
+                _sceneRowButtons[item.Id] = select;
                 select.Click += (_, _) =>
                 {
                     _source.SelectSceneItem(item.Id);

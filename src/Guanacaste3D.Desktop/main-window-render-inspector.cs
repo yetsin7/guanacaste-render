@@ -10,6 +10,24 @@ public partial class MainWindow
         private int _catalogVersion = -1;
         private IReadOnlyList<RenderSceneItem> _catalog = [];
         public bool HasScene => ModelElementIds(window._session.Document).Any() || window._links.Visible().Any();
+        public Guid? SelectedSceneItemId => window.SelectedMovableId();
+        public bool CanExecuteSceneCommand(string command)
+        {
+            var document = window._session.Document;
+            var selected = SelectedSceneItemId;
+            var wall = window._selectedOpeningId is null && document.Walls.Any(x => x.Id == selected);
+            var component = document.StructuralElements.FirstOrDefault(x => x.Id == selected);
+            return command switch
+            {
+                "open" or "save" or "save-as" or "sample" or "import" => true,
+                "undo" => window._session.CanUndo,
+                "redo" => window._session.CanRedo,
+                "delete" => selected is not null && SceneItems().Any(x => x.Id == selected),
+                "duplicate" => wall || component?.Kind == StructuralElementKind.Component,
+                "rotate" => wall || component is { Kind: StructuralElementKind.Component } && component.Start.DistanceTo(component.End) < 1e-9,
+                _ => false
+            };
+        }
         public bool CanMoveSelection => window.SelectedMovableId() is not null;
         public bool CanElevateSelection => window._selectedStructuralId is not null;
 

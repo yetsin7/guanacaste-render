@@ -94,11 +94,11 @@ public partial class RenderPanel
 
     private void SetMode(RenderMode mode)
     {
-        if (_rendering || _batchRunning || _renderingTour) mode = _mode;
+        if (StudioBusy) mode = _mode;
         var panoramaChanged = (mode == RenderMode.Panorama) != PanoramaMode;
         _mode = mode;
         SceneToolsBar.Margin = new Thickness(12, 0, 12, mode == RenderMode.Build ? 76 : 196);
-        SceneInspector.Margin = new Thickness(18, 60, 0, mode == RenderMode.Build ? 152 : 272);
+        UpdateStudioOverlayLayout();
         foreach (var rail in new[] { StudioBuildModeButton, StudioPhotoModeButton, StudioMovieModeButton, StudioPanoramaModeButton })
             rail.Background = rail.Tag?.ToString() == mode.ToString() ? RailActive : RailInactive;
         PhotoStrip.Visibility = mode == RenderMode.Photo ? Visibility.Visible : Visibility.Collapsed;

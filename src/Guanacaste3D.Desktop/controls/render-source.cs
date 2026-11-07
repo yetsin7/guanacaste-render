@@ -18,6 +18,8 @@ namespace Guanacaste3D.Desktop.Controls;
 internal interface IRenderSource
 {
     bool HasScene => true;
+    Guid? SelectedSceneItemId => null;
+    bool CanExecuteSceneCommand(string command) => false;
     bool CanMoveSelection => false;
     bool CanElevateSelection => false;
     string MoveSelection(double x, double y, double z) => "Selecciona un objeto para moverlo.";

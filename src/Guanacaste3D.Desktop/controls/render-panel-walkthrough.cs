@@ -129,7 +129,7 @@ public partial class RenderPanel
     /// </summary>
     private async void RenderTour_Click(object sender, RoutedEventArgs e)
     {
-        if (_source is null || _rendering || _renderingTour) return;
+        if (_source is null || StudioBusy) return;
         if (_path.Marks.Count < 2)
         {
             StatusText.Text = UiText.Get("RenderPanel.TourNeedsMarks");
@@ -153,8 +153,15 @@ public partial class RenderPanel
     /// <summary>Renders the camera path to the given .mp4 (the part after the file is chosen, so it can be run without a dialog).</summary>
     private async Task RunTourAsync(string videoPath)
     {
-        if (_source is null || _rendering || _renderingTour) return;
-        var scene = await _source.GetSceneAsync();
+        if (_source is null || StudioBusy) return;
+        var source = _source;
+        var version = source.SceneVersion;
+        _renderStarting = true;
+        RefreshStudioActions();
+        RenderScene? scene;
+        try { scene = await source.GetSceneAsync(); }
+        finally { _renderStarting = false; RefreshStudioActions(); }
+        if (!ReferenceEquals(source, _source) || source.SceneVersion != version) return;
         if (scene is null) return;
 
         var quality = Quality();
@@ -177,6 +184,7 @@ public partial class RenderPanel
 
         _preview?.Suspend();
         _renderingTour = true;
+        RefreshStudioActions();
         _cancel = new CancellationTokenSource();
         RenderButton.Content = UiText.Get("RenderPanel.Stop");
         RenderTourButton.IsEnabled = false;
@@ -216,6 +224,7 @@ public partial class RenderPanel
                 catch (Exception ex) { CrashReporter.Log("movie file", ex); }
             }
             _renderingTour = false;
+            RefreshStudioActions();
             RenderButton.Content = UiText.Get("RenderPanel.Render");
             RenderTourButton.IsEnabled = true;
             RenderProgressPanel.Visibility = Visibility.Collapsed;

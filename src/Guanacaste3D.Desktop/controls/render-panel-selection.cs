@@ -18,6 +18,7 @@ public partial class RenderPanel
     internal void ShowSelection(IReadOnlyList<EdgeSegment> edges)
     {
         _studioSelectionEdges = edges;
+        RefreshStudioActions();
         DrawTransformGizmo();
         SelectionOverlay.Children.Clear();
         if (_source is null || !IsVisible || ImageHost.ActualWidth <= 0 || ImageHost.ActualHeight <= 0) return;

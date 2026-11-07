@@ -27,10 +27,30 @@ internal static partial class InteractionChecks
             Check(Control<TabControl>("SectionTabs").SelectedIndex == 0 && Control<TabControl>("SectionTabs").SelectedContent is not null,
                 "Environment settings are selected on first launch");
             SaveBitmap("artifacts/studio-checks/01-start.png");
+            Check(!Control<Button>("DuplicateObjectButton").IsEnabled && !Control<Button>("DeleteObjectButton").IsEnabled &&
+                  !Control<Button>("UndoSceneButton").IsEnabled && !Control<Button>("RedoSceneButton").IsEnabled,
+                "Empty studio disables selection and history actions");
             Click("StudioBuildModeButton");
             Check(Control<Border>("PhotoStrip").Visibility == Visibility.Collapsed, "Scene mode frees the viewport from the photo strip");
             Click("StudioPhotoModeButton");
             Check(Control<Border>("PhotoStrip").Visibility == Visibility.Visible, "Photo mode restores saved camera slots");
+            Click("TheaterButton");
+            Check(((ColumnDefinition)panel.FindName("SettingsColumn")).Width.Value == 0 &&
+                  Control<Border>("SceneToolsBar").Margin.Bottom == 76, "Theater frees sidebar and photo-strip space");
+            Click("TheaterButton");
+            Check(((ColumnDefinition)panel.FindName("SettingsColumn")).Width.Value > 0 && Control<Border>("PhotoStrip").IsVisible,
+                "Theater button restores panels and the active output mode");
+            Click("FxBarButton");
+            Check(Control<Border>("FxPicker").IsVisible, "Effects toolbar button opens the real effect library");
+            Call("FxPickerClose_Click", panel, new RoutedEventArgs());
+            Check(!Control<Border>("FxPicker").IsVisible, "Effect library close returns to the workspace");
+            Click("FxBarButton");
+            Control<TextBox>("FxSearch").Text = "a";
+            var effects = Control<System.Windows.Controls.Primitives.UniformGrid>("FxTiles");
+            Check(effects.Children.Count > 0, "Effect search loads thumbnails across categories in the standalone host");
+            effects.Children.OfType<Button>().First(x => x.IsEnabled).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(!Control<Border>("FxPicker").IsVisible && Control<TabControl>("SectionTabs").SelectedIndex == 1,
+                "Available effect tile opens its actual controls");
             Click("StudioSampleButton");
             var deadline = DateTime.UtcNow.AddSeconds(90);
             while ((Control<Viewport3D>("InteractiveViewport").Children.Count <= 2 || Control<Border>("StudioWelcome").IsVisible)
@@ -60,6 +80,35 @@ internal static partial class InteractionChecks
             session.Undo();
             Check(source.SceneItems().Single(x => x.Id == target.Id).Visible, "Scene visibility is undoable");
             var objectBefore = session.Document.StructuralElements.First(x => x.Kind == StructuralElementKind.Component);
+            var opening = session.Document.Openings.First();
+            source.SelectSceneItem(opening.Id);
+            var hostBefore = session.Document.Walls.Single(x => x.Id == opening.WallId);
+            Check(!source.CanExecuteSceneCommand("rotate") && !source.CanExecuteSceneCommand("duplicate"),
+                "Selecting an opening never exposes actions for its host wall");
+            source.ExecuteSceneCommand("rotate");
+            source.ExecuteSceneCommand("duplicate");
+            Check(session.Document.Walls.Single(x => x.Id == opening.WallId) == hostBefore,
+                "Unsupported opening commands leave the host unchanged");
+            source.SelectSceneItem(objectBefore.Id);
+            var countBefore = session.Document.StructuralElements.Count;
+            Click("DuplicateObjectButton");
+            var duplicatedId = source.SelectedSceneItemId!.Value;
+            Check(session.Document.StructuralElements.Count == countBefore + 1, "Duplicate toolbar button creates a component");
+            Click("UndoSceneButton");
+            Check(session.Document.StructuralElements.Count == countBefore && Control<Button>("RedoSceneButton").IsEnabled,
+                "Undo toolbar button reverses duplication and enables redo");
+            Click("RedoSceneButton");
+            Check(session.Document.StructuralElements.Count == countBefore + 1, "Redo toolbar button restores the component");
+            source.SelectSceneItem(duplicatedId);
+            Click("DeleteObjectButton");
+            Check(session.Document.StructuralElements.Count == countBefore, "Delete toolbar button removes the selected duplicate");
+            Click("UndoSceneButton");
+            Click("UndoSceneButton");
+            source.SelectSceneItem(objectBefore.Id);
+            Click("RotateObjectButton");
+            Check(session.Document.StructuralElements.Single(x => x.Id == objectBefore.Id).Rotation != objectBefore.Rotation,
+                "Rotate toolbar button changes the selected component");
+            Click("UndoSceneButton");
             source.SelectSceneItem(objectBefore.Id);
             Click("MoveGizmoButton");
             Pump();
@@ -148,6 +197,13 @@ internal static partial class InteractionChecks
             Check(Control<Button>("StudioSaveButton").IsVisible && panel.Surface.ActualWidth > 500 && panel.Surface.ActualHeight > 400,
                 "Small desktop keeps project commands and a usable viewport");
             SaveBitmap("artifacts/studio-checks/06-compact.png");
+            var toolItems = Control<System.Windows.Controls.Primitives.UniformGrid>("SceneToolItems");
+            Check(toolItems.Children.OfType<Button>().All(button =>
+            {
+                var position = button.TranslatePoint(new Point(0, 0), toolItems);
+                return position.X >= 0 && position.X + button.ActualWidth <= toolItems.ActualWidth + 1 &&
+                    position.Y + button.ActualHeight <= toolItems.ActualHeight + 1;
+            }), "Every scene tool fits the compact toolbar without horizontal scrolling");
             Click("StudioMovieModeButton");
             Pump();
             var timeline = (Canvas)typeof(RenderPanel).GetField("_timeline", PrivateInstance)!.GetValue(panel)!;
@@ -158,18 +214,26 @@ internal static partial class InteractionChecks
             SaveBitmap("artifacts/studio-checks/10-panorama-compact.png");
             Click("StudioPhotoModeButton");
             var context = SynchronizationContext.Current;
+            // Release temporary save/reload snapshots before the memory-budgeted render on small machines.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
             SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(_window.Dispatcher));
             try
             {
                 var output = Path.GetFullPath("artifacts/studio-checks/rendered");
                 var existing = Directory.Exists(output) ? Directory.GetFiles(output, "*.png").Length : 0;
                 var job = (Task)Call("RenderPhotosAsync", new PhotoRenderOptions([], "640x360", "Draft", false, output, false))!;
+                Check(!Control<StackPanel>("ProjectCommands").IsEnabled && !Control<Button>("StudioMovieModeButton").IsEnabled &&
+                      !Control<Button>("DuplicateObjectButton").IsEnabled, "Rendering disables project replacement, mode changes and object edits");
                 var renderDeadline = DateTime.UtcNow.AddMinutes(5);
                 while (!job.IsCompleted && DateTime.UtcNow < renderDeadline) Pump();
                 Check(job.IsCompletedSuccessfully && Directory.Exists(output) && Directory.GetFiles(output, "*.png").Length > existing,
                     "Photo workflow renders and exports an actual PNG · " + Control<TextBlock>("StatusText").Text);
                 var png = System.Windows.Media.Imaging.BitmapFrame.Create(new Uri(Directory.GetFiles(output, "*.png").Last()));
                 Check(png.PixelWidth >= 320 && png.PixelHeight >= 180, "Exported render can be decoded at usable resolution");
+                Check(Control<StackPanel>("ProjectCommands").IsEnabled && Control<Button>("StudioMovieModeButton").IsEnabled,
+                    "Render completion restores workspace commands");
                 SaveBitmap("artifacts/studio-checks/07-rendered.png");
             }
             finally { SynchronizationContext.SetSynchronizationContext(context); }

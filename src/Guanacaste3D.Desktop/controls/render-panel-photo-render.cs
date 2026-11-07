@@ -70,6 +70,7 @@ public partial class RenderPanel
         var targets = options.PhotoIds.Count == 0 ? new Guid?[] { null } : [.. options.PhotoIds.Select(id => (Guid?)id)];
         var saved = new List<string>();
         _batchRunning = true;
+        RefreshStudioActions();
         _batchCancel = false;
         string? failure = null;
         try
@@ -120,6 +121,7 @@ public partial class RenderPanel
         finally
         {
             _batchRunning = false;
+            RefreshStudioActions();
             _batchLabel = null;
         }
 
