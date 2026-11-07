@@ -18,7 +18,8 @@ public partial class RenderPanel
 {
     private sealed record GalleryEntry(string Key, string Label, double Size, double Relief, bool Imported,
         double Roughness, double Metallic);
-    private const int GalleryPageSize = 8;
+    private const int GalleryPageSize = 16;
+    private string _galleryPresetCategory = "all";
     private const int GalleryCacheLimit = 24;
     private bool _galleryReady;
     private int _galleryPage;
@@ -34,6 +35,23 @@ public partial class RenderPanel
     private void InitializeMaterialGallery()
     {
         if (GalleryTargetPicker is null) return;
+        foreach (var (id, glyph, name) in new[] { ("all", "▦", "Todos"), ("metal", "◇", "Metales"),
+            ("mineral", "▧", "Piedra y concreto"), ("wood", "▥", "Madera"), ("glass", "◈", "Vidrio"),
+            ("paint", "◐", "Pinturas"), ("floor", "▤", "Pisos"), ("fabric", "▨", "Telas"),
+            ("water", "≈", "Agua"), ("natural", "♧", "Naturales"), ("plastic", "◉", "Plásticos"), ("other", "○", "Otros") })
+        {
+            var button = new Button { Content = glyph, Tag = id, ToolTip = name, Width = 42, Height = 34,
+                FontSize = 21, Padding = new Thickness(0), Margin = new Thickness(1), BorderThickness = new Thickness(0) };
+            System.Windows.Automation.AutomationProperties.SetName(button, name);
+            button.Click += (_, _) =>
+            {
+                _galleryPresetCategory = id;
+                GalleryGroupPicker.SelectedIndex = 0;
+                _galleryPage = 0;
+                RefreshMaterialGallery();
+            };
+            GalleryPresetCategories.Children.Add(button);
+        }
         foreach (var (category, label) in RenderTextureLibrary.Categories)
             GalleryTargetPicker.Items.Add(new ComboBoxItem { Content = Text(label), Tag = category });
         GalleryTargetPicker.SelectedItem = GalleryTargetPicker.Items.OfType<ComboBoxItem>()
@@ -116,6 +134,9 @@ public partial class RenderPanel
         _galleryLoadCancellation = new CancellationTokenSource();
         var token = _galleryLoadCancellation.Token;
         var group = (GalleryGroupPicker.SelectedItem as ComboBoxItem)?.Tag as string ?? "trees";
+        GalleryPresetCategories.Visibility = group == "presets" ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var categoryButton in GalleryPresetCategories.Children.OfType<Button>())
+            categoryButton.Background = categoryButton.Tag as string == _galleryPresetCategory ? RailActive : Brushes.Transparent;
         var search = GallerySearch.Text.Trim();
         var included = RenderTextureLibrary.BuiltIn
             .Where(texture => GalleryGroupMatches(group, texture.Key) &&
@@ -132,7 +153,7 @@ public partial class RenderPanel
         // The ready-made materials (steel, concrete, glass…), each shown as a ball like Lumion's library.
         var presets = group is "presets" or "all"
             ? MaterialPresets.All
-                .Where(preset => MaterialCatalogSearch.Matches(search, preset.Id, preset.Name,
+                .Where(preset => (group != "presets" || _galleryPresetCategory == "all" || MaterialPickerWindow.CategoryOf(preset) == _galleryPresetCategory) && MaterialCatalogSearch.Matches(search, preset.Id, preset.Name,
                     Text($"MaterialFamily.{preset.Group}")))
                 .Select(preset => new GalleryEntry(MaterialPresets.Prefix + preset.Id, preset.Name,
                     preset.TextureSize, preset.Relief, false, preset.Material.Roughness, preset.Material.Metallic))
@@ -146,7 +167,7 @@ public partial class RenderPanel
             var key = texture.Key;
             var picture = new Image
             {
-                Width = 112, Height = 84, Stretch = Stretch.UniformToFill,
+                Width = 58, Height = 58, Stretch = Stretch.UniformToFill,
                 HorizontalAlignment = HorizontalAlignment.Center
             };
             var placeholder = new TextBlock
@@ -155,7 +176,7 @@ public partial class RenderPanel
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
                 FontSize = 11, IsHitTestVisible = false
             };
-            var pictureFrame = new Grid { Width = 112, Height = 84, Background = new SolidColorBrush(Color.FromRgb(38, 56, 72)) };
+            var pictureFrame = new Grid { Width = 58, Height = 58, Background = new SolidColorBrush(Color.FromRgb(29, 30, 32)) };
             pictureFrame.Children.Add(placeholder);
             pictureFrame.Children.Add(picture);
             var label = new TextBlock
@@ -167,15 +188,15 @@ public partial class RenderPanel
             };
             var content = new StackPanel { Orientation = Orientation.Vertical };
             content.Children.Add(pictureFrame);
-            content.Children.Add(label);
             var button = new Button
             {
-                Tag = key, Content = content, Width = 128, MinHeight = 120,
-                Padding = new Thickness(5, 5, 5, 6),
-                Margin = new Thickness(3, 3, 3, 3), BorderThickness = new Thickness(2),
+                Tag = key, Content = content, Width = 64, Height = 64,
+                Padding = new Thickness(1),
+                Margin = new Thickness(1), BorderThickness = new Thickness(2),
                 BorderBrush = GalleryNormalBorder, Background = GalleryTileBackground,
                 ToolTip = $"{texture.Label} · escala {texture.Size:0.##} m" + (texture.Imported ? " · .g3dm PBR" : "")
             };
+            System.Windows.Automation.AutomationProperties.SetName(button, texture.Label);
             button.Click += (_, _) => ApplyGalleryTexture(texture);
             button.PreviewMouseLeftButtonDown += (_, e) => _galleryDragOrigin = e.GetPosition(button);
             button.MouseMove += (_, e) => StartGalleryDrag(button, texture, e);

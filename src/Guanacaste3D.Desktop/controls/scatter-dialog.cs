@@ -36,10 +36,12 @@ internal sealed class ScatterDialog : Window
         _pointUnderView = pointUnderView;
         _place = place;
         Title = "Colocación de objetos";
-        Width = 430;
-        SizeToContent = SizeToContent.Height;
+        Width = 800;
+        Height = 440;
+        MinWidth = 700;
+        MinHeight = 410;
         WindowStartupLocation = WindowStartupLocation.Manual;
-        ResizeMode = ResizeMode.NoResize;
+        ResizeMode = ResizeMode.CanResize;
         ShowInTaskbar = false;
         SetResourceReference(BackgroundProperty, "AppBackgroundBrush");
         SetResourceReference(ForegroundProperty, "PrimaryTextBrush");
@@ -87,7 +89,29 @@ internal sealed class ScatterDialog : Window
             Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0),
             Children = { spread, close }
         });
-        Content = root;
+        // Three compact panels follow the reference's object / distribution / variation arrangement.
+        // Keep the existing controls and handlers so the layout cannot diverge from the placement operation.
+        var elements = root.Children.Cast<UIElement>().ToArray();
+        root.Children.Clear();
+        var shell = new DockPanel { Margin = new Thickness(16) };
+        var heading = new StackPanel(); heading.Children.Add(elements[0]); heading.Children.Add(elements[1]);
+        DockPanel.SetDock(heading, Dock.Top); shell.Children.Add(heading);
+        var footer = new StackPanel(); footer.Children.Add(elements[17]); footer.Children.Add(elements[18]);
+        DockPanel.SetDock(footer, Dock.Bottom); shell.Children.Add(footer);
+        var columns = new Grid();
+        for (var column = 0; column < 3; column++) columns.ColumnDefinitions.Add(new ColumnDefinition());
+        var ranges = new[] { (2, 5), (6, 12), (13, 16) };
+        for (var column = 0; column < ranges.Length; column++)
+        {
+            var controls = new StackPanel { Margin = new Thickness(10, 4, 10, 8) };
+            for (var index = ranges[column].Item1; index <= ranges[column].Item2; index++) controls.Children.Add(elements[index]);
+            var card = new Border { Child = new ScrollViewer { Content = controls, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+                Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(25, 26, 28)),
+                Margin = new Thickness(2) };
+            Grid.SetColumn(card, column); columns.Children.Add(card);
+        }
+        shell.Children.Add(columns);
+        Content = shell;
         SuggestSpacing();
     }
 

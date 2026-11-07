@@ -31,6 +31,19 @@ public partial class MainWindow
         public bool CanMoveSelection => window.SelectedMovableId() is not null;
         public bool CanElevateSelection => window._selectedStructuralId is not null;
 
+        public string RotateSelection(double degrees)
+        {
+            if (!CanExecuteSceneCommand("rotate") || !double.IsFinite(degrees)) return "Selecciona un objeto que permita girar.";
+            try
+            {
+                if (window._selectedStructuralId is Guid component) window._session.RotateElement(component, degrees * Math.PI / 180);
+                else if (window._selectedWallId is Guid wall) window._session.RotateWall(wall, degrees);
+                window.UpdateModelSelection(true);
+                return $"Giro: {degrees:0.#}°. Ctrl+Z para deshacer.";
+            }
+            catch (System.IO.InvalidDataException error) { return LocalizedErrors.Translate(error.Message); }
+        }
+
         public string MoveSelection(double x, double y, double z)
         {
             if (!double.IsFinite(x) || !double.IsFinite(y) || !double.IsFinite(z) ||

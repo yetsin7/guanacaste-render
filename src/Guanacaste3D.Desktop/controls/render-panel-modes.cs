@@ -97,6 +97,13 @@ public partial class RenderPanel
         if (StudioBusy) mode = _mode;
         var panoramaChanged = (mode == RenderMode.Panorama) != PanoramaMode;
         _mode = mode;
+        StudioWorkspaceHeading.Text = mode switch
+        {
+            RenderMode.Build => "Escena · objetos y materiales",
+            RenderMode.Movie => "Película · recorrido de cámara",
+            RenderMode.Panorama => "Panorama · vista de 360°",
+            _ => "Foto · cámaras y efectos"
+        };
         var theater = _settingsWidthBeforeTheater is not null;
         SceneToolsBar.Margin = new Thickness(12, 0, 12, theater || mode == RenderMode.Build ? 76 : 196);
         UpdateStudioOverlayLayout();

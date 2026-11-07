@@ -51,6 +51,7 @@ public partial class RenderPanel
             };
             SectionHeading.Text = heading;
             SectionDescription.Text = description;
+            SectionContext.Visibility = SectionTabs.SelectedIndex == 3 ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 }

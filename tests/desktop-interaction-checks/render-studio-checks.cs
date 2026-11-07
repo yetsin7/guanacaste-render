@@ -114,9 +114,16 @@ internal static partial class InteractionChecks
             Click("UndoSceneButton");
             source.SelectSceneItem(objectBefore.Id);
             Click("RotateObjectButton");
+            Pump();
+            var rotationHandle = Control<Canvas>("TransformGizmo").Children.OfType<System.Windows.Controls.Primitives.Thumb>().Single();
+            rotationHandle.RaiseEvent(new System.Windows.Controls.Primitives.DragStartedEventArgs(0, 0) { RoutedEvent = System.Windows.Controls.Primitives.Thumb.DragStartedEvent });
+            rotationHandle.RaiseEvent(new System.Windows.Controls.Primitives.DragDeltaEventArgs(30, 0) { RoutedEvent = System.Windows.Controls.Primitives.Thumb.DragDeltaEvent });
+            rotationHandle.RaiseEvent(new System.Windows.Controls.Primitives.DragCompletedEventArgs(30, 0, false) { RoutedEvent = System.Windows.Controls.Primitives.Thumb.DragCompletedEvent });
             Check(session.Document.StructuralElements.Single(x => x.Id == objectBefore.Id).Rotation != objectBefore.Rotation,
-                "Rotate toolbar button changes the selected component");
+                "Rotation ring commits the dragged angle to the selected component");
             Click("UndoSceneButton");
+            Check(Math.Abs(session.Document.StructuralElements.Single(x => x.Id == objectBefore.Id).Rotation - objectBefore.Rotation) < 1e-6,
+                "One undo restores the rotation ring gesture");
             source.SelectSceneItem(objectBefore.Id);
             Click("MoveGizmoButton");
             Pump();
@@ -157,14 +164,36 @@ internal static partial class InteractionChecks
             Check(skies.Children.OfType<Button>().All(x => x.Visibility == Visibility.Collapsed) && Control<TextBlock>("SkyEmptyHint").IsVisible,
                 "Sky search reports an empty result without changing the scene");
             Control<TextBox>("SkySearch").Text = "";
+            var skyCategories = Control<WrapPanel>("SkyCategories").Children.OfType<Button>().ToArray();
+            skyCategories.Single(x => (string)x.Tag == "clouds").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(skies.Children.OfType<Button>().Where(x => x.Visibility == Visibility.Visible).All(x =>
+                Guanacaste3D.Core.Rendering.RenderLooks.Skies.Single(sky => sky.Id == (string)x.Tag).CloudCover >= .5),
+                "Sky categories filter real presets by cloud cover");
+            skyCategories[0].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             SaveBitmap("artifacts/studio-checks/04-skies.png");
             var tile = skies.Children.OfType<Button>().First();
             tile.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check((Control<ComboBox>("SkyPicker").SelectedItem as ComboBoxItem)?.Tag?.ToString() == tile.Tag.ToString() &&
                   !Control<Border>("SkyLibrary").IsVisible, "Sky tile applies actual lighting settings and returns to the viewport");
             Click("RenderRailMaterials");
+            Call("ShowScatterWindow");
+            Pump();
+            var scatter = Application.Current.Windows.OfType<ScatterDialog>().Single();
+            Check(scatter.ActualWidth >= 700 && scatter.ActualHeight <= 500, "Placement controls use three compact reference panels");
+            var scatterRadius = (TextBox)typeof(ScatterDialog).GetField("_radius", PrivateInstance)!.GetValue(scatter)!;
+            scatterRadius.Text = "NaN";
+            typeof(ScatterDialog).GetMethod("Spread", PrivateInstance)!.Invoke(scatter, null);
+            Check(((TextBlock)typeof(ScatterDialog).GetField("_message", PrivateInstance)!.GetValue(scatter)!).Text.Contains("1 a 500"),
+                "Invalid placement input is rejected without changing the scene");
+            scatter.Close();
             Pump();
             Check(Control<WrapPanel>("GalleryTiles").Children.Count > 0, "Material library is populated");
+            var categories = Control<WrapPanel>("GalleryPresetCategories").Children.OfType<Button>().ToArray();
+            categories.Single(x => (string)x.Tag == "water").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(Control<WrapPanel>("GalleryTiles").Children.OfType<Button>().All(x => ((string)x.Tag).Contains("water")) &&
+                Control<WrapPanel>("GalleryTiles").Children.Count > 0, "Water category exposes applicable water materials");
+            categories[0].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Check(Control<WrapPanel>("GalleryTiles").Children.Count == 16, "Embedded library uses a bounded compact material grid");
             var material = Control<WrapPanel>("GalleryTiles").Children.OfType<Button>().First();
             material.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(source.RenderMaterials.Any(x => x.TexturePath == material.Tag.ToString()), "Material gallery changes the document assignment");
@@ -182,6 +211,8 @@ internal static partial class InteractionChecks
             pickerSearch.Text = "material-inexistente-9471";
             Check(pickerTiles.Children.Count == 0, "Material search filters the complete catalog");
             pickerSearch.Text = "";
+            Check(pickerTiles.Children.OfType<Button>().Count() == pickerTiles.Children.Count,
+                "Every material palette tile supports keyboard activation");
             Pump();
             var pickerBitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)picker.ActualWidth, (int)picker.ActualHeight, 96, 96, PixelFormats.Pbgra32);
             pickerBitmap.Render(picker);
@@ -243,7 +274,13 @@ internal static partial class InteractionChecks
                 Check(!Control<StackPanel>("ProjectCommands").IsEnabled && !Control<Button>("StudioMovieModeButton").IsEnabled &&
                       !Control<Button>("DuplicateObjectButton").IsEnabled, "Rendering disables project replacement, mode changes and object edits");
                 var renderDeadline = DateTime.UtcNow.AddMinutes(5);
+                var heartbeats = 0;
+                var heartbeat = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+                heartbeat.Tick += (_, _) => heartbeats++;
+                heartbeat.Start();
                 while (!job.IsCompleted && DateTime.UtcNow < renderDeadline) Pump();
+                heartbeat.Stop();
+                Check(heartbeats >= 3, "UI dispatcher continues responding while rendering in the background");
                 Check(job.IsCompletedSuccessfully && Directory.Exists(output) && Directory.GetFiles(output, "*.png").Length > existing,
                     "Photo workflow renders and exports an actual PNG · " + Control<TextBlock>("StatusText").Text);
                 var png = System.Windows.Media.Imaging.BitmapFrame.Create(new Uri(Directory.GetFiles(output, "*.png").Last()));

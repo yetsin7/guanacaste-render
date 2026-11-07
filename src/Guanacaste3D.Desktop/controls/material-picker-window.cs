@@ -77,6 +77,10 @@ internal sealed class MaterialPickerWindow : Window
         MinHeight = 520;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
+        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Guanacaste3D.Desktop;component/controls/studio-theme.xaml") });
+        _search.Style = (Style)FindResource("StudioSearch");
+        _search.Tag = "Buscar materiales";
+        System.Windows.Automation.AutomationProperties.SetName(_search, "Buscar materiales");
         // The same dark palette as the Render studio, set outright so the text is always readable on it.
         Background = new SolidColorBrush(Color.FromRgb(0x20, 0x21, 0x24));
         Foreground = new SolidColorBrush(Color.FromRgb(0xF0, 0xF6, 0xFB));
@@ -251,19 +255,21 @@ internal sealed class MaterialPickerWindow : Window
                 Text = item.Label, Foreground = Foreground, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, MaxHeight = 36, FontSize = 12,
                 TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(2, 4, 2, 0), HorizontalAlignment = HorizontalAlignment.Center
             };
-            var stack = new StackPanel { Width = BallSize + 12 };
+            var stack = new StackPanel { Width = BallSize };
             stack.Children.Add(picture);
-            stack.Children.Add(label);
             var tile = new Border
             {
-                Child = stack, Margin = new Thickness(4), Padding = new Thickness(4, 6, 4, 6), CornerRadius = new CornerRadius(2), Cursor = Cursors.Hand,
+                Child = stack, Padding = new Thickness(1), CornerRadius = new CornerRadius(0), Cursor = Cursors.Hand,
                 Background = new SolidColorBrush(Color.FromRgb(0x14, 0x1E, 0x2A)), BorderThickness = new Thickness(2),
                 BorderBrush = new SolidColorBrush(Color.FromRgb(0x2A, 0x3A, 0x4A)), ToolTip = item.Label
             };
-            tile.MouseLeftButtonUp += (_, _) => { _debounce.Stop(); _host.Apply(item); SyncSliders(); Highlight(); };
+            var choose = new Button { Content = tile, Padding = new Thickness(0), Margin = new Thickness(1),
+                BorderThickness = new Thickness(0), Background = Brushes.Transparent, ToolTip = item.Label };
+            System.Windows.Automation.AutomationProperties.SetName(choose, item.Label);
+            choose.Click += (_, _) => { _debounce.Stop(); _host.Apply(item); SyncSliders(); Highlight(); };
             tile.MouseEnter += (_, _) => { if (tile.BorderBrush is SolidColorBrush { Color.G: not 0xDA }) tile.BorderBrush = new SolidColorBrush(Color.FromRgb(0x5A, 0x78, 0x90)); };
             tile.MouseLeave += (_, _) => Highlight();
-            _tiles.Children.Add(tile);
+            _tiles.Children.Add(choose);
             _tileOf[item.Key] = tile;
             if (_balls.TryGetValue(item.Key, out var cached)) picture.Source = cached;
             else _ = LoadBallAsync(item, picture, revision);

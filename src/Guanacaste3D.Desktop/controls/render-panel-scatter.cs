@@ -36,7 +36,7 @@ public partial class RenderPanel
         _scatterWindow.Foreground = System.Windows.Media.Brushes.White;
         if (_scatterWindow.Owner is { } owner)
         {
-            _scatterWindow.Left = owner.Left + Math.Max(0, owner.ActualWidth - 470);
+            _scatterWindow.Left = owner.Left + Math.Max(0, owner.ActualWidth - _scatterWindow.Width - 24);
             _scatterWindow.Top = owner.Top + 90;
         }
         _scatterWindow.Show();

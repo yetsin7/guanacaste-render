@@ -14,13 +14,13 @@ The copied code and assets retain their existing licenses and third-party attrib
 
 ## Estudio de visualización
 
-La interfaz sigue la organización de las referencias de Lumion: una barra superior para Escena, Foto, Película y Panorama; paneles oscuros; bibliotecas visuales y herramientas sobre la vista 3D. Las capturas de referencia no se distribuyen como recursos de la aplicación.
+La interfaz sigue la organización de las referencias de Lumion: una barra vertical para Escena, Foto, Película y Panorama; paneles oscuros; bibliotecas visuales y herramientas sobre la vista 3D. Las capturas de referencia no se distribuyen como recursos de la aplicación.
 
 - **Proyectos:** abrir, guardar, guardar como y casa de ejemplo desde la barra superior.
-- **Materiales:** biblioteca paginada con búsqueda y categorías, pestañas Biblioteca/Ajustes y asignación a la superficie seleccionada. Los controles PBR modifican los materiales del documento.
-- **Entorno:** biblioteca de cielos con miniaturas y búsqueda, carga de HDRI, orientación e intensidad. Las miniaturas incluidas representan cielos procedurales del motor.
+- **Materiales:** cuadrícula compacta paginada con búsqueda y categorías por iconos, pestañas Biblioteca/Ajustes y asignación a la superficie seleccionada. Los controles PBR modifican los materiales del documento.
+- **Entorno:** biblioteca de cielos con miniaturas, búsqueda y filtros de día, atardecer, nubes y noche, carga de HDRI, orientación e intensidad. Las miniaturas incluidas representan cielos procedurales del motor.
 - **Escena:** inspector por nivel y categoría, búsqueda y filtro combinables, selección y visibilidad persistente con deshacer. El catálogo enumera objetos nativos; no descompone modelos vinculados en objetos editables.
-- **Objetos:** 18 herramientas con nombres agrupadas en Crear, Editar y Vista, objeto seleccionado visible y acciones habilitadas según la selección. Movimiento, elevación de componentes, rotación, duplicación, eliminación, deshacer y rehacer. Seleccionar una puerta o ventana no permite girar o duplicar accidentalmente su muro anfitrión. La colocación masiva permite grupos circulares o líneas con separación y variación de tamaño.
+- **Objetos:** 18 herramientas con nombres agrupadas en Crear, Editar y Vista, objeto seleccionado visible y acciones habilitadas según la selección. Movimiento, elevación de componentes, rotación mediante anillo en el plano, duplicación, eliminación, deshacer y rehacer. Seleccionar una puerta o ventana no permite girar o duplicar accidentalmente su muro anfitrión. La colocación masiva permite grupos circulares o líneas con separación y variación de tamaño.
 - **Salidas:** cámaras con miniaturas, exportación de fotos, línea de tiempo de película y panorama. Cada grupo muestra seis herramientas en una sola fila sin desplazamiento horizontal. El panel lateral más estrecho deja más espacio para la escena; los ajustes tienen títulos y la ayuda de navegación se abre con el botón «?». Durante el render se bloquean las ediciones incompatibles, y los controles se restauran al terminar. Ampliar oculta los paneles; Esc permite recuperarlos.
 
 Esta adaptación utiliza las funciones reales del motor de Guanacaste. No incorpora el motor, el catálogo comercial ni todos los efectos de Lumion. La duplicación y la elevación se limitan a los tipos de objeto compatibles.
@@ -28,3 +28,7 @@ Esta adaptación utiliza las funciones reales del motor de Guanacaste. No incorp
 ## Verificación
 
 Ejecuta `./scripts/verify.ps1` en PowerShell para compilar Release y comprobar el motor y el estudio. Añade `-IncludeVideo` para los flujos ampliados de foto y vídeo. Las pruebas usan proyectos temporales y generan capturas en `artifacts/studio-checks/`, incluyendo tamaños de 1440 × 900 y 1100 × 760. Comprueban selección, filtros, visibilidad, movimiento, deshacer, materiales, cámaras, persistencia y exportación de un PNG real.
+
+## Instalar en Windows
+
+Publica con `dotnet publish guanacaste-render.csproj -c Release -r win-x64 --self-contained true -o release/win-x64` y ejecuta `./scripts/install.ps1`. El instalador coloca cada versión en LocalAppData/Programs/Guanacaste Render, verifica el ejecutable y las bibliotecas principales con SHA256 y crea el acceso del menú Inicio. Los proyectos se conservan fuera de la instalación.

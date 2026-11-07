@@ -23,6 +23,7 @@ internal interface IRenderSource
     bool CanMoveSelection => false;
     bool CanElevateSelection => false;
     string MoveSelection(double x, double y, double z) => "Selecciona un objeto para moverlo.";
+    string RotateSelection(double degrees) => "Selecciona un objeto para girarlo.";
     IReadOnlyList<RenderSceneItem> SceneItems() => [];
     void SelectSceneItem(Guid id) { }
     void SetSceneItemVisible(Guid id, bool visible) { }

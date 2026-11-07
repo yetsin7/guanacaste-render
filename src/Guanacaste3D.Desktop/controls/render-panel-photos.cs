@@ -119,6 +119,15 @@ public partial class RenderPanel
         thumb.Children.Add(picture);
         thumb.Children.Add(badge);
         thumb.Children.Add(delete);
+        var store = new Button
+        {
+            Content = "▣", Width = 24, Height = 24, Padding = new Thickness(0), Margin = new Thickness(0, 4, 30, 0),
+            HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
+            Visibility = Visibility.Collapsed, ToolTip = "Guardar la cámara actual en esta foto", Background = RailActive, Foreground = Brushes.White
+        };
+        System.Windows.Automation.AutomationProperties.SetName(store, "Actualizar cámara de " + photo.Name);
+        store.Click += (_, e) => { e.Handled = true; UpdatePhotoView(photo.Id); };
+        thumb.Children.Add(store);
         var name = new TextBlock
         {
             Text = photo.Name, Foreground = selected ? Brushes.White : new SolidColorBrush(Color.FromRgb(0xC6, 0xD6, 0xE3)),
@@ -136,8 +145,8 @@ public partial class RenderPanel
             ToolTip = $"{photo.Name}\nClic: abrir · Doble clic: renombrar · Clic derecho: más opciones" +
                       (number <= 10 ? $"\nMayús+{number % 10}: abrir · Ctrl+{number % 10}: actualizar encuadre" : "")
         };
-        card.MouseEnter += (_, _) => delete.Visibility = Visibility.Visible;
-        card.MouseLeave += (_, _) => delete.Visibility = Visibility.Collapsed;
+        card.MouseEnter += (_, _) => store.Visibility = delete.Visibility = Visibility.Visible;
+        card.MouseLeave += (_, _) => store.Visibility = delete.Visibility = Visibility.Collapsed;
         card.MouseLeftButtonDown += (_, e) =>
         {
             if (e.ClickCount == 2) RenamePhoto(photo.Id);

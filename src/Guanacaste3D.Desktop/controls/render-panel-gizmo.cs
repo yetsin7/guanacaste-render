@@ -13,14 +13,28 @@ public partial class RenderPanel
 {
     private IReadOnlyList<EdgeSegment> _studioSelectionEdges = [];
     private bool _showMoveGizmo;
+    private bool _showRotateGizmo;
     private bool _draggingGizmo;
 
     private void MoveGizmo_Click(object sender, RoutedEventArgs e)
     {
         _showMoveGizmo = !_showMoveGizmo;
+        _showRotateGizmo = false;
+        RotateObjectButton.Background = RailInactive;
         MoveGizmoButton.Background = _showMoveGizmo ? RailActive : RailInactive;
         DrawTransformGizmo();
         StatusText.Text = _showMoveGizmo ? "Selecciona un objeto y arrastra un eje. Mayús: pasos de 10 cm. Esc: cancelar arrastre." : "Herramienta de selección.";
+    }
+
+    private void RotateGizmo_Click(object sender, RoutedEventArgs e)
+    {
+        if (StudioBusy) return;
+        _showRotateGizmo = !_showRotateGizmo;
+        _showMoveGizmo = false;
+        MoveGizmoButton.Background = RailInactive;
+        RotateObjectButton.Background = _showRotateGizmo ? RailActive : RailInactive;
+        DrawTransformGizmo();
+        StatusText.Text = "Arrastra el anillo para girar en el plano. Mayús: pasos de 15°. Esc: cancelar arrastre.";
     }
 
     /// <summary>Projected world axes. A drag is preview-only until release, then commits one undoable edit.</summary>
@@ -28,7 +42,7 @@ public partial class RenderPanel
     {
         if (_draggingGizmo || TransformGizmo is null) return;
         TransformGizmo.Children.Clear();
-        if (!_showMoveGizmo || _source?.CanMoveSelection != true || _studioSelectionEdges.Count == 0 || _showingFinal) return;
+        if ((!_showMoveGizmo && !_showRotateGizmo) || _source?.CanMoveSelection != true || _studioSelectionEdges.Count == 0 || _showingFinal) return;
         var points = _studioSelectionEdges.SelectMany(x => new[] { x.A, x.B }).ToArray();
         var min = points.Aggregate(Vector3.Min);
         var max = points.Aggregate(Vector3.Max);
@@ -37,6 +51,11 @@ public partial class RenderPanel
         var height = (float)ImageHost.ActualHeight;
         var origin = _source.Camera.Project(center, width, height);
         if (origin is null) return;
+        if (_showRotateGizmo)
+        {
+            if (_source.CanExecuteSceneCommand("rotate")) DrawRotationRing(center, width, height, origin.Value.X, origin.Value.Y);
+            return;
+        }
         var axes = new[] { (Vector3.UnitX, "X", Colors.IndianRed), (Vector3.UnitY, "Y", Colors.LimeGreen), (Vector3.UnitZ, "Z", Colors.DodgerBlue) };
         foreach (var (axis, label, color) in axes)
         {
@@ -89,5 +108,46 @@ public partial class RenderPanel
             };
             TransformGizmo.Children.Add(thumb);
         }
+    }
+
+    private void DrawRotationRing(Vector3 center, float width, float height, double x, double y)
+    {
+        var unit = _source!.Camera.Project(center + Vector3.UnitX, width, height);
+        if (unit is null) return;
+        var scale = Math.Sqrt(Math.Pow(unit.Value.X - x, 2) + Math.Pow(unit.Value.Y - y, 2));
+        var radius = (float)(80 / Math.Max(2, scale));
+        Point RingPoint(double angle)
+        {
+            var point = _source.Camera.Project(center + new Vector3((float)Math.Cos(angle) * radius, (float)Math.Sin(angle) * radius, 0), width, height);
+            return point is null ? new Point(x, y) : new Point(point.Value.X, point.Value.Y);
+        }
+        var ring = new Polyline { Stroke = Brushes.DodgerBlue, StrokeThickness = 4, IsHitTestVisible = false };
+        for (var step = 0; step <= 64; step++) ring.Points.Add(RingPoint(step * Math.PI * 2 / 64));
+        TransformGizmo.Children.Add(ring);
+        var handle = new Thumb { Width = 30, Height = 30, Cursor = Cursors.SizeWE, ToolTip = "Girar en Z · Mayús: 15°" };
+        var face = new FrameworkElementFactory(typeof(Border));
+        face.SetValue(Border.BackgroundProperty, Brushes.DodgerBlue);
+        face.SetValue(Border.CornerRadiusProperty, new CornerRadius(15));
+        var caption = new FrameworkElementFactory(typeof(TextBlock));
+        caption.SetValue(TextBlock.TextProperty, "↻"); caption.SetValue(TextBlock.FontSizeProperty, 22.0);
+        caption.SetValue(TextBlock.ForegroundProperty, Brushes.White);
+        caption.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+        face.AppendChild(caption);
+        handle.Template = new ControlTemplate(typeof(Thumb)) { VisualTree = face };
+        System.Windows.Automation.AutomationProperties.SetName(handle, "Girar en Z");
+        void Position(double degrees) { var point = RingPoint(degrees * Math.PI / 180); Canvas.SetLeft(handle, point.X - 15); Canvas.SetTop(handle, point.Y - 15); }
+        double angle = 0;
+        Position(0);
+        handle.DragStarted += (_, _) => { _draggingGizmo = true; angle = 0; };
+        handle.PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { handle.CancelDrag(); e.Handled = true; } };
+        handle.DragDelta += (_, e) => { angle += e.HorizontalChange; Position(angle); StatusText.Text = $"Giro: {angle:0.#}° · suelta para aplicar"; };
+        handle.DragCompleted += (_, e) =>
+        {
+            _draggingGizmo = false;
+            if (!e.Canceled && Math.Abs(angle) > .1)
+                StatusText.Text = _source.RotateSelection((Keyboard.Modifiers & ModifierKeys.Shift) != 0 ? Math.Round(angle / 15) * 15 : angle);
+            DrawTransformGizmo();
+        };
+        TransformGizmo.Children.Add(handle);
     }
 }

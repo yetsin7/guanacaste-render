@@ -10,6 +10,8 @@ namespace Guanacaste3D.Desktop.Controls;
 public partial class RenderPanel
 {
     private bool _skyLibraryBuilt;
+    private string _skyCategory = "all";
+    private readonly SemaphoreSlim _skyPreviewGate = new(2, 2);
     private bool _updatingSceneCategories;
     private readonly HashSet<string> _collapsedSceneGroups = [];
     private readonly Dictionary<Guid, Button> _sceneRowButtons = [];
@@ -144,11 +146,29 @@ public partial class RenderPanel
         var count = 0;
         foreach (var tile in SkyTiles.Children.OfType<Button>())
         {
-            var matches = MaterialCatalogSearch.Matches(SkySearch.Text.Trim(), tile.ToolTip?.ToString() ?? "");
+            var sky = RenderLooks.Skies.First(x => x.Id == tile.Tag as string);
+            var categoryMatches = _skyCategory switch
+            {
+                "day" => sky.SolarHour is > 7 and < 17,
+                "sunset" => sky.SolarHour is >= 17 and <= 19 || sky.SolarHour is >= 5 and <= 7,
+                "night" => sky.SolarHour > 19 || sky.SolarHour < 5,
+                "clouds" => sky.CloudCover >= .5,
+                _ => true
+            };
+            var matches = categoryMatches && MaterialCatalogSearch.Matches(SkySearch.Text.Trim(), tile.ToolTip?.ToString() ?? "");
             tile.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
             if (matches) count++;
         }
         SkyEmptyHint.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void SkyCategory_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string category }) return;
+        _skyCategory = category;
+        foreach (var button in SkyCategories.Children.OfType<Button>())
+            button.Background = button.Tag as string == category ? RailActive : Brushes.Transparent;
+        SkySearch_Changed(SkySearch, new TextChangedEventArgs(TextBox.TextChangedEvent, UndoAction.None));
     }
 
     private void RefreshSceneInspector(IReadOnlyList<RenderSceneItem>? items = null)
@@ -229,12 +249,12 @@ public partial class RenderPanel
             _skyLibraryBuilt = true;
             foreach (var sky in RenderLooks.Skies)
             {
-                var picture = new Image { Height = 105, Stretch = Stretch.UniformToFill };
+                var picture = new Image { Height = 125, Stretch = Stretch.UniformToFill };
                 var content = new StackPanel();
                 content.Children.Add(picture);
                 content.Children.Add(new TextBlock { Text = Text(sky.NameKey), Margin = new Thickness(6, 9, 6, 5),
                     Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap });
-                var tile = new Button { Content = content, Margin = new Thickness(5), Padding = new Thickness(3),
+                var tile = new Button { Content = content, Margin = new Thickness(1), Padding = new Thickness(1),
                     HorizontalContentAlignment = HorizontalAlignment.Stretch, ToolTip = Text(sky.NameKey), Tag = sky.Id };
                 AutomationProperties.SetName(tile, Text(sky.NameKey));
                 tile.Click += (_, _) =>
@@ -248,8 +268,10 @@ public partial class RenderPanel
                 {
                     if (loaded) return;
                     loaded = true;
+                    await _skyPreviewGate.WaitAsync();
                     try { picture.Source = await Task.Run(() => RenderLookThumbnail.Sky(sky)); }
                     catch (InvalidOperationException) { loaded = false; }
+                    finally { _skyPreviewGate.Release(); }
                 };
                 SkyTiles.Children.Add(tile);
             }

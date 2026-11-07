@@ -11,9 +11,11 @@ $running = Get-Process GuanacasteRender -ErrorAction SilentlyContinue | Where-Ob
 if ($running) { throw 'Cierra Guanacaste Render antes de actualizar esta versión.' }
 New-Item -ItemType Directory -Path $destination -Force | Out-Null
 Copy-Item -Path (Join-Path $sourcePath '*') -Destination $destination -Recurse -Force
-$expected = (Get-FileHash -LiteralPath (Join-Path $sourcePath 'GuanacasteRender.dll') -Algorithm SHA256).Hash
-$actual = (Get-FileHash -LiteralPath (Join-Path $destination 'GuanacasteRender.dll') -Algorithm SHA256).Hash
-if ($actual -ne $expected) { throw 'La verificación de la instalación falló.' }
+foreach ($binary in @('GuanacasteRender.exe', 'GuanacasteRender.dll', 'Guanacaste3D.Desktop.dll', 'Guanacaste3D.Core.dll')) {
+    $expected = (Get-FileHash -LiteralPath (Join-Path $sourcePath $binary) -Algorithm SHA256).Hash
+    $actual = (Get-FileHash -LiteralPath (Join-Path $destination $binary) -Algorithm SHA256).Hash
+    if ($actual -ne $expected) { throw "La verificación de la instalación falló: $binary" }
+}
 $startMenu = Join-Path ([Environment]::GetFolderPath('Programs')) 'Guanacaste Render.lnk'
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($startMenu)
@@ -32,4 +34,4 @@ New-ItemProperty -Path $key -Name DisplayIcon -Value $executable -Force | Out-Nu
 $uninstall = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' + (Join-Path $installRoot 'uninstall.ps1') + '"'
 New-ItemProperty -Path $key -Name UninstallString -Value $uninstall -Force | Out-Null
 Write-Output "Instalado: $executable"
-Write-Output "SHA256 de la aplicación: $actual"
+Write-Output 'Verificados con SHA256: ejecutable, aplicación, interfaz y motor.'
