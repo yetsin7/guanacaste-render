@@ -13,6 +13,29 @@ public partial class RenderPanel
     private bool _updatingSceneCategories;
     private readonly HashSet<string> _collapsedSceneGroups = [];
     private readonly Dictionary<Guid, Button> _sceneRowButtons = [];
+    private string _toolGroup = "create";
+    private bool _showNavigationHelp;
+
+    private void NavigationHelp_Click(object sender, RoutedEventArgs e)
+    {
+        _showNavigationHelp = !_showNavigationHelp;
+        InteractiveHintCard.Visibility = _showNavigationHelp && !_showingFinal ? Visibility.Visible : Visibility.Collapsed;
+        NavigationHelpButton.Background = _showNavigationHelp ? RailActive : RailInactive;
+    }
+
+    private void ToolGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string group }) SelectToolGroup(group);
+    }
+
+    private void SelectToolGroup(string group)
+    {
+        _toolGroup = group;
+        foreach (var button in SceneToolItems.Children.OfType<Button>())
+            button.Visibility = button.CommandParameter as string == group ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var tab in new[] { CreateToolsTab, EditToolsTab, ViewToolsTab })
+            tab.Background = tab.Tag as string == group ? RailActive : Brushes.Transparent;
+    }
     private bool StudioBusy => _renderStarting || _rendering || _renderingTour || _batchRunning;
 
     private void RefreshStudioActions()
@@ -22,6 +45,7 @@ public partial class RenderPanel
         ProjectCommands.IsEnabled = SectionTabs.IsEnabled = SceneToolItems.IsEnabled = !busy;
         SceneInspector.IsEnabled = !busy;
         ModeOverlayHost.IsEnabled = PhotoStrip.IsEnabled = !busy;
+        CreateToolsTab.IsEnabled = EditToolsTab.IsEnabled = ViewToolsTab.IsEnabled = !busy;
         TransformGizmo.IsHitTestVisible = !busy;
         foreach (var window in new Window?[] { _materialPicker, _scatterWindow, _peopleWindow, _fireWindow })
             if (window is { IsLoaded: true }) window.IsEnabled = !busy;
@@ -66,6 +90,7 @@ public partial class RenderPanel
 
     private void InitializeStudio()
     {
+        SelectToolGroup(_toolGroup);
         SceneToolsBar.SizeChanged += (_, _) => UpdateStudioOverlayLayout();
         PreviewKeyDown += (_, e) =>
         {
@@ -78,6 +103,8 @@ public partial class RenderPanel
             { SceneInspector.Visibility = Visibility.Collapsed; SceneInspectorButton.Focus(); e.Handled = true; }
             else if (_settingsWidthBeforeTheater is not null)
             { Theater_Click(TheaterButton, new RoutedEventArgs()); e.Handled = true; }
+            else if (_showNavigationHelp)
+            { NavigationHelp_Click(NavigationHelpButton, new RoutedEventArgs()); e.Handled = true; }
         };
     }
 

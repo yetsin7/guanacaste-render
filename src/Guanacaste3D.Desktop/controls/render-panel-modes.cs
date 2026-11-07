@@ -97,11 +97,12 @@ public partial class RenderPanel
         if (StudioBusy) mode = _mode;
         var panoramaChanged = (mode == RenderMode.Panorama) != PanoramaMode;
         _mode = mode;
-        SceneToolsBar.Margin = new Thickness(12, 0, 12, mode == RenderMode.Build ? 76 : 196);
+        var theater = _settingsWidthBeforeTheater is not null;
+        SceneToolsBar.Margin = new Thickness(12, 0, 12, theater || mode == RenderMode.Build ? 76 : 196);
         UpdateStudioOverlayLayout();
         foreach (var rail in new[] { StudioBuildModeButton, StudioPhotoModeButton, StudioMovieModeButton, StudioPanoramaModeButton })
             rail.Background = rail.Tag?.ToString() == mode.ToString() ? RailActive : RailInactive;
-        PhotoStrip.Visibility = mode == RenderMode.Photo ? Visibility.Visible : Visibility.Collapsed;
+        PhotoStrip.Visibility = !theater && mode == RenderMode.Photo ? Visibility.Visible : Visibility.Collapsed;
         if (_movieStrip is not null) _movieStrip.Visibility = mode == RenderMode.Movie ? Visibility.Visible : Visibility.Collapsed;
         if (_panoramaStrip is not null) _panoramaStrip.Visibility = mode == RenderMode.Panorama ? Visibility.Visible : Visibility.Collapsed;
         foreach (var (buttonMode, button) in _modeButtons)

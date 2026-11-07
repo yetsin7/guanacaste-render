@@ -34,6 +34,9 @@ internal static partial class InteractionChecks
             Check(Control<Border>("PhotoStrip").Visibility == Visibility.Collapsed, "Scene mode frees the viewport from the photo strip");
             Click("StudioPhotoModeButton");
             Check(Control<Border>("PhotoStrip").Visibility == Visibility.Visible, "Photo mode restores saved camera slots");
+            Click("ViewToolsTab");
+            Check(Control<Button>("TheaterButton").IsVisible && !Control<Button>("DuplicateObjectButton").IsVisible,
+                "View group exposes navigation without unrelated editing tools");
             Click("TheaterButton");
             Check(((ColumnDefinition)panel.FindName("SettingsColumn")).Width.Value == 0 &&
                   Control<Border>("SceneToolsBar").Margin.Bottom == 76, "Theater frees sidebar and photo-strip space");
@@ -58,6 +61,11 @@ internal static partial class InteractionChecks
             Check(source.HasScene && !Control<Border>("StudioWelcome").IsVisible && Control<Viewport3D>("InteractiveViewport").Children.Count > 2,
                 "Bundled sample opens from the real button and becomes navigable");
             SaveBitmap("artifacts/studio-checks/02-scene.png");
+            Check(!Control<Border>("InteractiveHintCard").IsVisible, "Navigation help stays out of the scene by default");
+            Click("NavigationHelpButton");
+            Check(Control<Border>("InteractiveHintCard").IsVisible, "Navigation help opens on request");
+            Click("NavigationHelpButton");
+            Click("EditToolsTab");
             Click("SceneInspectorButton");
             Pump();
             var items = source.SceneItems();
@@ -198,12 +206,20 @@ internal static partial class InteractionChecks
                 "Small desktop keeps project commands and a usable viewport");
             SaveBitmap("artifacts/studio-checks/06-compact.png");
             var toolItems = Control<System.Windows.Controls.Primitives.UniformGrid>("SceneToolItems");
-            Check(toolItems.Children.OfType<Button>().All(button =>
+            foreach (var group in new[] { "CreateToolsTab", "EditToolsTab", "ViewToolsTab" })
             {
-                var position = button.TranslatePoint(new Point(0, 0), toolItems);
-                return position.X >= 0 && position.X + button.ActualWidth <= toolItems.ActualWidth + 1 &&
-                    position.Y + button.ActualHeight <= toolItems.ActualHeight + 1;
-            }), "Every scene tool fits the compact toolbar without horizontal scrolling");
+                Click(group);
+                Pump();
+                var visible = toolItems.Children.OfType<Button>().Where(button => button.IsVisible).ToArray();
+                Check(visible.Length == 6 && visible.All(button =>
+                {
+                    var position = button.TranslatePoint(new Point(0, 0), toolItems);
+                    return position.X >= 0 && position.X + button.ActualWidth <= toolItems.ActualWidth + 1 &&
+                        position.Y + button.ActualHeight <= toolItems.ActualHeight + 1;
+                }), group + " exposes six fully accessible tools at compact size");
+            }
+            Check(Control<Border>("SceneToolsBar").ActualHeight < 125, "Grouped tools leave more vertical space for the scene");
+            SaveBitmap("artifacts/studio-checks/06-compact.png");
             Click("StudioMovieModeButton");
             Pump();
             var timeline = (Canvas)typeof(RenderPanel).GetField("_timeline", PrivateInstance)!.GetValue(panel)!;

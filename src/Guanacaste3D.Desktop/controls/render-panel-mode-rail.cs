@@ -39,5 +39,18 @@ public partial class RenderPanel
             button.Foreground = selected ? RailActiveText : RailInactiveText;
             button.FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal;
         }
+        if (SectionHeading is not null && SectionDescription is not null)
+        {
+            var (heading, description) = SectionTabs.SelectedIndex switch
+            {
+                1 => ("Imagen y efectos", "Construye el acabado final de tu imagen."),
+                2 => ("Cámara", "Encuadre, perspectiva y recorrido."),
+                3 => ("Materiales", "Elige una superficie y define su apariencia."),
+                4 => ("Calidad de render", "Equilibra detalle, tiempo y recursos."),
+                _ => ("Entorno", "Define la luz y la atmósfera de tu imagen.")
+            };
+            SectionHeading.Text = heading;
+            SectionDescription.Text = description;
+        }
     }
 }

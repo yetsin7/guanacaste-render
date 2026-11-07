@@ -124,7 +124,7 @@
     <Style x:Key="SettingsCard" TargetType="Border">
       <Setter Property="Background" Value="#1C1D20"/>
       <Setter Property="BorderBrush" Value="#344555"/>
-      <Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="0"/>
+      <Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/>
       <Setter Property="Padding" Value="16,14"/><Setter Property="Margin" Value="12,0,12,12"/>
     </Style>
     <!-- Section tabs: an icon above a short name, with an accent bar under the open one. -->
@@ -199,6 +199,11 @@
         </ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
+    <Style x:Key="WorkspaceModeButton" TargetType="Button" BasedOn="{StaticResource ViewportToolButton}">
+      <Setter Property="MinWidth" Value="66"/><Setter Property="MinHeight" Value="34"/>
+      <Setter Property="Padding" Value="12,7"/><Setter Property="FontSize" Value="12"/>
+      <Setter Property="BorderThickness" Value="0"/><Setter Property="Background" Value="Transparent"/>
+    </Style>
     <Style x:Key="RenderPrimaryButton" TargetType="Button" BasedOn="{StaticResource ViewportToolButton}">
       <Setter Property="Background" Value="#345F91"/><Setter Property="BorderBrush" Value="#5686BC"/>
       <Setter Property="Foreground" Value="White"/><Setter Property="FontWeight" Value="SemiBold"/>
@@ -240,7 +245,7 @@
   <Grid>
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
-      <ColumnDefinition x:Name="SettingsColumn" Width="430" MinWidth="410" MaxWidth="760"/>
+      <ColumnDefinition x:Name="SettingsColumn" Width="340" MinWidth="330" MaxWidth="760"/>
       <ColumnDefinition Width="Auto"/>
       <ColumnDefinition Width="*"/>
     </Grid.ColumnDefinitions>
@@ -258,48 +263,37 @@
     </Border>
     <Grid Grid.Row="1" Grid.Column="0" Background="#1C1D20">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="64"/>
+        <ColumnDefinition Width="0"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
-      <Border Grid.Column="0" Background="#1C1D20" BorderBrush="#304050" BorderThickness="0,0,1,0">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
-        <StackPanel Margin="0,10,0,0" HorizontalAlignment="Center">
-          <Button Style="{StaticResource RenderRailButton}" Tag="save" Click="SceneCommand_Click" ToolTip="Guardar proyecto"><StackPanel><TextBlock Text="▣" FontSize="21" HorizontalAlignment="Center"/><TextBlock Text="Guardar" FontSize="9" HorizontalAlignment="Center"/></StackPanel></Button>
-          <Button x:Name="StudioBuildModeButton" Style="{StaticResource RenderRailButton}" Tag="Build" Click="StudioMode_Click" ToolTip="Construcción y objetos"><StackPanel><TextBlock Text="⌂" FontSize="23" HorizontalAlignment="Center"/><TextBlock Text="Escena" FontSize="9" HorizontalAlignment="Center"/></StackPanel></Button>
-          <Button x:Name="StudioPhotoModeButton" Style="{StaticResource RenderRailButton}" Tag="Photo" Click="StudioMode_Click" ToolTip="Cámaras y fotografías"><StackPanel><TextBlock Text="◎" FontSize="23" HorizontalAlignment="Center"/><TextBlock Text="Foto" FontSize="9" HorizontalAlignment="Center"/></StackPanel></Button>
-          <Button x:Name="StudioMovieModeButton" Style="{StaticResource RenderRailButton}" Tag="Movie" Click="StudioMode_Click" ToolTip="Película y recorrido"><StackPanel><TextBlock Text="▷" FontSize="23" HorizontalAlignment="Center"/><TextBlock Text="Película" FontSize="9" HorizontalAlignment="Center"/></StackPanel></Button>
-          <Button x:Name="StudioPanoramaModeButton" Style="{StaticResource RenderRailButton}" Tag="Panorama" Click="StudioMode_Click" ToolTip="Panorama 360°"><StackPanel><TextBlock Text="◉" FontSize="23" HorizontalAlignment="Center"/><TextBlock Text="360°" FontSize="9" HorizontalAlignment="Center"/></StackPanel></Button>
-        </StackPanel>
-        </ScrollViewer>
-      </Border>
       <DockPanel Grid.Column="1" Background="#242528">
         <Border DockPanel.Dock="Top" Background="#202124" BorderBrush="#344555" BorderThickness="0,0,0,1" Padding="16,12">
           <StackPanel>
-            <TextBlock Text="ESTUDIO DE VISUALIZACIÓN" Foreground="#E3EDF0" FontSize="10.5" FontWeight="Bold"/>
+            <TextBlock Text="AJUSTES DE ESCENA" Foreground="#8CA0B6" FontSize="10" FontWeight="SemiBold"/>
 
         <StackPanel x:Name="RenderModeRail" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
 
-          <Button x:Name="RenderRailScene" Tag="0" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" ToolTip="{DynamicResource RenderPanel.RailEnvironmentHint}">
+          <Button x:Name="RenderRailScene" Tag="0" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" Width="48" ToolTip="{DynamicResource RenderPanel.RailEnvironmentHint}">
             <StackPanel Orientation="Vertical"><TextBlock Text="&#xE706;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="19" HorizontalAlignment="Center"/>
               <TextBlock Text="{DynamicResource RenderPanel.RailEnvironment}" FontSize="9" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
           </Button>
-          <Button x:Name="RenderRailImage" Tag="1" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" ToolTip="{DynamicResource RenderPanel.RailImageHint}">
+          <Button x:Name="RenderRailImage" Tag="1" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" Width="48" ToolTip="{DynamicResource RenderPanel.RailImageHint}">
             <StackPanel Orientation="Vertical"><TextBlock Text="&#xE91B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="19" HorizontalAlignment="Center"/>
               <TextBlock Text="{DynamicResource RenderPanel.RailImage}" FontSize="10" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
           </Button>
-          <Button x:Name="RenderRailCamera" Tag="2" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" ToolTip="{DynamicResource RenderPanel.RailCameraHint}">
+          <Button x:Name="RenderRailCamera" Tag="2" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" Width="48" ToolTip="{DynamicResource RenderPanel.RailCameraHint}">
             <StackPanel Orientation="Vertical"><TextBlock Text="&#xE722;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="19" HorizontalAlignment="Center"/>
               <TextBlock Text="{DynamicResource RenderPanel.RailCamera}" FontSize="10" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
           </Button>
-          <Button x:Name="RenderRailMaterials" Tag="3" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" ToolTip="{DynamicResource RenderPanel.RailMaterialHint}">
+          <Button x:Name="RenderRailMaterials" Tag="3" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" Width="48" ToolTip="{DynamicResource RenderPanel.RailMaterialHint}">
             <StackPanel Orientation="Vertical"><TextBlock Text="&#xE790;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="19" HorizontalAlignment="Center"/>
               <TextBlock Text="{DynamicResource RenderPanel.RailMaterial}" FontSize="10" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
           </Button>
-          <Button x:Name="RenderRailQuality" Tag="4" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" ToolTip="{DynamicResource RenderPanel.RailQualityHint}">
+          <Button x:Name="RenderRailQuality" Tag="4" Click="RenderRail_Click" Style="{StaticResource RenderRailButton}" Width="48" ToolTip="{DynamicResource RenderPanel.RailQualityHint}">
             <StackPanel Orientation="Vertical"><TextBlock Text="&#xE9E9;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="19" HorizontalAlignment="Center"/>
               <TextBlock Text="{DynamicResource RenderPanel.RailQuality}" FontSize="10" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
           </Button>
-          <Button x:Name="RenderRailAi" Click="AiRender_Click" Style="{StaticResource RenderRailButton}" ToolTip="{DynamicResource RenderPanel.RailAiHint}">
+          <Button x:Name="RenderRailAi" Click="AiRender_Click" Style="{StaticResource RenderRailButton}" Width="48" ToolTip="{DynamicResource RenderPanel.RailAiHint}">
             <StackPanel Orientation="Vertical">
               <TextBlock Text="&#xE753;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="19" HorizontalAlignment="Center"/>
               <TextBlock Text="{DynamicResource RenderPanel.RailAi}" FontSize="10" HorizontalAlignment="Center" Margin="0,5,0,0"/>
@@ -321,8 +315,12 @@
           </UniformGrid>
         </StackPanel>
       </Border>
+      <StackPanel DockPanel.Dock="Top" Margin="18,14,18,10">
+        <TextBlock x:Name="SectionHeading" Text="Entorno" FontSize="22" FontWeight="SemiBold" Foreground="#F3F6FB"/>
+        <TextBlock x:Name="SectionDescription" Text="Define la luz y la atmósfera de tu imagen." FontSize="12" Foreground="#9AAFC5" TextWrapping="Wrap" Margin="0,5,0,0"/>
+      </StackPanel>
       <!-- Render actions remain available in every settings section. -->
-      <Border DockPanel.Dock="Top" Style="{StaticResource SettingsCard}" Margin="12,8,12,8" Padding="10,6">
+      <Border DockPanel.Dock="Bottom" Style="{StaticResource SettingsCard}" Margin="12,8,12,8" Padding="10,6">
         <StackPanel>
           <Button x:Name="PauseButton" Content="{DynamicResource RenderPanel.Pause}"
                   Click="PauseButton_Click" MinHeight="28" Padding="16,4" IsEnabled="False">
@@ -330,7 +328,7 @@
               <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers>
             </Style></Button.Style>
           </Button>
-          <Grid Margin="0,10,0,0">
+          <Grid Margin="0,2,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
             <ToggleButton x:Name="PreviewToggle" IsChecked="False" Style="{StaticResource PreviewSwitch}" Margin="0,0,4,0"
@@ -870,7 +868,7 @@
                   <TextBlock x:Name="MaterialScopeInfo" Style="{StaticResource PanelHint}" Text="Material general por categoría"/>
                   <Button x:Name="MaterialScopeReset" Visibility="Collapsed" Content="Volver a materiales generales"
                           HorizontalAlignment="Left" Margin="0,6,0,3" Padding="8,4" Click="MaterialScopeReset_Click"/>
-                  <Button x:Name="MaterialPickerButton" Content="Biblioteca de materiales (esferas)…" Margin="0,12,0,0" Padding="10,8"
+                  <Button x:Name="MaterialPickerButton" Content="Abrir catálogo de materiales" Margin="0,12,0,0" Padding="10,8"
                           HorizontalAlignment="Stretch" FontWeight="SemiBold" Click="MaterialPicker_Click"
                           ToolTip="Abre la biblioteca grande: esferas agrupadas por tipo, un clic aplica el material a la superficie elegida"/>
                   <UniformGrid Columns="2" Margin="0,12,0,8">
@@ -1069,12 +1067,19 @@
 
     <DockPanel Grid.Row="1" Grid.Column="2">
       <DockPanel DockPanel.Dock="Top" Background="#1B1C1F" LastChildFill="True">
-      <Button x:Name="CopyCurrentViewButton" Content="{DynamicResource RenderPanel.CopyViewForAi}" Click="CopyCurrentView_Click"
+      <Button x:Name="NavigationHelpButton" Content="?" Click="NavigationHelp_Click" DockPanel.Dock="Right" Width="34" Height="34" Margin="4,0,10,0" ToolTip="Ayuda de navegación"/>
+      <Button x:Name="CopyCurrentViewButton" Content="Copiar vista" Click="CopyCurrentView_Click"
               DockPanel.Dock="Right" VerticalAlignment="Center" Margin="6,0"
               Padding="14,9" MinHeight="38" FontWeight="SemiBold"
-              Background="#DB174B5A" Foreground="#FFFFFF" BorderBrush="#72D8C4"
+              Background="#2A3543" Foreground="#DDE9F7" BorderBrush="#42546A"
               ToolTip="{DynamicResource RenderPanel.CopyViewForAiHint}"/>
-        <ContentControl x:Name="OutputModeHost" HorizontalContentAlignment="Left" VerticalContentAlignment="Center"/>
+                <ContentControl x:Name="OutputModeHost" Visibility="Collapsed"/>
+        <StackPanel Orientation="Horizontal" Margin="10,8">
+          <Button x:Name="StudioBuildModeButton" Content="Escena" Tag="Build" Click="StudioMode_Click" Style="{StaticResource WorkspaceModeButton}"/>
+          <Button x:Name="StudioPhotoModeButton" Content="Foto" Tag="Photo" Click="StudioMode_Click" Style="{StaticResource WorkspaceModeButton}"/>
+          <Button x:Name="StudioMovieModeButton" Content="Película" Tag="Movie" Click="StudioMode_Click" Style="{StaticResource WorkspaceModeButton}"/>
+          <Button x:Name="StudioPanoramaModeButton" Content="360°" Tag="Panorama" Click="StudioMode_Click" Style="{StaticResource WorkspaceModeButton}"/>
+        </StackPanel>
       </DockPanel>
     <Grid x:Name="ImageHost" ClipToBounds="True" SizeChanged="ImageHost_SizeChanged"
           AllowDrop="True" DragOver="MaterialDragOver" Drop="MaterialDrop">
@@ -1140,9 +1145,11 @@
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="SceneItemsPanel"/></ScrollViewer>
         </DockPanel>
       </Border>
-      <Border x:Name="StudioWelcome" Panel.ZIndex="20" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="30,110,30,230" MaxWidth="560" Background="#F0202124" Padding="30" CornerRadius="6" BorderBrush="#4B505A" BorderThickness="1">
-        <StackPanel>
-          <TextBlock Text="Tu próxima imagen empieza aquí." FontSize="24" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap"/>
+      <Border x:Name="StudioWelcome" Padding="36">
+        <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#18232F" Offset="0"/><GradientStop Color="#283D50" Offset="0.6"/><GradientStop Color="#17202A" Offset="1"/></LinearGradientBrush></Border.Background>
+        <StackPanel MaxWidth="520" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,190">
+          <TextBlock Text="GUANACASTE RENDER" FontSize="12" FontWeight="SemiBold" Foreground="#80CFFF" Margin="0,0,0,16"/>
+          <TextBlock Text="De proyecto a imagen." FontSize="36" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap"/>
           <TextBlock Text="Abre un proyecto de Guanacaste o explora la casa de ejemplo. Ajusta materiales y luz, guarda tus cámaras y crea una imagen." TextWrapping="Wrap" Foreground="#BCC6D3" FontSize="14" LineHeight="22" Margin="0,12,0,20"/>
           <WrapPanel>
             <Button Content="Abrir proyecto" Tag="open" Click="SceneCommand_Click" Style="{StaticResource RenderPrimaryButton}" Padding="18,10" Margin="0,0,8,8"/>
@@ -1185,7 +1192,7 @@
           </ScrollViewer>
         </DockPanel>
       </Border>
-      <Border x:Name="InteractiveHintCard" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="18,68,18,0" Padding="12,9" CornerRadius="0"
+      <Border x:Name="InteractiveHintCard" Visibility="Collapsed" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="18,16,18,0" Padding="12,9" CornerRadius="0"
               Background="#DB202124" BorderBrush="#526F75" BorderThickness="1" IsHitTestVisible="False">
         <StackPanel>
           <TextBlock Text="{DynamicResource RenderPanel.InteractiveTitle}" Foreground="#D8F4EF" FontWeight="SemiBold" FontSize="12"/>
@@ -1194,30 +1201,37 @@
       </Border>
       <!-- The compact strip keeps scene actions reachable without covering the central viewport. -->
       <Border x:Name="SceneToolsBar" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="12,0,12,196" Padding="4"
-              Background="#212226" BorderBrush="#47616D" BorderThickness="1" CornerRadius="5" MaxWidth="760">
+              Background="#EE20262E" BorderBrush="#47616D" BorderThickness="1" CornerRadius="9" MaxWidth="660">
         <StackPanel>
-          <TextBlock x:Name="SceneSelectionText" Text="Selecciona un objeto en la escena" Foreground="#B9C8D9" FontSize="12" Margin="8,5,8,7" TextTrimming="CharacterEllipsis"/>
-          <UniformGrid x:Name="SceneToolItems" Columns="9">
-            <Button AutomationProperties.ItemType="Importar" Style="{StaticResource SceneToolButton}"
+          <DockPanel Margin="4,0,4,5">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+              <Button x:Name="CreateToolsTab" Content="Crear" Tag="create" Click="ToolGroup_Click" Style="{StaticResource WorkspaceModeButton}"/>
+              <Button x:Name="EditToolsTab" Content="Editar" Tag="edit" Click="ToolGroup_Click" Style="{StaticResource WorkspaceModeButton}"/>
+              <Button x:Name="ViewToolsTab" Content="Vista" Tag="view" Click="ToolGroup_Click" Style="{StaticResource WorkspaceModeButton}"/>
+            </StackPanel>
+            <TextBlock x:Name="SceneSelectionText" Text="Selecciona un objeto" Foreground="#B9C8D9" FontSize="12" Margin="12,0,8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+          </DockPanel>
+          <UniformGrid x:Name="SceneToolItems" Columns="6">
+            <Button CommandParameter="create" AutomationProperties.ItemType="Importar" Style="{StaticResource SceneToolButton}"
                     Content="&#xE8B5;" ToolTip="{DynamicResource RenderTool.ImportHint}"
                     AutomationProperties.Name="{DynamicResource RenderTool.ImportHint}" Tag="import" Click="SceneCommand_Click"/>
-            <Button AutomationProperties.ItemType="Vegetación" Style="{StaticResource SceneToolButton}" Click="SceneScatter_Click" ToolTip="{DynamicResource RenderTool.Vegetation}" AutomationProperties.Name="{DynamicResource RenderTool.Vegetation}" Content="&#xE8B7;"/>
-            <Button AutomationProperties.ItemType="Personas" Style="{StaticResource SceneToolButton}" Click="ScenePeople_Click" ToolTip="{DynamicResource RenderTool.People}" AutomationProperties.Name="{DynamicResource RenderTool.People}" Content="&#xE77B;"/>
-            <Button AutomationProperties.ItemType="Fuego" Style="{StaticResource SceneToolButton}" Click="Fire_Click" ToolTip="{DynamicResource RenderTool.Fire}" AutomationProperties.Name="{DynamicResource RenderTool.Fire}" Content="&#xE7E8;"/>
-            <Button AutomationProperties.ItemType="Material" Style="{StaticResource SceneToolButton}" Click="MaterialPicker_Click" ToolTip="{DynamicResource RenderTool.Material}" AutomationProperties.Name="{DynamicResource RenderTool.Material}" Content="&#xE790;"/>
-            <Button AutomationProperties.ItemType="Foto" Style="{StaticResource SceneToolButton}" Click="NewPhoto_Click" ToolTip="{DynamicResource RenderTool.Photo}" AutomationProperties.Name="{DynamicResource RenderTool.Photo}" Content="&#xE722;"/>
-            <Button AutomationProperties.ItemType="Cámara" Style="{StaticResource SceneToolButton}" Click="SceneCamera_Click" ToolTip="{DynamicResource RenderTool.Camera}" AutomationProperties.Name="{DynamicResource RenderTool.Camera}" Content="&#xE713;"/>
-            <Button AutomationProperties.ItemType="Órbita ←" Style="{StaticResource SceneToolButton}" x:Name="OrbitLeftButton" Click="OrbitLeft_Click" ToolTip="{DynamicResource RenderTool.OrbitLeft}" AutomationProperties.Name="{DynamicResource RenderTool.OrbitLeft}" Content="&#xE7AD;"/>
-            <Button AutomationProperties.ItemType="Órbita →" Style="{StaticResource SceneToolButton}" x:Name="OrbitRightButton" Click="OrbitRight_Click" ToolTip="{DynamicResource RenderTool.OrbitRight}" AutomationProperties.Name="{DynamicResource RenderTool.OrbitRight}" Content="&#xE7AC;"/>
-            <Button AutomationProperties.ItemType="Encuadrar" Style="{StaticResource SceneToolButton}" x:Name="FrameModelButton" Click="FrameModel_Click" ToolTip="{DynamicResource RenderTool.Frame}" AutomationProperties.Name="{DynamicResource RenderTool.Frame}" Content="&#xE8A3;"/>
-            <Button AutomationProperties.ItemType="Girar" Style="{StaticResource SceneToolButton}" x:Name="RotateObjectButton" Tag="rotate" Click="SceneCommand_Click" ToolTip="{DynamicResource RenderTool.Rotate}" AutomationProperties.Name="{DynamicResource RenderTool.Rotate}" Content="&#xE7AD;"/>
-            <Button AutomationProperties.ItemType="Mover" x:Name="MoveGizmoButton" Style="{StaticResource SceneToolButton}" Click="MoveGizmo_Click" ToolTip="Mover objeto · arrastra sus ejes X, Y o Z" AutomationProperties.Name="Mover objeto" Content="&#xE759;"/>
-            <Button AutomationProperties.ItemType="Duplicar" Style="{StaticResource SceneToolButton}" x:Name="DuplicateObjectButton" Tag="duplicate" Click="SceneCommand_Click" ToolTip="{DynamicResource RenderTool.Duplicate}" AutomationProperties.Name="{DynamicResource RenderTool.Duplicate}" Content="&#xE8A7;"/>
-            <Button AutomationProperties.ItemType="Eliminar" Style="{StaticResource SceneToolButton}" x:Name="DeleteObjectButton" Tag="delete" Click="SceneCommand_Click" ToolTip="{DynamicResource RenderTool.Delete}" AutomationProperties.Name="{DynamicResource RenderTool.Delete}" Content="&#xE74D;"/>
-            <Button AutomationProperties.ItemType="Deshacer" Style="{StaticResource SceneToolButton}" x:Name="UndoSceneButton" Tag="undo" Click="SceneCommand_Click" ToolTip="{DynamicResource RenderTool.Undo}" AutomationProperties.Name="{DynamicResource RenderTool.Undo}" Content="&#xE7A7;"/>
-            <Button AutomationProperties.ItemType="Rehacer" x:Name="RedoSceneButton" Style="{StaticResource SceneToolButton}" Tag="redo" Click="SceneCommand_Click" ToolTip="Rehacer · Ctrl+Y" AutomationProperties.Name="Rehacer" Content="&#xE7A6;"/>
-            <Button AutomationProperties.ItemType="Efectos" Style="{StaticResource SceneToolButton}" x:Name="FxBarButton" Click="AddFx_Click" ToolTip="{DynamicResource RenderTool.Effects}" AutomationProperties.Name="{DynamicResource RenderTool.Effects}" Content="&#xE710;"/>
-            <Button AutomationProperties.ItemType="Ampliar" Style="{StaticResource SceneToolButton}" x:Name="TheaterButton" Click="Theater_Click" ToolTip="{DynamicResource RenderTool.Theater}" AutomationProperties.Name="{DynamicResource RenderTool.Theater}">
+            <Button CommandParameter="create" AutomationProperties.ItemType="Vegetación" Style="{StaticResource SceneToolButton}" Click="SceneScatter_Click" ToolTip="{DynamicResource RenderTool.Vegetation}" AutomationProperties.Name="{DynamicResource RenderTool.Vegetation}" Content="&#xE8B7;"/>
+            <Button CommandParameter="create" AutomationProperties.ItemType="Personas" Style="{StaticResource SceneToolButton}" Click="ScenePeople_Click" ToolTip="{DynamicResource RenderTool.People}" AutomationProperties.Name="{DynamicResource RenderTool.People}" Content="&#xE77B;"/>
+            <Button CommandParameter="create" AutomationProperties.ItemType="Fuego" Style="{StaticResource SceneToolButton}" Click="Fire_Click" ToolTip="{DynamicResource RenderTool.Fire}" AutomationProperties.Name="{DynamicResource RenderTool.Fire}" Content="&#xE7E8;"/>
+            <Button CommandParameter="create" AutomationProperties.ItemType="Material" Style="{StaticResource SceneToolButton}" Click="MaterialPicker_Click" ToolTip="{DynamicResource RenderTool.Material}" AutomationProperties.Name="{DynamicResource RenderTool.Material}" Content="&#xE790;"/>
+            <Button CommandParameter="create" AutomationProperties.ItemType="Foto" Style="{StaticResource SceneToolButton}" Click="NewPhoto_Click" ToolTip="{DynamicResource RenderTool.Photo}" AutomationProperties.Name="{DynamicResource RenderTool.Photo}" Content="&#xE722;"/>
+            <Button CommandParameter="view" AutomationProperties.ItemType="Cámara" Style="{StaticResource SceneToolButton}" Click="SceneCamera_Click" ToolTip="{DynamicResource RenderTool.Camera}" AutomationProperties.Name="{DynamicResource RenderTool.Camera}" Content="&#xE713;"/>
+            <Button CommandParameter="view" AutomationProperties.ItemType="Órbita ←" Style="{StaticResource SceneToolButton}" x:Name="OrbitLeftButton" Click="OrbitLeft_Click" ToolTip="{DynamicResource RenderTool.OrbitLeft}" AutomationProperties.Name="{DynamicResource RenderTool.OrbitLeft}" Content="&#xE7AD;"/>
+            <Button CommandParameter="view" AutomationProperties.ItemType="Órbita →" Style="{StaticResource SceneToolButton}" x:Name="OrbitRightButton" Click="OrbitRight_Click" ToolTip="{DynamicResource RenderTool.OrbitRight}" AutomationProperties.Name="{DynamicResource RenderTool.OrbitRight}" Content="&#xE7AC;"/>
+            <Button CommandParameter="view" AutomationProperties.ItemType="Encuadrar" Style="{StaticResource SceneToolButton}" x:Name="FrameModelButton" Click="FrameModel_Click" ToolTip="{DynamicResource RenderTool.Frame}" AutomationProperties.Name="{DynamicResource RenderTool.Frame}" Content="&#xE8A3;"/>
+            <Button CommandParameter="edit" AutomationProperties.ItemType="Girar" Style="{StaticResource SceneToolButton}" x:Name="RotateObjectButton" Tag="rotate" Click="SceneCommand_Click" ToolTip="{DynamicResource RenderTool.Rotate}" AutomationProperties.Name="{DynamicResource RenderTool.Rotate}" Content="&#xE7AD;"/>
+            <Button CommandParameter="edit" AutomationProperties.ItemType="Mover" x:Name="MoveGizmoButton" Style="{StaticResource SceneToolButton}" Click="MoveGizmo_Click" ToolTip="Mover objeto · arrastra sus ejes X, Y o Z" AutomationProperties.Name="Mover objeto" Content="&#xE759;"/>
+            <Button CommandParameter="edit" AutomationProperties.ItemType="Duplicar" Style="{StaticResource SceneToolButton}" x:Name="DuplicateObjectButton" Tag="duplicate" Click="SceneCommand_Click" ToolTip="{DynamicResource RenderTool.Duplicate}" AutomationProperties.Name="{DynamicResource RenderTool.Duplicate}" Content="&#xE8A7;"/>
+            <Button CommandParameter="edit" AutomationProperties.ItemType="Eliminar" Style="{StaticResource SceneToolButton}" x:Name="DeleteObjectButton" Tag="delete" Click="SceneCommand_Click" ToolTip="{DynamicResource RenderTool.Delete}" AutomationProperties.Name="{DynamicResource RenderTool.Delete}" Content="&#xE74D;"/>
+            <Button CommandParameter="edit" AutomationProperties.ItemType="Deshacer" Style="{StaticResource SceneToolButton}" x:Name="UndoSceneButton" Tag="undo" Click="SceneCommand_Click" ToolTip="{DynamicResource RenderTool.Undo}" AutomationProperties.Name="{DynamicResource RenderTool.Undo}" Content="&#xE7A7;"/>
+            <Button CommandParameter="edit" AutomationProperties.ItemType="Rehacer" x:Name="RedoSceneButton" Style="{StaticResource SceneToolButton}" Tag="redo" Click="SceneCommand_Click" ToolTip="Rehacer · Ctrl+Y" AutomationProperties.Name="Rehacer" Content="&#xE7A6;"/>
+            <Button CommandParameter="view" AutomationProperties.ItemType="Efectos" Style="{StaticResource SceneToolButton}" x:Name="FxBarButton" Click="AddFx_Click" ToolTip="{DynamicResource RenderTool.Effects}" AutomationProperties.Name="{DynamicResource RenderTool.Effects}" Content="&#xE710;"/>
+            <Button CommandParameter="view" AutomationProperties.ItemType="Ampliar" Style="{StaticResource SceneToolButton}" x:Name="TheaterButton" Click="Theater_Click" ToolTip="{DynamicResource RenderTool.Theater}" AutomationProperties.Name="{DynamicResource RenderTool.Theater}">
               <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE740;"/><TextBlock x:Name="TheaterText" Visibility="Collapsed"/></StackPanel>
             </Button>
           </UniformGrid>

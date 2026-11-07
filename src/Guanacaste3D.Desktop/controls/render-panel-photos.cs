@@ -57,8 +57,8 @@ public partial class RenderPanel
         }
         PhotoCards.Children.Clear();
         for (var index = 0; index < photos.Count; index++) PhotoCards.Children.Add(BuildPhotoCard(photos[index], index + 1));
-        // Lumion keeps ten camera slots per set: the free ones are shown so a click (or Ctrl+number) fills the next.
-        for (var number = photos.Count + 1; number <= SlotCount; number++) PhotoCards.Children.Add(BuildEmptySlot(number, number == photos.Count + 1));
+        // Show the next useful action instead of nine inactive placeholders; numbered shortcuts remain available.
+        if (photos.Count < SlotCount) PhotoCards.Children.Add(BuildEmptySlot(photos.Count + 1, true));
         PhotoEmptyHint.Visibility = Visibility.Collapsed;
         PhotoCountText.Text = photos.Count switch { 0 => "", 1 => "1 foto", _ => $"{photos.Count} fotos" };
     }
