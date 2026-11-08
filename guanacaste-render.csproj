@@ -19,9 +19,18 @@
     <Compile Include="program.cs" />
     <ProjectReference Include="src/GuanacasteRender.Desktop/GuanacasteRender.Desktop.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <RevitBridgeVersion Include="2025;2026;2027" />
+  </ItemGroup>
   <Target Name="RemoveStandaloneDesktopHostFromRenderOutput" AfterTargets="Build;Publish">
     <Delete Files="$(OutDir)Guanacaste3D.Desktop.exe" Condition="Exists('$(OutDir)Guanacaste3D.Desktop.exe')" />
     <Delete Files="$(PublishDir)Guanacaste3D.Desktop.exe"
             Condition="'$(PublishDir)' != '' and Exists('$(PublishDir)Guanacaste3D.Desktop.exe')" />
+  </Target>
+  <Target Name="PublishRevitBridge" AfterTargets="Publish">
+    <Copy SourceFiles="src\GuanacasteRender.RevitBridge\bin\$(Configuration)\desktop\Revit%(RevitBridgeVersion.Identity)\Guanacaste3D.RevitBridge.dll"
+          DestinationFolder="$(PublishDir)revit-bridge\Revit%(RevitBridgeVersion.Identity)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('src\GuanacasteRender.RevitBridge\bin\$(Configuration)\desktop\Revit%(RevitBridgeVersion.Identity)\Guanacaste3D.RevitBridge.dll')" />
   </Target>
 </Project>
