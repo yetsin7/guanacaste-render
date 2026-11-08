@@ -31,7 +31,7 @@ public partial class App : Application
 
             await ReportStepAsync(splash, 1, "Splash.Step.Interface");
             // Started without a document, the application shows the Home screen so the person chooses what to work on.
-            var window = new MainWindow(projectPath, showStartScreen: !RenderOnly);
+            var window = new MainWindow(projectPath, showStartScreen: projectPath is null);
             if (RenderOnly) window.EnterRenderWorkspace();
             MainWindow = window;
 
