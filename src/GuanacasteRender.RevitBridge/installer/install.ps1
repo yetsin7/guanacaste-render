@@ -17,13 +17,23 @@ $addinsRoot = Join-Path $env:APPDATA 'Autodesk\Revit\Addins'
 $done = @()
 if (-not $Uninstall) {
     if ($EnableThumbnails) {
-        & (Join-Path $package 'ensure-desktop-runtime.ps1') -PackageDirectory $package
-        & (Join-Path $package 'register-thumbnails.ps1') -ProviderDirectory (Join-Path $package 'thumbnail-handler') -AllowInProcess
+        $runtimeInstaller = Join-Path $package 'ensure-desktop-runtime.ps1'
+        $thumbnailInstaller = Join-Path $package 'register-thumbnails.ps1'
+        if (-not (Test-Path -LiteralPath $runtimeInstaller) -or -not (Test-Path -LiteralPath $thumbnailInstaller)) {
+            throw 'The optional thumbnail installer is not included in this package.'
+        }
+        & $runtimeInstaller -PackageDirectory $package
+        & $thumbnailInstaller -ProviderDirectory (Join-Path $package 'thumbnail-handler') -AllowInProcess
     }
     else {
         # Never enable in-process Explorer thumbnail parsing during a normal Revit add-in installation.
-        & (Join-Path $package 'register-thumbnails.ps1') -Unregister
-        Write-Host 'Explorer thumbnails disabled by default. Use -EnableThumbnails to opt in.'
+        $thumbnailInstaller = Join-Path $package 'register-thumbnails.ps1'
+        if (Test-Path -LiteralPath $thumbnailInstaller) {
+            & $thumbnailInstaller -Unregister
+        }
+        else {
+            Write-Host 'Explorer thumbnail scripts are not included; no thumbnail settings were changed.'
+        }
     }
 }
 
