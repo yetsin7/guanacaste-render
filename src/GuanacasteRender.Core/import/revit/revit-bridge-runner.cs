@@ -92,12 +92,13 @@ public static class RevitBridgeRunner
     /// <summary>
     /// Remembers where Guanacaste 3D runs from, so the Revit add-in's "Abrir en Guanacaste 3D" button can start it.
     /// </summary>
-    public static void RecordApplicationPath(string? executable)
+    public static void RecordApplicationPath(string? executable, bool renderOnly = false)
     {
         if (string.IsNullOrWhiteSpace(executable)) return;
         try
         {
-            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Guanacaste3D");
+            var productFolder = renderOnly ? "GuanacasteRender" : "Guanacaste3D";
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), productFolder);
             Directory.CreateDirectory(folder);
             var file = Path.Combine(folder, "application-path.txt");
             if (!File.Exists(file) || File.ReadAllText(file) != executable) File.WriteAllText(file, executable);
@@ -128,7 +129,7 @@ public static class RevitBridgeRunner
         }
         var installation = InstallationFor(year) ??
                            throw new InvalidDataException(Installations().Count == 0
-                               ? "Revit is not installed on this computer; export the model to IFC or .g3dx from Revit and import that file."
+                               ? "Revit is not installed on this computer; export the model to IFC, .g3d or .gr from Revit and import that file."
                                : "The project was saved by a newer Revit than the one installed on this computer.");
         InstallAddin(installation);
 

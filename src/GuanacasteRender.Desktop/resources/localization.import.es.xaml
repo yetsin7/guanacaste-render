@@ -25,8 +25,8 @@
   <!-- Revit projects opened as editable Guanacaste projects through the Revit bridge add-in. -->
   <sys:String x:Key="RevitImport.Title">Abrir proyecto de Revit</sys:String>
   <sys:String x:Key="RevitImport.Intro">Guanacaste 3D abrirá este proyecto con tu Revit {0}, leerá cada muro, puerta, ventana, losa, techo, mueble y equipo, y lo convertirá en un proyecto editable: muros, aberturas y losas nativos, y el resto como familias .g3df.</sys:String>
-  <sys:String x:Key="RevitImport.IntroExchange">Este archivo de intercambio (.g3dx) se convertirá en un proyecto editable: muros, aberturas y losas nativos, y el resto como familias .g3df.</sys:String>
-  <sys:String x:Key="RevitImport.NoRevit">No se encontró Revit 2025 o posterior en este equipo. Exporta el modelo desde Revit con el botón «Exportar a Guanacaste 3D» (archivo .g3dx) o a IFC, e importa ese archivo.</sys:String>
+  <sys:String x:Key="RevitImport.IntroExchange">Este archivo de intercambio anterior se convertirá en un proyecto editable: muros, aberturas y losas nativos, y el resto como familias .g3df.</sys:String>
+  <sys:String x:Key="RevitImport.NoRevit">No se encontró Revit 2025 o posterior en este equipo. Exporta el modelo desde Revit con el complemento Guanacaste a .g3d o .gr, o a IFC, e importa ese archivo.</sys:String>
   <sys:String x:Key="RevitImport.FirstRun">La primera vez, Revit pregunta si confías en el complemento «Guanacaste 3D»: elige «Cargar siempre». Revit se abrirá y se cerrará solo al terminar.</sys:String>
   <sys:String x:Key="RevitImport.Cached">Este proyecto ya se leyó antes y no ha cambiado: se abrirá de inmediato.</sys:String>
   <sys:String x:Key="RevitImport.SaveFamilies">Guardar también cada familia como archivo .g3df en una carpeta junto al modelo</sys:String>
@@ -67,7 +67,7 @@
   <sys:String x:Key="RevitImport.Reason.Element larger than 50 m">elemento de más de 50 m</sys:String>
   <sys:String x:Key="RevitImport.Reason.Room with several boundaries">habitación con varios contornos</sys:String>
   <sys:String x:Key="RevitImport.Reason.Room that is not rectangular">habitación no rectangular</sys:String>
-  <sys:String x:Key="Error.Revit is not installed on this computer; export the model to IFC or .g3dx from Revit and import that file.">Revit no está instalado en este equipo; exporta el modelo desde Revit a IFC o .g3dx e importa ese archivo.</sys:String>
+  <sys:String x:Key="Error.Revit is not installed on this computer; export the model to IFC, .g3d or .gr from Revit and import that file.">Revit no está instalado en este equipo; exporta el modelo desde Revit a .g3d, .gr o IFC e importa ese archivo.</sys:String>
   <sys:String x:Key="Error.The project was saved by a newer Revit than the one installed on this computer.">El proyecto se guardó con un Revit más nuevo que el instalado en este equipo.</sys:String>
   <sys:String x:Key="Error.Revit did not finish exporting the project in time.">Revit no terminó de exportar el proyecto a tiempo.</sys:String>
   <sys:String x:Key="Error.Revit closed before exporting the project.">Revit se cerró antes de exportar el proyecto. Si apareció el aviso del complemento sin firma, elige «Cargar siempre» e inténtalo de nuevo.</sys:String>

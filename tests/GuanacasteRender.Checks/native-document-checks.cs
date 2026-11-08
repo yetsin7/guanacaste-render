@@ -51,6 +51,15 @@ static class NativeDocumentChecks
         ProjectFile.Save(path, project);
         check(File.Exists(path + ".bak"), ".G3D atomic overwrite preserves the previous project as a backup");
 
+        var renderPath = Path.Combine(root, "render-project.gr");
+        ProjectFile.Save(renderPath, project);
+        var renderInfo = NativeDocumentStore.Inspect(renderPath);
+        var renderReopened = ProjectFile.Load(renderPath);
+        check(ProjectFile.IsNativePath(renderPath) &&
+              renderInfo.Kind == NativeDocumentKind.Project &&
+              renderReopened.Id == project.Id && renderReopened.Name == project.Name,
+            ".GR uses the same validated native project container and round-trips as .G3D");
+
         var wrongKindRejected = false;
         try { NativeDocumentStore.LoadFamily(path); }
         catch (InvalidDataException) { wrongKindRejected = true; }

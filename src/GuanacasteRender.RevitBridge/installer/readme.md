@@ -6,9 +6,10 @@ Restart Revit after installation. The add-in is installed for the current user;
 The bundled .NET 10 Desktop runtime is needed only if optional thumbnails are enabled;
 Windows may request administrator credentials for that prerequisite.
 
-The Guanacaste 3D ribbon exports the whole model or the active 3D view to `.g3dx`.
-New files contain a 512-pixel preview. The included optional Windows thumbnail component can preview older `.g3dx`, `.g3d`,
-`.g3dt`, and `.g3df` files, but is **disabled by default** because it currently runs
+The Guanacaste Render ribbon exports the whole model or the active 3D view to `.g3d` (Guanacaste 3D) or `.gr` (Guanacaste Render).
+Both project extensions contain the Revit exchange data and are converted to an editable project when opened. Existing `.g3dx`
+exchange files remain importable for compatibility.
+The included optional Windows thumbnail component can preview `.g3d`, `.gr`, `.g3dt`, and `.g3df` files, but is **disabled by default** because it currently runs
 inside Explorer and can continue work after a timeout. To accept that risk, run
 `./install.ps1 -EnableThumbnails` in PowerShell from the extracted directory.
 Refresh Explorer with F5 afterward. The desktop application is needed to open/edit

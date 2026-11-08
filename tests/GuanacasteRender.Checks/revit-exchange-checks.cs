@@ -85,7 +85,34 @@ static class RevitExchangeChecks
         check(sofa.Kinds.All(kind => kind == SurfaceKind.Upholstery), "Revit materials map onto render surfaces");
         check(document.WallTypes.Any(type => type.Construction == WallConstruction.Brick), "Brick wall layers give a brick wall type");
         document.Validate();
+        CheckProjectExtensionsImportExchange(file, check);
         RealModelCases(check);
+    }
+
+    private static void CheckProjectExtensionsImportExchange(ExchangeFile file, Action<bool, string> check)
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "guanacaste-revit-project-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            foreach (var extension in new[] { ".g3d", ".gr" })
+            {
+                var path = Path.Combine(folder, "from-revit" + extension);
+                File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(file,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+                var imported = ProjectFile.Load(path);
+                check(imported.Walls.Count == 2 && imported.Openings.Count == 2,
+                    $"A Revit export named {extension} converts into an editable Guanacaste project");
+                ProjectFile.Save(path, imported);
+                check(NativeDocumentStore.Inspect(path).Kind == NativeDocumentKind.Project &&
+                      ProjectFile.Load(path).Walls.Count == 2,
+                    $"Saving an imported {extension} project replaces the exchange payload with the native container");
+            }
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     }
 
     /// <summary>Cases found converting a real house: sunk walls, gables, split slabs and light cut-outs.</summary>

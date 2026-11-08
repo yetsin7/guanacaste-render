@@ -12,7 +12,7 @@ using Guanacaste3D.Core.Import.Revit;
 namespace Guanacaste3D.Desktop;
 
 /// <summary>
-/// Opens a Revit project (.rvt) or a Guanacaste exchange file (.g3dx) as a new editable project: it runs the user's
+/// Opens a Revit project (.rvt) or a legacy Guanacaste exchange file (.g3dx) as a new editable project: it runs the user's
 /// Revit through the bridge add-in when needed, converts the elements, optionally saves every family as a .g3df file,
 /// and reports what became native and what kept Revit's geometry before the project is opened.
 /// </summary>

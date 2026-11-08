@@ -435,7 +435,7 @@
   <sys:String x:Key="RenderPanel.RailQualityHint">Calidad, tamaño y equipo</sys:String>
   <sys:String x:Key="RenderPanel.RailAiHint">Render con IA: prepara la imagen para servicios externos</sys:String>
   <sys:String x:Key="Action.ExportRenderProject">Exportar a Guanacaste Render…</sys:String>
-  <sys:String x:Key="RenderExport.Filter">Proyecto Guanacaste (*.g3d)|*.g3d</sys:String>
+  <sys:String x:Key="RenderExport.Filter">Proyecto Guanacaste Render (*.gr)|*.gr</sys:String>
   <sys:String x:Key="RenderExport.Completed">Proyecto exportado para Guanacaste Render.</sys:String>
   <sys:String x:Key="RenderExport.SameFile">Selecciona un archivo diferente al proyecto original.</sys:String>
   <sys:String x:Key="RenderExport.ExternalAssets">La copia conserva referencias externas; mantén disponibles los archivos vinculados y materiales externos.</sys:String>

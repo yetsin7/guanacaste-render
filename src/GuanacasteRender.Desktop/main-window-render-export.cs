@@ -26,8 +26,8 @@ public partial class MainWindow
         var dialog = new SaveFileDialog
         {
             Filter = GetText("RenderExport.Filter"),
-            FileName = _session.Document.Name + "-render.g3d",
-            DefaultExt = ".g3d",
+            FileName = _session.Document.Name + "-render" + ProjectFile.RenderExtension,
+            DefaultExt = ProjectFile.RenderExtension,
             AddExtension = true
         };
         if (dialog.ShowDialog(this) != true) return;

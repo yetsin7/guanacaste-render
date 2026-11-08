@@ -1,11 +1,13 @@
 using System.Text;
 using System.Text.Json;
+using Guanacaste3D.Core.Import.Revit;
 
 namespace Guanacaste3D.Core;
 
 /// <summary>
-/// Project persistence facade. New projects use the official compressed .g3d
-/// container; the earlier .g3 envelope and .g3d.json preview remain readable.
+/// Project persistence facade. Guanacaste 3D uses the compressed .g3d container;
+/// Guanacaste Render uses the same container with a .gr extension. Earlier .g3
+/// and .g3d.json previews remain readable.
 /// </summary>
 public static class ProjectFile
 {
@@ -14,6 +16,9 @@ public static class ProjectFile
 
     /// <summary>Official Guanacaste 3D project extension.</summary>
     public const string NativeExtension = NativeDocumentStore.ProjectExtension;
+
+    /// <summary>Guanacaste Render project extension, using the same native container as .g3d.</summary>
+    public const string RenderExtension = NativeDocumentStore.RenderProjectExtension;
 
     /// <summary>Previous preview project extension, retained for compatibility.</summary>
     public const string PreviewExtension = ".g3";
@@ -35,7 +40,8 @@ public static class ProjectFile
         IsOfficialPath(path) || IsPreviewPath(path);
 
     public static bool IsOfficialPath(string path) =>
-        string.Equals(Path.GetExtension(path), NativeExtension, StringComparison.OrdinalIgnoreCase);
+        string.Equals(Path.GetExtension(path), NativeExtension, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(Path.GetExtension(path), RenderExtension, StringComparison.OrdinalIgnoreCase);
 
     public static bool IsPreviewPath(string path) =>
         string.Equals(Path.GetExtension(path), PreviewExtension, StringComparison.OrdinalIgnoreCase);
@@ -54,14 +60,21 @@ public static class ProjectFile
     public static BuildingDocument Load(string path)
     {
         if (IsOfficialPath(path))
+        {
+            if (ExchangeFile.IsExchangeJson(path))
+            {
+                var name = Path.GetFileNameWithoutExtension(path);
+                return ExchangeConverter.Convert(ExchangeFile.Read(path), name).Document;
+            }
             return NativeDocumentStore.LoadProject(path);
+        }
 
         if (!IsPreviewPath(path) && !IsLegacyPath(path))
         {
             if (NativeDocumentStore.TryInspect(path, out var info) && info?.Kind == NativeDocumentKind.Project)
                 return NativeDocumentStore.LoadProject(path);
             throw new InvalidDataException(
-                "Guanacaste 3D projects must be a valid .g3d container, .g3 preview, or .g3d.json legacy document.");
+                "Projects must be a valid .g3d or .gr container, .g3 preview, or .g3d.json legacy document.");
         }
 
         if (new FileInfo(path).Length > MaximumBytes)
@@ -208,8 +221,8 @@ public static class ProjectFile
     }
 
     /// <summary>
-    /// Saves an official .g3d project, or the older .g3 format when an existing
-    /// compatibility path is explicitly supplied.
+    /// Saves an official .g3d or .gr project container, or the older .g3 format
+    /// when an existing compatibility path is explicitly supplied.
     /// </summary>
     public static void Save(string path, BuildingDocument document)
     {
@@ -219,7 +232,7 @@ public static class ProjectFile
             return;
         }
         if (!IsPreviewPath(path))
-            throw new InvalidDataException("Native Guanacaste 3D projects must use the .g3d extension.");
+            throw new InvalidDataException("Native projects must use the .g3d or .gr extension.");
 
         document.Validate();
         var full = Path.GetFullPath(path);

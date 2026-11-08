@@ -33,6 +33,12 @@ internal static partial class InteractionChecks
         application.InitializeComponent();
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(application.Dispatcher));
         application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        if (Environment.GetEnvironmentVariable("G3D_ONLY") == "associated")
+        {
+            CheckAssociatedDocumentStartup();
+            Console.WriteLine("Desktop interaction checks passed (associated documents).");
+            return 0;
+        }
         if (App.RenderOnly)
         {
             RenderStudioChecks();

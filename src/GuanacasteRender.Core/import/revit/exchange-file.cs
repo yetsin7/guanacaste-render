@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 
 namespace Guanacaste3D.Core.Import.Revit;
@@ -47,6 +48,25 @@ public sealed class ExchangeFile
     /// <summary>Whether a path names an exchange file.</summary>
     public static bool IsExchangePath(string path) =>
         Path.GetExtension(path).Equals(Extension, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Recognizes an exchange payload exported with a .g3d or .gr filename.</summary>
+    public static bool IsExchangeJson(string path)
+    {
+        try
+        {
+            using var stream = File.OpenRead(path);
+            Span<byte> header = stackalloc byte[256];
+            var length = stream.Read(header);
+            var prefix = Encoding.UTF8.GetString(header[..length]).TrimStart('\uFEFF', ' ', '\t', '\r', '\n');
+            return prefix.StartsWith("{", StringComparison.Ordinal) &&
+                prefix.Contains("\"format\"", StringComparison.OrdinalIgnoreCase) &&
+                prefix.Contains("\"guanacaste-exchange\"", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
 }
 
 public sealed class ExchangeLevel

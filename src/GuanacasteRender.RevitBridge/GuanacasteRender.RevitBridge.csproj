@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    Revit add-in that writes a Revit project as a Guanacaste exchange file (.g3dx). Guanacaste 3D starts Revit with
+    Revit add-in that writes a Revit project as Guanacaste 3D (.g3d) or Guanacaste Render (.gr). Guanacaste starts Revit with
     this add-in to import .rvt files, and Revit users can also run it from the "Guanacaste 3D" ribbon tab. It is built
     only where Revit is installed, because it compiles against Revit's own API assemblies.
   -->

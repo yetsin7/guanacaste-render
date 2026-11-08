@@ -16,8 +16,8 @@ internal sealed record ExportJob(string Input, string Output, string Status);
 /// <summary>
 /// The add-in. Started by Guanacaste 3D with <c>G3D_REVIT_JOB</c> pointing at a job file, it opens the project as soon
 /// as Revit is ready, writes the exchange file, closes Revit and answers every dialog on the way so nothing waits for
-/// a person. Otherwise it adds a "Guanacaste 3D" ribbon tab with two buttons: export a .g3dx file, and open the model
-/// in Guanacaste 3D directly.
+/// a person. Otherwise it adds a "Guanacaste Render" ribbon tab with buttons to export a .g3d or .gr project and open
+/// the model in Guanacaste Render directly.
 /// </summary>
 public sealed class BridgeApplication : IExternalApplication
 {
@@ -36,24 +36,24 @@ public sealed class BridgeApplication : IExternalApplication
             application.Idling += OnIdling;
             return Result.Succeeded;
         }
-        const string tab = "Guanacaste 3D";
+        const string tab = "Guanacaste Render";
         try { application.CreateRibbonTab(tab); }
         catch (Autodesk.Revit.Exceptions.ArgumentException) { /* the tab exists already */ }
-        var panel = application.CreateRibbonPanel(tab, "Intercambio");
+        var panel = application.CreateRibbonPanel(tab, "Proyecto");
         var assembly = typeof(BridgeApplication).Assembly.Location;
-        panel.AddItem(new PushButtonData("G3DOpen", "Abrir en\nGuanacaste 3D", assembly, typeof(OpenInGuanacasteCommand).FullName)
+        panel.AddItem(new PushButtonData("G3DOpen", "Abrir en\nGuanacaste Render", assembly, typeof(OpenInGuanacasteCommand).FullName)
         {
             LargeImage = Icon("open", 32),
             Image = Icon("open", 16),
-            ToolTip = "Exporta el modelo y lo abre en Guanacaste 3D como un proyecto editable, listo para renderizar.",
+            ToolTip = "Exporta el modelo y lo abre en Guanacaste Render como un proyecto editable.",
             LongDescription = "Muros, puertas, ventanas, losas, cielos y techos planos se convierten en elementos nativos; " +
                               "muebles, equipos, escaleras y demás elementos, en familias .g3df."
         });
-        panel.AddItem(new PushButtonData("G3DExport", "Exportar\n.g3dx", assembly, typeof(ExportCommand).FullName)
+        panel.AddItem(new PushButtonData("G3DExport", "Exportar\n.g3d / .gr", assembly, typeof(ExportCommand).FullName)
         {
             LargeImage = Icon("export", 32),
             Image = Icon("export", 16),
-            ToolTip = "Guarda el modelo como archivo de intercambio .g3dx para abrirlo en Guanacaste 3D en cualquier computadora."
+            ToolTip = "Exporta el proyecto para Guanacaste 3D (.g3d) o Guanacaste Render (.gr)."
         });
         return Result.Succeeded;
     }
@@ -166,7 +166,7 @@ public sealed class BridgeApplication : IExternalApplication
     }
 }
 
-/// <summary>The "Exportar .g3dx" button: exports the active project to a file the user chooses.</summary>
+/// <summary>The export button: writes a project that Guanacaste 3D or Guanacaste Render can open.</summary>
 [Transaction(TransactionMode.ReadOnly)]
 public sealed class ExportCommand : IExternalCommand
 {
@@ -176,20 +176,26 @@ public sealed class ExportCommand : IExternalCommand
         {
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
-                Filter = "Intercambio Guanacaste 3D (*.g3dx)|*.g3dx",
-                FileName = Path.GetFileNameWithoutExtension(document.PathName is { Length: > 0 } path ? path : document.Title) + ".g3dx"
+                Filter = "Proyecto Guanacaste 3D (*.g3d)|*.g3d|Proyecto Guanacaste Render (*.gr)|*.gr",
+                FileName = Path.GetFileNameWithoutExtension(document.PathName is { Length: > 0 } path ? path : document.Title) + ".gr",
+                FilterIndex = 2,
+                AddExtension = false
             };
-            return dialog.ShowDialog() == true ? dialog.FileName : null;
+            if (dialog.ShowDialog() != true) return null;
+            var extension = dialog.FilterIndex == 1 ? ".g3d" : ".gr";
+            return string.Equals(Path.GetExtension(dialog.FileName), extension, StringComparison.OrdinalIgnoreCase)
+                ? dialog.FileName
+                : Path.ChangeExtension(dialog.FileName, extension);
         }, out var saved, ref message);
         if (exporter is null) return string.IsNullOrEmpty(message) ? Result.Cancelled : Result.Failed;
-        TaskDialog.Show("Guanacaste 3D",
+        TaskDialog.Show("Guanacaste Render",
             $"Se exportaron {exporter.ElementCount:N0} elementos ({exporter.TriangleCount:N0} triángulos) a\n{saved}\n\n" +
-            "Abra el archivo en Guanacaste 3D (Importar, o arrástrelo a la ventana) para convertirlo en un proyecto editable.");
+            "Abra el archivo en Guanacaste Render o Guanacaste 3D para convertirlo en un proyecto editable.");
         return Result.Succeeded;
     }
 }
 
-/// <summary>The "Abrir en Guanacaste 3D" button: exports to a temporary file and opens it in Guanacaste 3D.</summary>
+/// <summary>The open button: exports a temporary .gr project and opens it in Guanacaste Render.</summary>
 [Transaction(TransactionMode.ReadOnly)]
 public sealed class OpenInGuanacasteCommand : IExternalCommand
 {
@@ -198,16 +204,15 @@ public sealed class OpenInGuanacasteCommand : IExternalCommand
         var application = GuanacasteLocator.Find();
         if (application is null)
         {
-            TaskDialog.Show("Guanacaste 3D",
-                "No se encontró Guanacaste 3D en esta computadora. Ábralo una vez (así queda registrado) o use «Exportar .g3dx» " +
-                "y abra el archivo desde Guanacaste 3D.");
+            TaskDialog.Show("Guanacaste Render",
+                "No se encontró Guanacaste Render en esta computadora. Ábralo una vez o use «Exportar .g3d / .gr» y abra el archivo desde la aplicación.");
             return Result.Cancelled;
         }
-        var exporter = BridgeApplication.ExportActive(commandData, "Abrir en Guanacaste 3D", "Exportar y abrir", document =>
+        var exporter = BridgeApplication.ExportActive(commandData, "Abrir en Guanacaste Render", "Exportar y abrir", document =>
         {
             var folder = Path.Combine(Path.GetTempPath(), "Guanacaste3D", "revit");
             Directory.CreateDirectory(folder);
-            return Path.Combine(folder, string.Concat(document.Title.Split(Path.GetInvalidFileNameChars())) + ".g3dx");
+            return Path.Combine(folder, string.Concat(document.Title.Split(Path.GetInvalidFileNameChars())) + ".gr");
         }, out var saved, ref message);
         if (exporter is null) return string.IsNullOrEmpty(message) ? Result.Cancelled : Result.Failed;
         Process.Start(new ProcessStartInfo(application, $"\"{saved}\"") { UseShellExecute = false });
@@ -216,8 +221,7 @@ public sealed class OpenInGuanacasteCommand : IExternalCommand
 }
 
 /// <summary>
-/// Finds Guanacaste3D.Desktop.exe: Guanacaste writes its location to %LOCALAPPDATA%\Guanacaste3D\application-path.txt
-/// every time it starts, and the add-in installer may leave a copy next to the add-in.
+/// Finds GuanacasteRender.exe or Guanacaste3D.Desktop.exe from their per-user launch records.
 /// </summary>
 internal static class GuanacasteLocator
 {
@@ -225,6 +229,7 @@ internal static class GuanacasteLocator
     {
         var candidates = new[]
         {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GuanacasteRender", "application-path.txt"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Guanacaste3D", "application-path.txt"),
             Path.Combine(Path.GetDirectoryName(typeof(GuanacasteLocator).Assembly.Location)!, "application-path.txt")
         };

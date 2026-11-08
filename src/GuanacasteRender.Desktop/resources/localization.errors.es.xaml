@@ -183,7 +183,7 @@
   <sys:String x:Key="Error.An opening references a missing or mismatched type.">Una abertura usa un tipo inexistente o de otra clase.</sys:String>
   <sys:String x:Key="Error.Door and window type identifiers and names must be unique.">Los nombres de tipo deben ser únicos dentro de cada familia.</sys:String>
   <sys:String x:Key="Error.Element identifiers must be unique.">Los identificadores de elementos deben ser únicos.</sys:String>
-  <sys:String x:Key="Error.Guanacaste 3D projects must use .g3d, previous .g3, or legacy .g3d.json extension.">Los proyectos deben usar .g3d; también se pueden abrir archivos anteriores .g3 y .g3d.json.</sys:String>
+  <sys:String x:Key="Error.Guanacaste 3D projects must use .g3d, .gr, previous .g3, or legacy .g3d.json extension.">Los proyectos deben usar .g3d o .gr; también se pueden abrir archivos anteriores .g3 y .g3d.json.</sys:String>
   <sys:String x:Key="Error.Hosted openings cannot overlap.">Las aberturas de un mismo muro no pueden solaparse.</sys:String>
   <sys:String x:Key="Error.The opening can only move to a wall on its level.">La abertura solo puede pasar a un muro del mismo nivel.</sys:String>
   <sys:String x:Key="Error.Invalid column definitions.">Las columnas no son válidas.</sys:String>
@@ -227,7 +227,7 @@
   <sys:String x:Key="Error.Invalid project views.">Las vistas del proyecto no son válidas.</sys:String>
   <sys:String x:Key="Error.Invalid room definitions.">Las habitaciones no son válidas.</sys:String>
   <sys:String x:Key="Error.Invalid wall-type catalog.">El catálogo de tipos de muro no es válido.</sys:String>
-  <sys:String x:Key="Error.Native Guanacaste 3D projects must use the .g3d extension.">Los proyectos nativos de Guanacaste 3D deben usar la extensión .g3d.</sys:String>
+  <sys:String x:Key="Error.Native projects must use the .g3d or .gr extension.">Los proyectos nativos deben usar la extensión .g3d o .gr.</sys:String>
   <sys:String x:Key="Error.Project parameter identifiers and names must be unique.">Ya existe un parámetro con ese nombre.</sys:String>
   <sys:String x:Key="Error.The native project header is missing or unsupported.">El encabezado del proyecto nativo falta o no es compatible.</sys:String>
   <sys:String x:Key="Error.The document exceeds the supported element limits.">El documento supera los límites de elementos admitidos.</sys:String>
@@ -348,7 +348,7 @@
   <sys:String x:Key="Error.A nested-family reference is invalid.">Una referencia a una familia anidada no es válida.</sys:String>
   <sys:String x:Key="Error.A family operation references a missing dependency.">Una operación de familia hace referencia a una dependencia inexistente.</sys:String>
   <sys:String x:Key="Error.The family operation graph contains a circular dependency.">El grafo de operaciones de la familia contiene una dependencia circular.</sys:String>
-  <sys:String x:Key="Error.Guanacaste 3D projects must be a valid .g3d container, .g3 preview, or .g3d.json legacy document.">El proyecto debe ser un contenedor .g3d válido, un proyecto de vista previa .g3 o un documento heredado .g3d.json.</sys:String>
+  <sys:String x:Key="Error.Projects must be a valid .g3d or .gr container, .g3 preview, or .g3d.json legacy document.">El proyecto debe ser un contenedor .g3d o .gr válido, un proyecto de vista previa .g3 o un documento heredado .g3d.json.</sys:String>
   <sys:String x:Key="Error.The native document JSON payload is invalid.">El contenido JSON del documento nativo no es válido.</sys:String>
   <sys:String x:Key="Error.The native document compressed payload is invalid.">El contenido comprimido del documento nativo no es válido.</sys:String>
   <sys:String x:Key="Error.The PNG file must start with an IHDR chunk.">El archivo PNG debe comenzar con un encabezado IHDR.</sys:String>
@@ -448,7 +448,7 @@
   <sys:String x:Key="Error.Guanacaste 3D templates must use the .g3dt extension.">Las plantillas de Guanacaste 3D deben usar la extensión .g3dt.</sys:String>
   <sys:String x:Key="Error.The file is not a Guanacaste 3D template.">El archivo no es una plantilla de Guanacaste 3D.</sys:String>
   <sys:String x:Key="Error.A template cannot contain model elements or parameter values.">Una plantilla no puede contener elementos del modelo ni valores de parámetros.</sys:String>
-  <sys:String x:Key="Error.Guanacaste 3D projects must use .g3 or the legacy .g3d.json extension.">Los proyectos de Guanacaste 3D deben usar la extensión .g3 o la heredada .g3d.json.</sys:String>
+  <sys:String x:Key="Error.Guanacaste 3D projects must use .g3, .gr, or the legacy .g3d.json extension.">Los proyectos deben usar .g3 o .gr, o la extensión heredada .g3d.json.</sys:String>
   <sys:String x:Key="Error.Native Guanacaste 3D projects must use the .g3 extension.">Los proyectos nativos de Guanacaste 3D deben usar la extensión .g3.</sys:String>
   <sys:String x:Key="Error.The .g3 project header is missing or unsupported.">El encabezado del proyecto .g3 falta o no es compatible.</sys:String>
   <sys:String x:Key="Error.An elevator must rise to a higher level.">El ascensor debe subir a un nivel superior.</sys:String>

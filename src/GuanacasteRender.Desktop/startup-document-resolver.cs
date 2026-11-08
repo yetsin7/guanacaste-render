@@ -3,7 +3,7 @@ namespace Guanacaste3D.Desktop;
 /// <summary>Filters process arguments so only registered Guanacaste documents reach the workspace loader.</summary>
 internal static class StartupDocumentResolver
 {
-    private static readonly string[] SupportedExtensions = [".g3d.json", ".g3d", ".g3df", ".g3dt", ".g3", ".g3dx", ".rvt"];
+    private static readonly string[] SupportedExtensions = [".g3d.json", ".g3d", ".gr", ".g3df", ".g3dt", ".g3", ".g3dx", ".rvt"];
 
     /// <summary>
     /// Returns the first supported document path, ignoring executable paths, switches and unrelated shell arguments.

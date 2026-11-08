@@ -24,6 +24,7 @@ public static class NativeDocumentStore
     private const int HeaderBytes = 8 + 4 + 1 + 4 + 16 + 8 + 8 + 32;
 
     public const string ProjectExtension = ".g3d";
+    public const string RenderProjectExtension = ".gr";
     public const string FamilyExtension = ".g3df";
     public const string TemplateExtension = ".g3dt";
 
@@ -110,7 +111,11 @@ public static class NativeDocumentStore
 
     private static void Save<T>(string path, NativeDocumentKind kind, int schemaVersion, Guid documentId, T document)
     {
-        if (!string.Equals(Path.GetExtension(path), ExtensionFor(kind), StringComparison.OrdinalIgnoreCase))
+        var extension = Path.GetExtension(path);
+        var validExtension = string.Equals(extension, ExtensionFor(kind), StringComparison.OrdinalIgnoreCase) ||
+            kind == NativeDocumentKind.Project &&
+            string.Equals(extension, RenderProjectExtension, StringComparison.OrdinalIgnoreCase);
+        if (!validExtension)
             throw new InvalidDataException("The selected path does not use the required Guanacaste 3D document extension.");
         if (schemaVersion < 1 || documentId == Guid.Empty)
             throw new InvalidDataException("The document identity or schema version is invalid.");

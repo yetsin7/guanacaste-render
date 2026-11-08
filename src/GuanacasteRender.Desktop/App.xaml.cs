@@ -16,34 +16,49 @@ public partial class App : Application
     {
         base.OnStartup(e);
         CrashReporter.Install(this);
-        var projectPath = StartupDocumentResolver.FindSupportedPath(e.Args);
-        if (RenderOnly) Resources["App.Name"] = Resources["RenderProduct.Name"];
         var splash = new SplashWindow();
         splash.Show();
 
-        if (!RenderOnly) Core.Import.Revit.RevitBridgeRunner.RecordApplicationPath(Environment.ProcessPath);
-        await ReportStepAsync(splash, 0, "Splash.Step.Model");
-        // Core model and geometry code is pure computation, so it warms up off the UI thread.
-        await Task.Run(StartupWarmup.LoadModelLibraries);
+        try
+        {
+            var projectPath = StartupDocumentResolver.FindSupportedPath(e.Args);
+            if (RenderOnly) Resources["App.Name"] = Resources["RenderProduct.Name"];
 
-        await ReportStepAsync(splash, 1, "Splash.Step.Interface");
-        // Started without a document, the application shows the Home screen so the person chooses what to work on.
-        var window = new MainWindow(projectPath, showStartScreen: !RenderOnly);
-        if (RenderOnly) window.EnterRenderWorkspace();
-        MainWindow = window;
+            Core.Import.Revit.RevitBridgeRunner.RecordApplicationPath(Environment.ProcessPath, RenderOnly);
+            await ReportStepAsync(splash, 0, "Splash.Step.Model");
+            // Core model and geometry code is pure computation, so it warms up off the UI thread.
+            await Task.Run(StartupWarmup.LoadModelLibraries);
 
-        await ReportStepAsync(splash, 2, "Splash.Step.Workspace");
-        var rendered = new TaskCompletionSource();
-        window.ContentRendered += (_, _) => rendered.TrySetResult();
-        window.WindowState = WindowState.Maximized;
-        window.Show();
-        await rendered.Task;
+            await ReportStepAsync(splash, 1, "Splash.Step.Interface");
+            // Started without a document, the application shows the Home screen so the person chooses what to work on.
+            var window = new MainWindow(projectPath, showStartScreen: !RenderOnly);
+            if (RenderOnly) window.EnterRenderWorkspace();
+            MainWindow = window;
 
-        splash.Report(StartupStepCount, StartupStepCount, GetText("Splash.Step.Ready"));
-        splash.Close();
-        CrashReporter.OfferPendingReport(window);
-        // A copy left by a session that ended without saving is offered before anything else is opened.
-        if (projectPath is null && !RenderOnly) window.OfferRecovery();
+            await ReportStepAsync(splash, 2, "Splash.Step.Workspace");
+            var rendered = new TaskCompletionSource();
+            window.ContentRendered += (_, _) => rendered.TrySetResult();
+            window.WindowState = WindowState.Maximized;
+            window.Show();
+            await rendered.Task;
+
+            splash.Report(StartupStepCount, StartupStepCount, GetText("Splash.Step.Ready"));
+            splash.Close();
+            CrashReporter.OfferPendingReport(window);
+            // A copy left by a session that ended without saving is offered before anything else is opened.
+            if (projectPath is null && !RenderOnly) window.OfferRecovery();
+        }
+        catch (Exception exception)
+        {
+            CrashReporter.Log("startup", exception);
+            splash.Close();
+            MessageBox.Show(
+                $"No se pudo iniciar Guanacaste 3D.\n\n{exception.Message}",
+                "Error de inicio",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Shutdown(-1);
+        }
     }
 
     /// <summary>Publishes a startup step and yields so the splash paints before the next blocking step.</summary>

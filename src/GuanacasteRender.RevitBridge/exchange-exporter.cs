@@ -6,9 +6,9 @@ using Autodesk.Revit.DB.Architecture;
 namespace Guanacaste3D.RevitBridge;
 
 /// <summary>
-/// Writes a Revit document as a Guanacaste exchange file (.g3dx): JSON with the levels, the materials, the triangle
-/// meshes and every model element with the BIM data Guanacaste needs to rebuild it natively (wall centerlines, hosted
-/// door and window positions, slab outlines, rooms). Lengths are meters, Z up, in Revit's internal coordinates.
+/// Writes a Revit document as the Guanacaste exchange payload: JSON with the levels, materials, triangle meshes and
+/// model elements with the BIM data needed to rebuild them natively (wall centerlines, hosted door and window positions,
+/// slab outlines, rooms). Lengths are meters, Z up, in Revit's internal coordinates.
 /// Identical family geometry is written once: an instance refers to a mesh in its own frame (origin plus a turn about Z).
 /// The format is documented in docs/revit-import.md.
 /// </summary>

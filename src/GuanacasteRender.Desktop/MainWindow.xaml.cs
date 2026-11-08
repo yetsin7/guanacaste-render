@@ -219,10 +219,10 @@ public partial class MainWindow : Window
         {
             var dialog = new SaveFileDialog
             {
-                Filter = GetText("Dialog.ProjectFilter"),
-                FileName = _session.Document.Name + ProjectFile.NativeExtension,
+                Filter = GetText(App.RenderOnly ? "Dialog.RenderProjectFilter" : "Dialog.ProjectFilter"),
+                FileName = _session.Document.Name + (App.RenderOnly ? ProjectFile.RenderExtension : ProjectFile.NativeExtension),
                 AddExtension = true,
-                DefaultExt = ProjectFile.NativeExtension
+                DefaultExt = App.RenderOnly ? ProjectFile.RenderExtension : ProjectFile.NativeExtension
             };
             if (dialog.ShowDialog(this) != true) return false;
             path = dialog.FileName;

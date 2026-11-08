@@ -15,10 +15,11 @@ public static class ModelImporter
 
     /// <summary>File-dialog filter covering every format that can be inspected.</summary>
     public const string DialogFilter =
-        "Modelos 3D y CAD|*.obj;*.dxf;*.dwg;*.stl;*.ifc;*.skp;*.rvt;*.g3dx;*.rfa;*.rte;*.rft;*.dae;*.glb;*.gltf;*.g3d|" +
+        "Modelos 3D y CAD|*.obj;*.dxf;*.dwg;*.stl;*.ifc;*.skp;*.rvt;*.rfa;*.rte;*.rft;*.dae;*.glb;*.gltf;*.g3d;*.gr|" +
         "Wavefront OBJ (*.obj)|*.obj|AutoCAD DXF (*.dxf)|*.dxf|AutoCAD DWG (*.dwg)|*.dwg|" +
-        "IFC (*.ifc)|*.ifc|SketchUp (*.skp)|*.skp|Revit (*.rvt;*.rfa)|*.rvt;*.rfa;*.rte;*.rft|Intercambio Revit (*.g3dx)|*.g3dx|" +
-        "STL (*.stl)|*.stl|COLLADA (*.dae)|*.dae|glTF (*.glb;*.gltf)|*.glb;*.gltf|Proyecto Guanacaste 3D (*.g3d)|*.g3d";
+        "IFC (*.ifc)|*.ifc|SketchUp (*.skp)|*.skp|Revit (*.rvt;*.rfa)|*.rvt;*.rfa;*.rte;*.rft|" +
+        "STL (*.stl)|*.stl|COLLADA (*.dae)|*.dae|glTF (*.glb;*.gltf)|*.glb;*.gltf|" +
+        "Proyectos Guanacaste (*.g3d;*.gr)|*.g3d;*.gr";
 
     /// <summary>Recognizes the format from the file's first bytes, falling back to its extension.</summary>
     public static ImportFormat Detect(string path)

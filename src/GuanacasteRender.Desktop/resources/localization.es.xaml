@@ -1060,7 +1060,7 @@
   <sys:String x:Key="Status.Scale">1 : 100</sys:String>
   <sys:String x:Key="Status.ProjectNew">Proyecto nuevo.</sys:String>
   <sys:String x:Key="Status.ProjectOpened">Proyecto abierto correctamente.</sys:String>
-  <sys:String x:Key="Status.LegacyProjectImported">Proyecto anterior importado. Guárdalo como archivo .g3d.</sys:String>
+  <sys:String x:Key="Status.LegacyProjectImported">Proyecto anterior importado. Guárdalo como proyecto nativo .g3d o .gr.</sys:String>
   <sys:String x:Key="Status.QuantitiesExported">Cantidades BIM exportadas a CSV.</sys:String>
   <sys:String x:Key="Status.ProjectSaved">Proyecto guardado: {0}</sys:String>
   <sys:String x:Key="Status.ProjectFromTemplate">Proyecto creado desde la plantilla. Guárdalo para conservar cambios.</sys:String>
@@ -1179,8 +1179,9 @@
   <sys:String x:Key="Schedule.Room">Habitación</sys:String>
   <sys:String x:Key="Schedule.Floor">Suelo</sys:String>
   <sys:String x:Key="Schedule.Sheet">Lámina</sys:String>
-  <sys:String x:Key="Dialog.OpenProjectFilter">Proyecto Guanacaste 3D (*.g3d)|*.g3d|Proyecto de vista previa (*.g3)|*.g3|Proyecto anterior (*.g3d.json)|*.g3d.json</sys:String>
+  <sys:String x:Key="Dialog.OpenProjectFilter">Proyecto Guanacaste 3D (*.g3d)|*.g3d|Proyecto Guanacaste Render (*.gr)|*.gr|Proyecto de vista previa (*.g3)|*.g3|Proyecto anterior (*.g3d.json)|*.g3d.json</sys:String>
   <sys:String x:Key="Dialog.ProjectFilter">Proyecto Guanacaste 3D (*.g3d)|*.g3d|Proyecto de vista previa (*.g3)|*.g3</sys:String>
+  <sys:String x:Key="Dialog.RenderProjectFilter">Proyecto Guanacaste Render (*.gr)|*.gr|Proyecto Guanacaste 3D (*.g3d)|*.g3d|Proyecto de vista previa (*.g3)|*.g3</sys:String>
   <sys:String x:Key="Dialog.TemplateFilter">Plantilla Guanacaste 3D (*.g3dt)|*.g3dt</sys:String>
   <sys:String x:Key="Dialog.FamilyFilter">Familia Guanacaste 3D (*.g3df)|*.g3df</sys:String>
   <sys:String x:Key="Dialog.QuantitiesFilter">Tabla de cantidades (*.csv)|*.csv</sys:String>
