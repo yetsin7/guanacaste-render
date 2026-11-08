@@ -39,6 +39,12 @@ internal static partial class InteractionChecks
             Console.WriteLine("Desktop interaction checks passed (associated documents).");
             return 0;
         }
+        if (Environment.GetEnvironmentVariable("G3D_ONLY") == "save-name")
+        {
+            ProjectSaveNameChecks();
+            Console.WriteLine("Desktop interaction checks passed (project save names).");
+            return 0;
+        }
         if (App.RenderOnly)
         {
             RenderStudioChecks();

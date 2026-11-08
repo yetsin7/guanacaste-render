@@ -209,6 +209,15 @@ public partial class MainWindow : Window
     /// <summary>Saves a copy of the project at a user-selected location.</summary>
     private void SaveAs_Click(object sender, RoutedEventArgs e) => SaveProject(true);
 
+    /// <summary>Builds a readable default filename without characters Windows cannot store in a path.</summary>
+    private static string SafeProjectFileStem(string name)
+    {
+        var invalidCharacters = System.IO.Path.GetInvalidFileNameChars().ToHashSet();
+        var safe = new string(name.Select(character => invalidCharacters.Contains(character) ? '-' : character).ToArray())
+            .Trim().TrimEnd('.', ' ');
+        return safe.Length == 0 ? "Proyecto" : safe;
+    }
+
     /// <summary>Persists the active document and returns whether the operation completed.</summary>
     private bool SaveProject(bool choosePath)
     {
@@ -220,7 +229,8 @@ public partial class MainWindow : Window
             var dialog = new SaveFileDialog
             {
                 Filter = GetText(App.RenderOnly ? "Dialog.RenderProjectFilter" : "Dialog.ProjectFilter"),
-                FileName = _session.Document.Name + (App.RenderOnly ? ProjectFile.RenderExtension : ProjectFile.NativeExtension),
+                FileName = SafeProjectFileStem(_session.Document.Name) +
+                    (App.RenderOnly ? ProjectFile.RenderExtension : ProjectFile.NativeExtension),
                 AddExtension = true,
                 DefaultExt = App.RenderOnly ? ProjectFile.RenderExtension : ProjectFile.NativeExtension
             };
