@@ -35,15 +35,19 @@ internal static partial class InteractionChecks
             Pump();
             var home = (StartScreen)opened.FindName("StartScreenControl");
             Check(home.Visibility == Visibility.Visible &&
-                  home.FindName("OpenProjectButton") is Button &&
-                  home.FindName("NewProjectButton") is Button,
-                "Guanacaste Render starts on Home with Open and New project actions");
+                  ((Grid)home.FindName("ClassicHomeRoot")).Visibility == Visibility.Collapsed &&
+                  ((Grid)home.FindName("RenderHomeRoot")).Visibility == Visibility.Visible &&
+                  home.FindName("RenderOpenProjectButton") is Button &&
+                  home.FindName("RenderNewProjectButton") is Button,
+                "Guanacaste Render starts on its separate branded Home with Open and New project actions");
 
             home.Attach(new RecentProjectsStartHost(recentDocuments));
             Pump();
-            var items = (ListBox)home.FindName("Items");
+            var items = (ListBox)home.FindName("RenderRecentItems");
             Check(items.Items.Cast<StartItem>().Single().Title == "Proyecto reciente",
                 "Render Home lists the most recently opened project");
+            if (Environment.GetEnvironmentVariable("G3D_HOME_SCREENSHOT") is { Length: > 0 } screenshot)
+                SaveBitmap(screenshot);
             home.Attach((IStartScreenHost)opened);
 
             ((IStartScreenHost)opened).NewProject();

@@ -145,6 +145,7 @@
   </UserControl.Resources>
 
   <Grid>
+  <Grid x:Name="ClassicHomeRoot">
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="262"/>
       <ColumnDefinition Width="*"/>
@@ -274,5 +275,182 @@
                    Visibility="Collapsed"/>
       </Grid>
     </DockPanel>
+  </Grid>
+  <Grid x:Name="RenderHomeRoot" Visibility="Collapsed" Background="#14191C">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="72"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <Grid Background="#1B2226">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <StackPanel Orientation="Horizontal" Margin="34,0,0,0" VerticalAlignment="Center">
+        <Image Source="{StaticResource Brand.Logo}" Width="34" Height="34" Margin="0,0,12,0"/>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="GUANACASTE" Foreground="#E8F0EE" FontSize="11" FontWeight="SemiBold"/>
+          <TextBlock Text="RENDER" Foreground="#59D6B0" FontSize="17" FontWeight="Bold"/>
+        </StackPanel>
+      </StackPanel>
+      <TextBlock Grid.Column="1" Text="ESTUDIO DE VISUALIZACIÓN ARQUITECTÓNICA" Foreground="#71817F"
+                 FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+      <Button Grid.Column="2" Content="Acerca de Guanacaste Render" Click="About_Click"
+              Background="Transparent" BorderThickness="0" Foreground="#B4C0BD" FontSize="12"
+              Margin="0,0,34,0" Cursor="Hand"/>
+    </Grid>
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="310"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Border Background="#1A2225" BorderBrush="#293437" BorderThickness="0,0,1,0">
+        <StackPanel Margin="34,44,28,28">
+          <TextBlock Text="TU ESPACIO CREATIVO" Foreground="#59D6B0" FontSize="10" FontWeight="SemiBold"
+                     Margin="0,0,0,14"/>
+          <TextBlock Text="Da vida a tus&#xA;ideas." Foreground="#F1F4F2" FontSize="31" FontWeight="Light"
+                     LineHeight="38" Margin="0,0,0,12"/>
+          <TextBlock Text="Abre un proyecto y continúa donde lo dejaste, o empieza una nueva visualización."
+                     Foreground="#A1AEAA" FontSize="13" TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,30"/>
+          <Button x:Name="RenderNewProjectButton" Content="＋   Nuevo proyecto" Click="NewProject_Click"
+                  Height="46" HorizontalContentAlignment="Left" Padding="16,0" FontSize="14" FontWeight="SemiBold"
+                  Foreground="#10221D" Background="#59D6B0" BorderBrush="#59D6B0" Cursor="Hand" Margin="0,0,0,11">
+            <Button.Template>
+              <ControlTemplate TargetType="Button">
+                <Border x:Name="Frame" Background="{TemplateBinding Background}" CornerRadius="3"
+                        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" Padding="{TemplateBinding Padding}">
+                  <ContentPresenter VerticalAlignment="Center"/>
+                </Border>
+                <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Frame" Property="Background" Value="#7CE5C5"/>
+                    <Setter TargetName="Frame" Property="BorderBrush" Value="#7CE5C5"/>
+                  </Trigger>
+                </ControlTemplate.Triggers>
+              </ControlTemplate>
+            </Button.Template>
+          </Button>
+          <Button x:Name="RenderOpenProjectButton" Content="Abrir proyecto…" Click="OpenProject_Click" Height="44"
+                  HorizontalContentAlignment="Left" Padding="16,0" FontSize="13" Foreground="#E0E8E5"
+                  Background="#252F32" BorderBrush="#3A4849" Cursor="Hand">
+            <Button.Template>
+              <ControlTemplate TargetType="Button">
+                <Border x:Name="Frame" Background="{TemplateBinding Background}" CornerRadius="3"
+                        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" Padding="{TemplateBinding Padding}">
+                  <ContentPresenter VerticalAlignment="Center"/>
+                </Border>
+                <ControlTemplate.Triggers>
+                  <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Frame" Property="Background" Value="#303D3F"/>
+                    <Setter TargetName="Frame" Property="BorderBrush" Value="#59D6B0"/>
+                  </Trigger>
+                </ControlTemplate.Triggers>
+              </ControlTemplate>
+            </Button.Template>
+          </Button>
+          <Border Height="1" Background="#303B3D" Margin="0,28,0,20"/>
+          <TextBlock Text="FORMATOS COMPATIBLES" Foreground="#74817F" FontSize="10" FontWeight="SemiBold"
+                     Margin="0,0,0,9"/>
+          <TextBlock Text=".GR   ·   .G3D" Foreground="#C0CCC8" FontSize="12" FontWeight="SemiBold"/>
+          <TextBlock Text="Proyectos nativos y modelos exportados desde Revit."
+                     Foreground="#84918D" FontSize="11" TextWrapping="Wrap" LineHeight="17" Margin="0,6,0,0"/>
+          <Button x:Name="RenderBackToProjectButton" Content="Volver al proyecto abierto  →"
+                  Click="BackToProject_Click" Background="Transparent" BorderThickness="0" Foreground="#59D6B0"
+                  HorizontalContentAlignment="Left" Padding="0" Margin="0,26,0,0" Cursor="Hand"
+                  Visibility="Collapsed"/>
+        </StackPanel>
+      </Border>
+      <Grid Grid.Column="1" Margin="44,34,42,30">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="CONTINÚA TU TRABAJO" Foreground="#59D6B0" FontSize="10" FontWeight="SemiBold"
+                       />
+            <TextBlock Text="Proyectos recientes" Foreground="#F1F4F2" FontSize="25" FontWeight="SemiBold"
+                       Margin="0,7,0,0"/>
+          </StackPanel>
+          <TextBlock Text="PROYECTOS DISPONIBLES" Foreground="#8D9A96" FontSize="10"
+                     HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,2,4"/>
+        </Grid>
+        <Border Grid.Row="1" Height="1" Background="#303A3C" Margin="0,20,0,20"/>
+        <Grid Grid.Row="2">
+          <ListBox x:Name="RenderRecentItems" Background="Transparent" BorderThickness="0"
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto" PreviewMouseLeftButtonUp="RenderItems_Click"
+                   KeyDown="RenderItems_KeyDown">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Border Width="248" Height="244" Margin="0,0,16,16" Background="#20292C" BorderBrush="#354144"
+                        BorderThickness="1" CornerRadius="4" ToolTip="{Binding ToolTip}" Opacity="{Binding TileOpacity}">
+                  <Grid>
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="158"/>
+                      <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Background="#293638" ClipToBounds="True">
+                      <Image Source="{Binding Thumbnail}" Stretch="UniformToFill"
+                             RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </Border>
+                    <Border Grid.Row="1" Background="#20292C" Padding="13,10">
+                      <Grid>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <TextBlock Text="{Binding Title}" Foreground="#EAF0ED" FontSize="13" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Row="1" Text="{Binding Detail}" Foreground="#91A09B" FontSize="11"
+                                   Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
+                        <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="#31423E"
+                                Padding="5,2" CornerRadius="2" Margin="0,0,0,0">
+                          <TextBlock Text="{Binding Badge}" Foreground="#8FE5C8" FontSize="9" FontWeight="Bold"/>
+                        </Border>
+                      </Grid>
+                    </Border>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+            <ListBox.ItemContainerStyle>
+              <Style TargetType="ListBoxItem">
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                  <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                      <Border x:Name="Frame" BorderBrush="Transparent" BorderThickness="2">
+                        <ContentPresenter/>
+                      </Border>
+                      <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                          <Setter TargetName="Frame" Property="BorderBrush" Value="#59D6B0"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                          <Setter TargetName="Frame" Property="BorderBrush" Value="#59D6B0"/>
+                        </Trigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                  </Setter.Value>
+                </Setter>
+              </Style>
+            </ListBox.ItemContainerStyle>
+          </ListBox>
+          <StackPanel x:Name="RenderEmptyState" HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Visibility="Collapsed">
+            <TextBlock Text="Aún no hay proyectos recientes" Foreground="#E4ECE8" FontSize="18"
+                       FontWeight="SemiBold" HorizontalAlignment="Center"/>
+            <TextBlock Text="Crea un proyecto o abre un archivo para verlo aquí la próxima vez."
+                       Foreground="#91A09B" FontSize="12" TextWrapping="Wrap" TextAlignment="Center"
+                       MaxWidth="360" Margin="0,9,0,0"/>
+          </StackPanel>
+        </Grid>
+      </Grid>
+    </Grid>
+  </Grid>
   </Grid>
 </UserControl>

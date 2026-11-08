@@ -78,6 +78,8 @@ public partial class StartScreen : UserControl
     public StartScreen()
     {
         InitializeComponent();
+        ClassicHomeRoot.Visibility = App.RenderOnly ? Visibility.Collapsed : Visibility.Visible;
+        RenderHomeRoot.Visibility = App.RenderOnly ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public void Attach(IStartScreenHost host)
@@ -91,7 +93,8 @@ public partial class StartScreen : UserControl
     {
         if (_host is null) return;
         BackToProjectLink.Visibility = _host.HasOpenProject ? Visibility.Visible : Visibility.Collapsed;
-        var samples = SamplesTab.IsChecked == true;
+        RenderBackToProjectButton.Visibility = _host.HasOpenProject ? Visibility.Visible : Visibility.Collapsed;
+        var samples = !App.RenderOnly && SamplesTab.IsChecked == true;
         PageTitle.Text = Text(samples ? "Start.Samples" : "Start.Recent");
         SearchHint.Text = Text(samples ? "Start.SearchSamples" : "Start.Search");
         IEnumerable<StartItem> items = samples ? SampleItems() : RecentItems();
@@ -117,6 +120,8 @@ public partial class StartScreen : UserControl
         };
         var list = items.ToList();
         Items.ItemsSource = list;
+        RenderRecentItems.ItemsSource = list;
+        RenderEmptyState.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Text = Text(query.Length > 0 ? "Start.NoMatches" : "Start.Empty");
         EmptyText.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -296,6 +301,19 @@ public partial class StartScreen : UserControl
     {
         if (ItemsControl.ContainerFromElement(Items, (DependencyObject)e.OriginalSource) is ListBoxItem container)
             Open(container.DataContext as StartItem);
+    }
+
+    private void RenderItems_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (ItemsControl.ContainerFromElement(RenderRecentItems, (DependencyObject)e.OriginalSource) is ListBoxItem container)
+            Open(container.DataContext as StartItem);
+    }
+
+    private void RenderItems_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+        Open(RenderRecentItems.SelectedItem as StartItem);
+        e.Handled = true;
     }
 
     private void Items_DoubleClick(object sender, MouseButtonEventArgs e) => e.Handled = true;
