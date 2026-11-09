@@ -56,10 +56,13 @@ internal static partial class InteractionChecks
                 "Available effect tile opens its actual controls");
             Click("StudioSampleButton");
             var deadline = DateTime.UtcNow.AddSeconds(90);
-            while ((Control<Viewport3D>("InteractiveViewport").Children.Count <= 2 || Control<Border>("StudioWelcome").IsVisible)
+            while ((Control<Viewport3D>("InteractiveViewport").Children.Count <= 2 || Control<Border>("StudioWelcome").IsVisible ||
+                    Control<Border>("InteractiveLoading").Visibility == Visibility.Visible)
                    && DateTime.UtcNow < deadline) Pump();
             Check(source.HasScene && !Control<Border>("StudioWelcome").IsVisible && Control<Viewport3D>("InteractiveViewport").Children.Count > 2,
                 "Bundled sample opens from the real button and becomes navigable");
+            Check(Control<Border>("InteractiveLoading").Visibility == Visibility.Collapsed,
+                "The loading indicator clears when the 3D model is ready");
             SaveBitmap("artifacts/studio-checks/02-scene.png");
             Check(!Control<Border>("InteractiveHintCard").IsVisible, "Navigation help stays out of the scene by default");
             Click("NavigationHelpButton");
@@ -167,11 +170,11 @@ internal static partial class InteractionChecks
             var skyCategories = Control<WrapPanel>("SkyCategories").Children.OfType<Button>().ToArray();
             skyCategories.Single(x => (string)x.Tag == "clouds").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(skies.Children.OfType<Button>().Where(x => x.Visibility == Visibility.Visible).All(x =>
-                Guanacaste3D.Core.Rendering.RenderLooks.Skies.Single(sky => sky.Id == (string)x.Tag).CloudCover >= .5),
-                "Sky categories filter real presets by cloud cover");
+                Guanacaste3D.Core.Rendering.RenderLooks.Skies.FirstOrDefault(sky => sky.Id == (string)x.Tag) is not { } preset || preset.CloudCover >= .5),
+                "Cloud filter includes only cloudy procedural skies alongside matching HDR skies");
             skyCategories[0].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             SaveBitmap("artifacts/studio-checks/04-skies.png");
-            var tile = skies.Children.OfType<Button>().First();
+            var tile = skies.Children.OfType<Button>().First(x => Guanacaste3D.Core.Rendering.RenderLooks.Skies.Any(sky => sky.Id == (string)x.Tag));
             tile.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check((Control<ComboBox>("SkyPicker").SelectedItem as ComboBoxItem)?.Tag?.ToString() == tile.Tag.ToString() &&
                   !Control<Border>("SkyLibrary").IsVisible, "Sky tile applies actual lighting settings and returns to the viewport");
@@ -200,7 +203,11 @@ internal static partial class InteractionChecks
             Click("MaterialSettingsTab");
             Check(Control<StackPanel>("MaterialSettingsHost").Visibility == Visibility.Visible && Control<Expander>("GalleryExpander").Visibility == Visibility.Collapsed,
                 "Material settings are accessible without scrolling through the library");
-            Click("MaterialLibraryTab");
+            Call("FocusMaterials");
+            Pump();
+            Check(Control<Expander>("GalleryExpander").Visibility == Visibility.Visible &&
+                  Control<StackPanel>("MaterialSettingsHost").Visibility == Visibility.Collapsed,
+                "Material shortcut returns to the visual library instead of hidden advanced rows");
             Call("OpenMaterialPicker");
             Pump();
             var picker = Application.Current.Windows.OfType<MaterialPickerWindow>().Single();

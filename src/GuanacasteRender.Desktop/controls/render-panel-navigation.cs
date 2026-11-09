@@ -15,8 +15,9 @@ public partial class RenderPanel
         SectionTabs.SelectedIndex = MaterialsTab;
         Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
         {
-            MaterialRows.BringIntoView();
-            MaterialRows.Children.OfType<DockPanel>().FirstOrDefault()?.Children.OfType<ComboBox>().FirstOrDefault()?.Focus();
+            MaterialView_Click(MaterialLibraryTab, new RoutedEventArgs());
+            MaterialLibraryTab.BringIntoView();
+            MaterialLibraryTab.Focus();
         }));
     }
 

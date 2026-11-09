@@ -55,6 +55,11 @@ internal static partial class InteractionChecks
             Check(home.Visibility == Visibility.Collapsed &&
                   (bool)typeof(MainWindow).GetField("_projectChosen", PrivateInstance)!.GetValue(opened)!,
                 "Creating a new project from Render Home enters the workspace");
+            var renderPanel = (RenderPanel)opened.FindName("RenderPanelControl");
+            var emptyAction = (Button)renderPanel.FindName("EmptyProjectImportButton");
+            Check(emptyAction.IsVisible && emptyAction.Content.ToString()!.Contains("Importar") &&
+                  ((Border)renderPanel.FindName("StudioWelcome")).IsVisible,
+                "An empty project shows an import action instead of a second welcome screen");
         }
         finally
         {

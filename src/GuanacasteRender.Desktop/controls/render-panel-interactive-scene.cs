@@ -22,14 +22,21 @@ public partial class RenderPanel
         var source = _source;
         var version = source.SceneVersion;
         var request = ++_interactiveSceneRequest;
+        InteractiveLoading.Visibility = source.HasScene ? Visibility.Visible : Visibility.Collapsed;
         try
         {
             var snapshot = await source.GetInteractiveSceneAsync().ConfigureAwait(false);
             if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished) return;
             await Dispatcher.InvokeAsync(() =>
             {
-                if (request != _interactiveSceneRequest || source != _source ||
-                    version != source.SceneVersion || !IsVisible) return;
+                if (request != _interactiveSceneRequest || source != _source) return;
+                if (!IsVisible) { InteractiveLoading.Visibility = Visibility.Collapsed; return; }
+                if (version != source.SceneVersion)
+                {
+                    // A document edit can arrive before its scene notification; rebuild the newest version.
+                    RefreshInteractiveScene();
+                    return;
+                }
                 InteractiveViewport.Children.Clear();
                 InteractiveViewport.Children.Add(new ModelVisual3D { Content = new AmbientLight(Color.FromRgb(150, 150, 150)) });
                 InteractiveViewport.Children.Add(new ModelVisual3D
@@ -38,6 +45,7 @@ public partial class RenderPanel
                 });
                 foreach (var model in snapshot.Models)
                     InteractiveViewport.Children.Add(new ModelVisual3D { Content = model });
+                InteractiveLoading.Visibility = Visibility.Collapsed;
                 UpdateInteractiveCamera();
                 ScheduleStyledPreview();
             });
@@ -49,7 +57,10 @@ public partial class RenderPanel
                 _ = Dispatcher.BeginInvoke(() =>
                 {
                     if (request == _interactiveSceneRequest && source == _source && IsVisible)
+                    {
+                        InteractiveLoading.Visibility = Visibility.Collapsed;
                         StatusText.Text = UiText.Get("RenderPanel.ModelViewFailed");
+                    }
                 });
         }
     }
