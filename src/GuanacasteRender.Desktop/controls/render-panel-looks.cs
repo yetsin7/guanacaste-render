@@ -74,7 +74,7 @@ public partial class RenderPanel
             SunStrengthSlider.Value = preset.SunStrength;
             SkyStrengthSlider.Value = preset.SkyStrength;
             // Picking a built-in procedural sky deliberately replaces any custom HDRI, not just its label.
-            if (_hdriEnvironment is not null) ClearHdriForDocument();
+            ClearHdriForDocument();
         }
         finally
         {

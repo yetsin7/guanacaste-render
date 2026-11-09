@@ -321,7 +321,7 @@ public partial class RenderPanel
         FxTiles.Children.Clear();
         var query = FxSearch.Text.Trim();
         var effects = query.Length == 0
-            ? (category == FxCategory.Featured ? ReferenceFeaturedEffects() : RenderFx.In(category))
+            ? RenderFx.In(category)
             : RenderFx.All.Where(effect => effect.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase) || effect.Description.Contains(query, StringComparison.CurrentCultureIgnoreCase));
         foreach (var effect in effects) FxTiles.Children.Add(BuildFxTile(effect));
     }

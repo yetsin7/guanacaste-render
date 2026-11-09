@@ -146,15 +146,17 @@ public partial class RenderPanel
         var count = 0;
         foreach (var tile in SkyTiles.Children.OfType<Button>())
         {
-            var sky = RenderLooks.Skies.First(x => x.Id == tile.Tag as string);
-            var categoryMatches = _skyCategory switch
+            var id = tile.Tag as string;
+            var real = RealSkies.FirstOrDefault(x => x.Id == id);
+            var sky = RenderLooks.Skies.FirstOrDefault(x => x.Id == id);
+            var categoryMatches = real is not null ? _skyCategory == "all" || real.Categories.Contains(_skyCategory) : sky is not null && (_skyCategory switch
             {
                 "day" => sky.SolarHour is > 7 and < 17,
                 "sunset" => sky.SolarHour is >= 17 and <= 19 || sky.SolarHour is >= 5 and <= 7,
                 "night" => sky.SolarHour > 19 || sky.SolarHour < 5,
                 "clouds" => sky.CloudCover >= .5,
                 _ => true
-            };
+            });
             var matches = categoryMatches && MaterialCatalogSearch.Matches(SkySearch.Text.Trim(), tile.ToolTip?.ToString() ?? "");
             tile.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
             if (matches) count++;
@@ -242,11 +244,60 @@ public partial class RenderPanel
               (matches.Length > 250 ? " · Mostrando 250; busca para acotar." : "");
     }
 
+    private sealed record RealSky(string Id, string Name, string[] Categories);
+    private static readonly RealSky[] RealSkies =
+    [
+        new("kloofendal_43d_clear_puresky", "Día despejado", ["day"]),
+        new("kloofendal_48d_partly_cloudy_puresky", "Día con nubes suaves", ["day", "clouds"]),
+        new("kloofendal_38d_partly_cloudy_puresky", "Día parcialmente nublado", ["day", "clouds"]),
+        new("kloofendal_overcast_puresky", "Cielo cubierto", ["day", "clouds"]),
+        new("kloofendal_28d_misty_puresky", "Día con neblina", ["day", "clouds"]),
+        new("kloofendal_misty_morning_puresky", "Mañana con neblina", ["day", "clouds"]),
+        new("belfast_sunset_puresky", "Atardecer de Belfast", ["sunset"]),
+        new("industrial_sunset_02_puresky", "Atardecer cálido", ["sunset"]),
+        new("quarry_01_puresky", "Amanecer despejado", ["sunset"]),
+        new("qwantani_dawn_puresky", "Amanecer de Qwantani", ["sunset"]),
+        new("qwantani_dusk_1_puresky", "Crepúsculo de Qwantani", ["sunset"]),
+        new("qwantani_afternoon_puresky", "Tarde de Qwantani", ["day"])
+    ];
+
+    private void AddRealSkyTiles()
+    {
+        foreach (var sky in RealSkies)
+        {
+            var directory = System.IO.Path.Combine(AppContext.BaseDirectory, "resources", "skies");
+            var picture = new Image { Height = 125, Stretch = Stretch.UniformToFill };
+            var preview = System.IO.Path.Combine(directory, sky.Id + ".png");
+            if (System.IO.File.Exists(preview))
+                picture.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(preview));
+            var content = new StackPanel();
+            content.Children.Add(picture);
+            content.Children.Add(new TextBlock { Text = sky.Name + " · HDRI", Margin = new Thickness(6, 9, 6, 5),
+                Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap });
+            var tile = new Button { Content = content, Margin = new Thickness(1), Padding = new Thickness(1),
+                HorizontalContentAlignment = HorizontalAlignment.Stretch, ToolTip = sky.Name, Tag = sky.Id };
+            AutomationProperties.SetName(tile, sky.Name + " HDRI");
+            tile.Click += async (_, _) =>
+            {
+                if (_rendering) return;
+                Select(SkyPicker, string.Empty);
+                SkyLibrary.Visibility = Visibility.Collapsed;
+                StatusText.Text = "Cargando cielo: " + sky.Name;
+                var request = ++_hdriRequestVersion;
+                await LoadHdriAsync(System.IO.Path.Combine(directory, sky.Id + ".hdr"), request, showWarning: true);
+                if (request == _hdriRequestVersion && _hdriEnvironment is not null)
+                    StatusText.Text = "Cielo aplicado: " + sky.Name;
+            };
+            SkyTiles.Children.Add(tile);
+        }
+    }
+
     private void SkyLibrary_Click(object sender, RoutedEventArgs e)
     {
         if (!_skyLibraryBuilt)
         {
             _skyLibraryBuilt = true;
+            AddRealSkyTiles();
             foreach (var sky in RenderLooks.Skies)
             {
                 var picture = new Image { Height = 125, Stretch = Stretch.UniformToFill };

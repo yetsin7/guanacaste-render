@@ -314,6 +314,7 @@ public partial class RenderPanel : UserControl
     {
         if (!_ready) return;
         UpdateInteractiveCamera();
+        ScheduleSkyBackground();
         NotifySelectionViewportChanged();
         if (_preview is not null)
         {

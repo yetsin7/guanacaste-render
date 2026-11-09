@@ -15,6 +15,24 @@ internal static partial class InteractionChecks
     private static void CheckBuiltInTextures()
     {
         var library = typeof(MainWindow).Assembly.GetType("Guanacaste3D.Desktop.RenderTextureLibrary")!;
+        // Provider-independent PBR sidecars must keep their raw linear channel values.
+        var sidecarFolder = Path.Combine(Path.GetTempPath(), "pbr-sidecars-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(sidecarFolder);
+        try
+        {
+            foreach (var channel in new[] { "roughness", "metallic" })
+            {
+                var bitmap = BitmapSource.Create(1, 1, 96, 96, PixelFormats.Gray8, null, new byte[] { 160 }, 1);
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                using (var stream = File.Create(Path.Combine(sidecarFolder, "custom_" + channel + ".png"))) encoder.Save(stream);
+                var map = (RenderScalarMap?)library.GetMethod("LoadSidecarScalar", BindingFlags.NonPublic | BindingFlags.Static)!
+                    .Invoke(null, new object?[] { Path.Combine(sidecarFolder, "custom.jpg"), channel });
+                Check(map is not null && Math.Abs(map.Sample(.5f, .5f, 0) - 160f / 255f) < .005f,
+                    "Custom " + channel + " sidecar loads independently of provider and albedo extension");
+            }
+        }
+        finally { Directory.Delete(sidecarFolder, true); }
         var catalog = (IEnumerable)library.GetProperty("BuiltIn", BindingFlags.Public | BindingFlags.Static)!.GetValue(null)!;
         var resolve = library.GetMethod("Resolve", BindingFlags.Public | BindingFlags.Static)!;
         var load = library.GetMethod("Load", BindingFlags.Public | BindingFlags.Static)!;
@@ -26,9 +44,10 @@ internal static partial class InteractionChecks
             var key = (string)textureType.GetProperty("Key")!.GetValue(texture)!;
             var label = (string)textureType.GetProperty("LabelKey")!.GetValue(texture)!;
             var path = resolve.Invoke(null, ["builtin:" + key, null]);
-            Check(path is string && load.Invoke(null, [path]) is not null &&
-                  Application.Current.TryFindResource(label) is string,
-                $"Built-in texture {key} is available, decodable and localized");
+            var decoded = path is string && load.Invoke(null, [path]) is not null;
+            var localized = Application.Current.TryFindResource(label) is string;
+            Check(decoded && localized,
+                $"Built-in texture {key} is available, decodable and localized (decoded={decoded}, localized={localized})");
             if (key.StartsWith("tree-", StringComparison.Ordinal))
             {
                 treeTextures++;
@@ -73,6 +92,15 @@ internal static partial class InteractionChecks
             "Procedural tree bark loads its bundled OpenGL normal map as well as albedo");
 
         var assignments = new[] { assignment };
+        foreach (var id in new[] { "poly-brick-wall", "poly-concrete-wall", "poly-oak-planks", "poly-clay-plaster" })
+        {
+            var polyResolver = (Func<SurfaceKind, RenderMaterial>)library.GetMethod("Resolver",
+                BindingFlags.Public | BindingFlags.Static)!.Invoke(null,
+                [new[] { new RenderMaterialAssignment(SurfaceKind.Wall, MaterialPresets.Prefix + id) }, null, true])!;
+            var polyMaterial = polyResolver(SurfaceKind.Wall);
+            Check(polyMaterial.Texture is not null && polyMaterial.NormalMap is not null && polyMaterial.RoughnessMap is not null,
+                $"Poly Haven preset {id} loads its color, normal and roughness maps");
+        }
         var resolver = (Func<SurfaceKind, RenderMaterial>)library.GetMethod("Resolver",
             BindingFlags.Public | BindingFlags.Static)!.Invoke(null, [assignments, null, true])!;
         var rendered = resolver(SurfaceKind.Wall);
@@ -180,7 +208,7 @@ internal static partial class InteractionChecks
         var sphereCreate = sphereType.GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static)!;
         var sphereSource = new BitmapImage(new Uri((string)resolve.Invoke(null, ["builtin:stone-paving", null])!));
         var sphere = (BitmapSource)sphereCreate.Invoke(null, [sphereSource, .85, 0.0, .6])!;
-        Check(sphere.PixelWidth == 132 && sphere.PixelHeight == 84 && sphere.IsFrozen,
+        Check(sphere.PixelWidth == 240 && sphere.PixelHeight == 180 && sphere.IsFrozen,
             "Material gallery generates a bounded, cross-thread-safe PBR sphere preview");
         var spherePixels = new byte[132 * 84 * 4];
         sphere.CopyPixels(spherePixels, 132 * 4, 0);

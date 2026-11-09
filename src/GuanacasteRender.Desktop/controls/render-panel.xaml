@@ -1225,7 +1225,7 @@
           <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
             <Button DockPanel.Dock="Right" Content="✕" Click="SkyLibraryClose_Click" Padding="10,5" ToolTip="Cerrar biblioteca de cielos"/>
             <StackPanel><TextBlock Text="Biblioteca de cielos" FontSize="21" Foreground="White" FontWeight="SemiBold"/>
-              <TextBlock Text="Cielos procedurales · cada cielo ajusta luz, hora y nubes" Foreground="#ADB9C8" Margin="0,5,0,0" TextWrapping="Wrap"/></StackPanel>
+              <TextBlock Text="Cielos HDRI reales y cielos procedurales · elige una vista" Foreground="#ADB9C8" Margin="0,5,0,0" TextWrapping="Wrap"/></StackPanel>
           </DockPanel>
           <TextBox x:Name="SkySearch" Style="{StaticResource StudioSearch}" Tag="Buscar cielos" DockPanel.Dock="Top" TextChanged="SkySearch_Changed" Margin="0,0,0,12" ToolTip="Buscar cielo por nombre" AutomationProperties.Name="Buscar cielo"/>
           <WrapPanel x:Name="SkyCategories" DockPanel.Dock="Top" Margin="0,0,0,12">

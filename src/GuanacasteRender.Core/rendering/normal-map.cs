@@ -72,7 +72,7 @@ public sealed class NormalMap
                             }
                         average = sum / (float)((right - left) * (bottom - top));
                     }
-                    average = average.LengthSquared() > 1e-8f ? Vector3.Normalize(average) : Vector3.UnitZ;
+                    // Preserve vector length until final sampling so cancelling slopes retain their weight.
                     var index = (y * nextWidth + x) * 3;
                     downsampled[index] = Encode(average.X);
                     downsampled[index + 1] = Encode(average.Y);
@@ -100,12 +100,12 @@ public sealed class NormalMap
         var level = float.IsFinite(footprint) && footprint > 0
             ? MathF.Log2(MathF.Max(footprint * Math.Max(Width, Height), 1e-6f))
             : 0;
-        if (level <= 0) return Bilinear(0, u, v);
+        if (level <= 0) return Direction(Bilinear(0, u, v));
         var last = _levels.Length - 1;
-        if (level >= last) return Bilinear(last, u, v);
+        if (level >= last) return Direction(Bilinear(last, u, v));
         var low = (int)level;
         var blended = Vector3.Lerp(Bilinear(low, u, v), Bilinear(low + 1, u, v), level - low);
-        return blended.LengthSquared() > 1e-8f ? Vector3.Normalize(blended) : Vector3.UnitZ;
+        return Direction(blended);
     }
 
     private Vector3 Bilinear(int level, float u, float v)
@@ -121,8 +121,11 @@ public sealed class NormalMap
         var top = Vector3.Lerp(Texel(level, x0, y0), Texel(level, x0 + 1, y0), dx);
         var bottom = Vector3.Lerp(Texel(level, x0, y0 + 1), Texel(level, x0 + 1, y0 + 1), dx);
         var normal = Vector3.Lerp(top, bottom, dy);
-        return normal.LengthSquared() > 1e-8f ? Vector3.Normalize(normal) : Vector3.UnitZ;
+        return normal;
     }
+
+    private static Vector3 Direction(Vector3 value) =>
+        value.LengthSquared() > 1e-8f ? Vector3.Normalize(value) : Vector3.UnitZ;
 
     private Vector3 Texel(int level, int x, int y)
     {

@@ -108,6 +108,13 @@ public partial class RenderPanel
         }
     }
 
+    /// <summary>Starts new projects with the bundled photographic sky.</summary>
+    internal void LoadDefaultSky()
+    {
+        var file = Path.Combine(AppContext.BaseDirectory, "resources", "skies", "kloofendal_48d_partly_cloudy_puresky.hdr");
+        _ = LoadHdriAsync(file, ++_hdriRequestVersion, showWarning: false);
+    }
+
     /// <summary>Restore safely: a broken or missing asset leaves the physical procedural sky enabled.</summary>
     internal void RestoreHdriForProject(string? savedPath, string? projectFile)
     {
@@ -339,6 +346,7 @@ public partial class RenderPanel
             }
             if (PreviewToggle.IsChecked == true) ResumePreview();
         }
+        ScheduleSkyBackground();
         SyncLensFromCamera();
         UpdateInteractiveCamera();
         HideStyledPreview();
@@ -378,6 +386,7 @@ public partial class RenderPanel
     private void Lighting_Changed(object sender, RoutedEventArgs e)
     {
         if (!_ready) return;
+        ScheduleSkyBackground();
         SunControls.Visibility = Scenario() == LightingScenario.Sunny ? Visibility.Visible : Visibility.Collapsed;
         _preview?.SetSettings(PreviewSettings());
         _preview?.SetFinish(CurrentFinish());

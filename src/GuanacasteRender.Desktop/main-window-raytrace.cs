@@ -135,18 +135,19 @@ public partial class MainWindow
         public Task<ModelSceneSnapshot> GetInteractiveSceneAsync()
         {
             var document = window.ModelDisplayDocument();
-            var textures = RenderTextureLibrary.Previews3D(document.RenderMaterials, window._filePath);
-            var scopedTextures = new Dictionary<(Guid, SurfaceKind), (System.Windows.Media.ImageSource Image, double Size)>();
-            foreach (var assignment in document.RenderMaterials.Where(item => item.ElementId is not null))
-            {
-                var preview = RenderTextureLibrary.Previews3D([assignment with { ElementId = null }], window._filePath);
-                if (preview.TryGetValue(assignment.Category, out var image))
-                    scopedTextures[(assignment.ElementId!.Value, assignment.Category)] = image;
-            }
+            var projectFile = window._filePath;
             var links = window._links.Visible().ToArray();
             var clay = window._renderClay;
             return Task.Run(() =>
             {
+                var textures = RenderTextureLibrary.Previews3D(document.RenderMaterials, projectFile);
+                var scopedTextures = new Dictionary<(Guid, SurfaceKind), (System.Windows.Media.ImageSource Image, double Size)>();
+                foreach (var assignment in document.RenderMaterials.Where(item => item.ElementId is not null))
+                {
+                    var preview = RenderTextureLibrary.Previews3D([assignment with { ElementId = null }], projectFile);
+                    if (preview.TryGetValue(assignment.Category, out var image))
+                        scopedTextures[(assignment.ElementId!.Value, assignment.Category)] = image;
+                }
                 var snapshot = ModelSceneSnapshot.Build(document, clay, false, false, textures, includeGround: true, scopedTextures: scopedTextures);
                 var models = snapshot.Models.ToList();
                 foreach (var (link, loaded) in links)

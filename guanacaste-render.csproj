@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>GuanacasteRender</AssemblyName>
     <Product>Guanacaste Render</Product>
-    <Version>1.0.3</Version>
+    <Version>1.0.5</Version>
     <ApplicationIcon>src\GuanacasteRender.Desktop\resources\brand\guanacaste3d.ico</ApplicationIcon>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableDefaultPageItems>false</EnableDefaultPageItems>

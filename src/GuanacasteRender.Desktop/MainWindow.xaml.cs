@@ -308,6 +308,7 @@ public partial class MainWindow : Window
         RefreshAll();
         FrameCameraToScene();
         if (document.RenderSetup is { } setup) ApplyRenderSetup(setup);
+        else RenderPanelControl.LoadDefaultSky();
         RenderPanelControl.RestoreMovie();
         RenderPanelControl.RestoreOcean();
     }

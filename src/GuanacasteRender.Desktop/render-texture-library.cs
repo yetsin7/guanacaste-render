@@ -30,6 +30,10 @@ internal static class RenderTextureLibrary
         new("concrete", "Texture.Concrete", 1.2, 0.15),
         new("stucco-white", "Texture.Stucco", 1.0, 0.35),
         new("gravel", "Texture.Gravel", 1.0, 0.8),
+        new("polyhaven-brick_wall_001", "Texture.PolyBrick", 2.0, 0, ".jpg"),
+        new("polyhaven-concrete_wall_001", "Texture.PolyConcrete", 2.0, 0, ".jpg"),
+        new("polyhaven-oak_wood_planks", "Texture.PolyOak", 2.0, 0),
+        new("polyhaven-clay_plaster", "Texture.PolyPlaster", 2.0, 0),
         new("ambientcg-wood096", "Texture.AmbientWood096", 0.5, 0.15, ".jpg"),
         new("ambientcg-wood092", "Texture.AmbientWood092", 0.8, 0.15, ".jpg"),
         new("ambientcg-wood051", "Texture.AmbientWood051", 0.8, 0.15, ".jpg"),
@@ -208,11 +212,26 @@ internal static class RenderTextureLibrary
         var folder = Path.GetDirectoryName(albedoPath);
         var name = Path.GetFileNameWithoutExtension(albedoPath);
         if (string.IsNullOrWhiteSpace(folder) || string.IsNullOrWhiteSpace(name)) return null;
-        foreach (var suffix in new[] { "_NormalGL.png", "_normal.png", "_Normal.png", "_nrm.png" })
+        foreach (var suffix in new[] { "_NormalGL.png", "_normal.png", "_Normal.png", "_nrm.png", "_normal.jpg" })
         {
             var sidecar = Path.Combine(folder, name + suffix);
             if (File.Exists(sidecar) && LoadNormal(sidecar) is { } result) return result;
         }
+        return null;
+    }
+
+    /// <summary>Finds linear PBR maps beside any albedo image, regardless of provider.</summary>
+    private static RenderScalarMap? LoadSidecarScalar(string? albedoPath, string channel)
+    {
+        if (string.IsNullOrWhiteSpace(albedoPath)) return null;
+        var folder = Path.GetDirectoryName(albedoPath);
+        if (string.IsNullOrEmpty(folder)) return null;
+        var name = Path.GetFileNameWithoutExtension(albedoPath);
+        foreach (var suffix in channel == "roughness"
+            ? new[] { "_roughness", "_Roughness", "_rough" }
+            : new[] { "_metallic", "_Metalness", "_metalness" })
+            foreach (var extension in new[] { ".png", ".jpg", ".jpeg" })
+                if (LoadScalar(Path.Combine(folder, name + suffix + extension)) is { } map) return map;
         return null;
     }
 
@@ -307,7 +326,9 @@ internal static class RenderTextureLibrary
                 {
                     TextureSize = (float)assignment.TextureSize,
                     TextureRelief = (float)assignment.Relief,
-                    NormalMap = LoadSidecarNormal(albedoPath) ?? preset.Material.NormalMap
+                    NormalMap = LoadSidecarNormal(albedoPath) ?? preset.Material.NormalMap,
+                    RoughnessMap = LoadSidecarScalar(albedoPath, "roughness") ?? preset.Material.RoughnessMap,
+                    MetallicMap = LoadSidecarScalar(albedoPath, "metallic") ?? preset.Material.MetallicMap
                 };
             }
             else if (assignment.TexturePath == "stock:")
@@ -321,8 +342,14 @@ internal static class RenderTextureLibrary
             else if (assignment.Category != SurfaceKind.Glass &&
                      Load(Resolve(assignment.TexturePath, projectFile)) is { } texture)
             {
+                var albedoPath = Resolve(assignment.TexturePath, projectFile);
                 material = MaterialLibrary.Textured(assignment.Category, texture, assignment.TextureSize, assignment.Relief)
-                    with { NormalMap = LoadSidecarNormal(Resolve(assignment.TexturePath, projectFile)) };
+                    with
+                    {
+                        NormalMap = LoadSidecarNormal(albedoPath),
+                        RoughnessMap = LoadSidecarScalar(albedoPath, "roughness"),
+                        MetallicMap = LoadSidecarScalar(albedoPath, "metallic")
+                    };
             }
             if (material is null) continue;
             textured[assignment.Category] = MaterialTint.Apply(material, assignment.TintHex) with

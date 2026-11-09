@@ -7,6 +7,8 @@ namespace Guanacaste3D.Desktop.Controls;
 public partial class RenderPanel
 {
     private int _interactiveSceneRequest;
+    private bool _interactiveSceneBuilding;
+    private bool _interactiveScenePending;
 
     /// <summary>Builds the latest model without starting the path tracer, discarding obsolete results.</summary>
     private async void RefreshInteractiveScene()
@@ -19,13 +21,21 @@ public partial class RenderPanel
             return;
         }
         if (_source is null || !IsVisible) return;
+        if (_interactiveSceneBuilding)
+        {
+            _interactiveScenePending = true;
+            ++_interactiveSceneRequest;
+            return;
+        }
+        _interactiveSceneBuilding = true;
+        _interactiveScenePending = false;
         var source = _source;
         var version = source.SceneVersion;
         var request = ++_interactiveSceneRequest;
         InteractiveLoading.Visibility = source.HasScene ? Visibility.Visible : Visibility.Collapsed;
         try
         {
-            var snapshot = await source.GetInteractiveSceneAsync().ConfigureAwait(false);
+            var snapshot = await source.GetInteractiveSceneAsync();
             if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished) return;
             await Dispatcher.InvokeAsync(() =>
             {
@@ -62,6 +72,15 @@ public partial class RenderPanel
                         StatusText.Text = UiText.Get("RenderPanel.ModelViewFailed");
                     }
                 });
+        }
+        finally
+        {
+            _interactiveSceneBuilding = false;
+            if (_interactiveScenePending && !Dispatcher.HasShutdownStarted)
+            {
+                _interactiveScenePending = false;
+                RefreshInteractiveScene();
+            }
         }
     }
 

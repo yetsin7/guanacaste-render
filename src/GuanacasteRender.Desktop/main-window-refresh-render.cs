@@ -109,14 +109,18 @@ public partial class MainWindow
         var hiddenDocument = _revealHidden ? _session.Document.Clone() : null;
         var hiddenIds = _revealHidden ? ModelElementIds(_session.Document).Except(ModelElementIds(document)).ToHashSet() : null;
         var showEdges = _showEdges || style is ModelDisplayStyle.Wireframe or ModelDisplayStyle.HiddenLine;
-        var textures = xray || style is ModelDisplayStyle.Wireframe or ModelDisplayStyle.HiddenLine or ModelDisplayStyle.Shaded or ModelDisplayStyle.ConsistentColors
-            ? null : RenderTextureLibrary.Previews3D(document.RenderMaterials, _filePath);
+        var projectFile = _filePath;
+        var useTextures = !(xray || style is ModelDisplayStyle.Wireframe or ModelDisplayStyle.HiddenLine or ModelDisplayStyle.Shaded or ModelDisplayStyle.ConsistentColors);
         await _modelBuildGate.WaitAsync().ConfigureAwait(false);
         ModelSceneSnapshot snapshot;
         try
         {
             if (request != Volatile.Read(ref _modelBuildRequest) || version != Volatile.Read(ref _sceneVersion)) return;
-            snapshot = await Task.Run(() => ModelSceneSnapshot.Build(document, false, xray, showEdges, textures, shadowSun, hiddenDocument, hiddenIds, detail, thickLines)).ConfigureAwait(false);
+            snapshot = await Task.Run(() =>
+            {
+                var textures = useTextures ? RenderTextureLibrary.Previews3D(document.RenderMaterials, projectFile) : null;
+                return ModelSceneSnapshot.Build(document, false, xray, showEdges, textures, shadowSun, hiddenDocument, hiddenIds, detail, thickLines);
+            }).ConfigureAwait(false);
         }
         catch (Exception exception)
         {

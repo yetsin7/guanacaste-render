@@ -167,7 +167,7 @@ public partial class RenderPanel
             var key = texture.Key;
             var picture = new Image
             {
-                Width = 58, Height = 58, Stretch = Stretch.UniformToFill,
+                Width = 88, Height = 66, Stretch = Stretch.UniformToFill,
                 HorizontalAlignment = HorizontalAlignment.Center
             };
             var placeholder = new TextBlock
@@ -188,9 +188,10 @@ public partial class RenderPanel
             };
             var content = new StackPanel { Orientation = Orientation.Vertical };
             content.Children.Add(pictureFrame);
+            content.Children.Add(label);
             var button = new Button
             {
-                Tag = key, Content = content, Width = 64, Height = 64,
+                Tag = key, Content = content, Width = 96, Height = 110,
                 Padding = new Thickness(1),
                 Margin = new Thickness(1), BorderThickness = new Thickness(2),
                 BorderBrush = GalleryNormalBorder, Background = GalleryTileBackground,
@@ -321,7 +322,8 @@ public partial class RenderPanel
                         return MaterialPresets.FromPath(key) is { } flat
                             ? SolidMaterialBall(flat.Material, roughness, metallic, relief, null) : null;
                     var image = DecodeGalleryImage(file, sphere ? 192 : 132);
-                    return sphere ? MaterialSpherePreview.Create(image, roughness, metallic, relief) : image;
+                    return sphere ? RenderMaterialBall(new RenderMaterialAssignment(SurfaceKind.Wall, key),
+                        SurfaceKind.Wall, null, roughness, metallic, relief) : image;
                 }, token);
             }
             finally { _galleryDecodeGate.Release(); }

@@ -131,6 +131,10 @@
   <sys:String x:Key="Material.Rock">Rocas</sys:String>
   <sys:String x:Key="Texture.Brick">Ladrillo rojo</sys:String>
   <sys:String x:Key="Texture.AmbientWood096">Madera natural 096</sys:String>
+  <sys:String x:Key="Texture.PolyBrick">Ladrillo · Poly Haven</sys:String>
+  <sys:String x:Key="Texture.PolyConcrete">Concreto · Poly Haven</sys:String>
+  <sys:String x:Key="Texture.PolyOak">Roble · Poly Haven</sys:String>
+  <sys:String x:Key="Texture.PolyPlaster">Estuco de arcilla · Poly Haven</sys:String>
   <sys:String x:Key="Texture.AmbientWood092">Madera natural 092</sys:String>
   <sys:String x:Key="Texture.AmbientWood051">Madera natural 051</sys:String>
   <sys:String x:Key="Texture.AmbientBricks105">Ladrillo 105</sys:String>

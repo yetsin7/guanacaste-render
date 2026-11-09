@@ -123,6 +123,17 @@ static class RenderEngineChecks
               MathF.Abs(far.X) < 0.03f && retained.X > 0.6f,
             "Normal maps retain near detail, filter distant opposing slopes and own the source buffer");
 
+        // Cancelling slopes must retain their weight through multiple mip reductions.
+        byte[] mixed = [250, 128, 164, 5, 128, 164, 218, 128, 218, 218, 128, 218];
+        var mixedMap = NormalMap.FromRgb(4, 1, mixed);
+        var expected = Vector3.Zero;
+        for (var i = 0; i < mixed.Length; i += 3)
+            expected += new Vector3(mixed[i], mixed[i + 1], mixed[i + 2]) * (2f / 255f) - Vector3.One;
+        expected = Vector3.Normalize(expected);
+        check(Vector3.Distance(mixedMap.Sample(.5f, .5f, 10), expected) < .015f &&
+              Vector3.Distance(mixedMap.Sample(.5f, .5f, MathF.Sqrt(8f) / 4f), expected) < .015f,
+            "Normal filtering preserves mean slope across mixed relief and fractional mip levels");
+
         bool Rejects(Func<NormalMap> create)
         {
             try { create(); return false; }

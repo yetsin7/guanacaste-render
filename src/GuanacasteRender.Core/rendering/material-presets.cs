@@ -97,7 +97,10 @@ public static class MaterialPresets
         new("lacquer-black", "Laca negra brillante", MaterialFamily.Paint, Matte("Laca negra brillante", 0.02f, 0.02f, 0.02f, 0.08f)),
         new("lacquer-white", "Laca blanca brillante", MaterialFamily.Paint, Matte("Laca blanca brillante", 0.82f, 0.82f, 0.80f, 0.1f)),
 
+        Textured("poly-clay-plaster", "Estuco de arcilla · Poly Haven", MaterialFamily.Paint, "polyhaven-clay_plaster", 2.0, 0.9f, 0),
+
         // Concrete.
+        Textured("poly-concrete-wall", "Concreto natural · Poly Haven", MaterialFamily.Concrete, "polyhaven-concrete_wall_001", 2.0, 0.85f, 0),
         Textured("concrete-smooth", "Concreto visto liso", MaterialFamily.Concrete, "ambientcg-concrete046", 2.4, 0.82f, 0.12),
         Textured("concrete-board", "Concreto visto con tablilla", MaterialFamily.Concrete, "ambientcg-concrete034", 1.1, 0.85f, 0.18),
         Textured("concrete-polished", "Concreto pulido", MaterialFamily.Concrete, "ambientcg-concrete046", 2.4, 0.3f, 0.05),
@@ -105,6 +108,7 @@ public static class MaterialPresets
         new("concrete-dark", "Concreto oscuro", MaterialFamily.Concrete, Matte("Concreto oscuro", 0.17f, 0.17f, 0.17f, 0.85f, SurfacePattern.Concrete, 1.4f)),
 
         // Masonry.
+        Textured("poly-brick-wall", "Ladrillo realista · Poly Haven", MaterialFamily.Masonry, "polyhaven-brick_wall_001", 2.0, 0.9f, 0),
         Textured("brick-red", "Ladrillo rojo", MaterialFamily.Masonry, "ambientcg-bricks105", 2.4, 0.9f, 0.35),
         Textured("brick-old", "Ladrillo envejecido", MaterialFamily.Masonry, "ambientcg-bricks113a", 1.0, 0.9f, 0.35),
         new("block-grey", "Bloque de concreto gris", MaterialFamily.Masonry, Matte("Bloque de concreto gris", 0.42f, 0.42f, 0.40f, 0.92f, SurfacePattern.Blocks, 1)),
@@ -122,6 +126,7 @@ public static class MaterialPresets
         Textured("stone-beige-facade", "Piedra beige para fachada", MaterialFamily.Stone, "stone-paving", 2.1, 0.88f, 0.45),
 
         // Wood.
+        Textured("poly-oak-planks", "Tablas de roble · Poly Haven", MaterialFamily.Wood, "polyhaven-oak_wood_planks", 2.0, 0.6f, 0),
         Textured("oak-light", "Roble claro", MaterialFamily.Wood, "ambientcg-wood096", 0.5, 0.55f, 0.15),
         Textured("walnut", "Nogal", MaterialFamily.Wood, "ambientcg-wood092", 0.8, 0.45f, 0.15),
         Textured("teak", "Teca", MaterialFamily.Wood, "ambientcg-wood051", 0.8, 0.6f, 0.15),

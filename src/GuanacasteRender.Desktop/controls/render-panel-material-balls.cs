@@ -57,7 +57,7 @@ public partial class RenderPanel
         // Glass has no colour of its own: show it pale and clear, as Lumion does, instead of a black ball.
         if (material.Transmission > .5f)
             color = Vector3.Lerp(new Vector3(.9f), material.TransmissionTint, .5f);
-        return MaterialSpherePreview.Create(SolidSwatch(color), roughness, metallic, relief);
+        return MaterialSpherePreview.CreateMaterial(SolidSwatch(color), material with { Roughness = (float)roughness, Metallic = (float)metallic, TextureRelief = (float)relief });
     }
 
     /// <summary>
@@ -74,7 +74,11 @@ public partial class RenderPanel
             var file = assignment is null || assignment.TexturePath == "stock:"
                 ? null : RenderTextureLibrary.Resolve(assignment.TexturePath, projectFile);
             if (file is not null && File.Exists(file))
-                return MaterialSpherePreview.Create(DecodeGalleryImage(file, 192), roughness, metallic, relief);
+                {
+                    var resolved = RenderTextureLibrary.Resolver(assignment is null ? [] : [assignment with { ElementId = null }], projectFile)(category);
+                    return MaterialSpherePreview.CreateMaterial(DecodeGalleryImage(file, 384), resolved with
+                    { Roughness = (float)roughness, Metallic = (float)metallic, TextureRelief = (float)relief });
+                }
             return SolidMaterialBall(preset?.Material ?? stock, roughness, metallic, relief, assignment?.TintHex);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or

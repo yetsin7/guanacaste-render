@@ -34,6 +34,12 @@ internal static partial class InteractionChecks
         application.InitializeComponent();
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(application.Dispatcher));
         application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        if (check == "materials")
+        {
+            CheckBuiltInTextures();
+            Console.WriteLine("Desktop interaction checks passed (materials).");
+            return 0;
+        }
         if (Environment.GetEnvironmentVariable("G3D_ONLY") == "associated")
         {
             CheckAssociatedDocumentStartup();
