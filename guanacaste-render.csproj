@@ -8,7 +8,7 @@
     <AssemblyName>GuanacasteRender</AssemblyName>
     <Product>Guanacaste Render</Product>
     <Version>1.0.3</Version>
-    <ApplicationIcon>src\Guanacaste3D.Desktop\resources\brand\guanacaste3d.ico</ApplicationIcon>
+    <ApplicationIcon>src\GuanacasteRender.Desktop\resources\brand\guanacaste3d.ico</ApplicationIcon>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableDefaultPageItems>false</EnableDefaultPageItems>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
@@ -17,6 +17,20 @@
     <AssemblyMetadata Include="ReleaseDate" Value="2026-11-06" />
     <RuntimeHostConfigurationOption Include="System.GC.LOHThreshold" Value="8388608" />
     <Compile Include="program.cs" />
-    <ProjectReference Include="src/Guanacaste3D.Desktop/Guanacaste3D.Desktop.csproj" />
+    <ProjectReference Include="src/GuanacasteRender.Desktop/GuanacasteRender.Desktop.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <RevitBridgeVersion Include="2025;2026;2027" />
+  </ItemGroup>
+  <Target Name="RemoveStandaloneDesktopHostFromRenderOutput" AfterTargets="Build;Publish">
+    <Delete Files="$(OutDir)Guanacaste3D.Desktop.exe" Condition="Exists('$(OutDir)Guanacaste3D.Desktop.exe')" />
+    <Delete Files="$(PublishDir)Guanacaste3D.Desktop.exe"
+            Condition="'$(PublishDir)' != '' and Exists('$(PublishDir)Guanacaste3D.Desktop.exe')" />
+  </Target>
+  <Target Name="PublishRevitBridge" AfterTargets="Publish">
+    <Copy SourceFiles="src\GuanacasteRender.RevitBridge\bin\$(Configuration)\desktop\Revit%(RevitBridgeVersion.Identity)\Guanacaste3D.RevitBridge.dll"
+          DestinationFolder="$(PublishDir)revit-bridge\Revit%(RevitBridgeVersion.Identity)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('src\GuanacasteRender.RevitBridge\bin\$(Configuration)\desktop\Revit%(RevitBridgeVersion.Identity)\Guanacaste3D.RevitBridge.dll')" />
+  </Target>
 </Project>

@@ -58,7 +58,7 @@ internal static partial class InteractionChecks
         if (Directory.Exists(beside)) return beside;
         for (var folder = new DirectoryInfo(AppContext.BaseDirectory); folder is not null; folder = folder.Parent)
         {
-            var source = Path.Combine(folder.FullName, "src", "Guanacaste3D.Desktop", "resources", "families");
+            var source = Path.Combine(folder.FullName, "src", "GuanacasteRender.Desktop", "resources", "families");
             if (Directory.Exists(source)) return source;
         }
         throw new DirectoryNotFoundException("The shipped families were not found.");

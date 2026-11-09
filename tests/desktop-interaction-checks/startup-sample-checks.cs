@@ -11,6 +11,75 @@ using Guanacaste3D.Desktop.Controls;
 
 internal static partial class InteractionChecks
 {
+    private static void RenderHomeStartupChecks()
+    {
+        var recentFolder = Path.Combine(Path.GetTempPath(), "guanacaste-render-home-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(recentFolder);
+        var recentPath = Path.Combine(recentFolder, "Proyecto reciente.gr");
+        File.WriteAllText(recentPath, "test");
+        var recentDocuments = new RecentDocuments(Path.Combine(recentFolder, "recents"));
+        recentDocuments.Add(recentPath);
+
+        var opened = new MainWindow(showStartScreen: true)
+        {
+            Width = 1440,
+            Height = 900,
+            WindowState = WindowState.Normal
+        };
+        var previous = _window;
+        _window = opened;
+        try
+        {
+            opened.EnterRenderWorkspace();
+            opened.Show();
+            Pump();
+            var home = (StartScreen)opened.FindName("StartScreenControl");
+            Check(home.Visibility == Visibility.Visible &&
+                  ((Grid)home.FindName("ClassicHomeRoot")).Visibility == Visibility.Collapsed &&
+                  ((Grid)home.FindName("RenderHomeRoot")).Visibility == Visibility.Visible &&
+                  home.FindName("RenderOpenProjectButton") is Button &&
+                  home.FindName("RenderNewProjectButton") is Button,
+                "Guanacaste Render starts on its separate branded Home with Open and New project actions");
+
+            home.Attach(new RecentProjectsStartHost(recentDocuments));
+            Pump();
+            var items = (ListBox)home.FindName("RenderRecentItems");
+            Check(items.Items.Cast<StartItem>().Single().Title == "Proyecto reciente",
+                "Render Home lists the most recently opened project");
+            if (Environment.GetEnvironmentVariable("G3D_HOME_SCREENSHOT") is { Length: > 0 } screenshot)
+                SaveBitmap(screenshot);
+            home.Attach((IStartScreenHost)opened);
+
+            ((IStartScreenHost)opened).NewProject();
+            Pump();
+            Check(home.Visibility == Visibility.Collapsed &&
+                  (bool)typeof(MainWindow).GetField("_projectChosen", PrivateInstance)!.GetValue(opened)!,
+                "Creating a new project from Render Home enters the workspace");
+        }
+        finally
+        {
+            typeof(MainWindow).GetField("_dirty", PrivateInstance)!.SetValue(opened, false);
+            opened.Close();
+            _window = previous;
+            Directory.Delete(recentFolder, recursive: true);
+        }
+    }
+
+    private sealed class RecentProjectsStartHost(RecentDocuments recents) : IStartScreenHost
+    {
+        public RecentDocuments Recents => recents;
+        public IReadOnlyList<StartSample> Samples => [];
+        public bool HasOpenProject => false;
+        public void NewProject() { }
+        public void OpenProjectDialog() { }
+        public void OpenProject(string path) { }
+        public void OpenFamilyDialog() { }
+        public void NewFamily() { }
+        public void OpenSample(StartSample sample) { }
+        public void ShowAbout() { }
+        public void ReturnToProject() { }
+    }
+
     /// <summary>
     /// Started without a document, the application shows the Home screen; its breeze-block house sample opens in the
     /// Render tab with the saved camera, sun and filters, and opening it hides the Home screen.

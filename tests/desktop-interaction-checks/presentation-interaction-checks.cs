@@ -23,17 +23,24 @@ internal static partial class InteractionChecks
         {
             var projectPath = Path.Combine(folder, "startup.g3d");
             ProjectFile.Save(projectPath, BuildingDocument.Create("StartupProject"));
+            var renderPath = Path.Combine(folder, "startup.gr");
+            ProjectFile.Save(renderPath, BuildingDocument.Create("RenderStartupProject"));
             var familyPath = Path.Combine(folder, "startup.g3df");
             FamilyFile.Save(familyPath, OpeningFamilyDocument.CreateStandard(OpeningKind.Door, "StartupFamily"));
             var templatePath = Path.Combine(folder, "startup.g3dt");
             TemplateFile.Save(templatePath, OfficialTemplates.CreateArchitecturalMetric());
 
-            foreach (var path in new[] { projectPath, familyPath, templatePath })
+            Check(StartupDocumentResolver.FindSupportedPath(["--open", renderPath]) == renderPath,
+                "Windows startup arguments recognize .gr project files");
+
+            foreach (var path in new[] { projectPath, renderPath, familyPath, templatePath })
             {
                 var opened = new MainWindow(path);
                 var loaded = (DocumentSession)typeof(MainWindow).GetField("_session", PrivateInstance)!.GetValue(opened)!;
                 if (path == projectPath)
                     Check(loaded.Document.Name == "StartupProject", "Associated .g3d loads the project");
+                else if (path == renderPath)
+                    Check(loaded.Document.Name == "RenderStartupProject", "Associated .gr loads the render project");
                 else if (path == familyPath)
                     Check(loaded.Document.OpeningTypes.Any(type => type.FamilyName == "StartupFamily"),
                         "Associated .g3df imports the family");

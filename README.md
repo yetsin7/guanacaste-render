@@ -8,7 +8,7 @@ Install the .NET 10 SDK and run `dotnet build guanacaste-render.csproj`. No adja
 
 ## Project exchange
 
-Open a `.g3d` snapshot exported from Guanacaste 3D. Linked models remain in a sidecar, and external textures and other referenced files must remain accessible. The snapshot is not a self-contained asset package. Save rendering changes to the snapshot rather than the original design project.
+Guanacaste Render saves native projects as `.gr`. It also opens and saves the same native project container as `.g3d` for compatibility with Guanacaste 3D, along with `.g3` and `.g3d.json` projects from older versions. The Revit add-in exports Revit exchange data using either `.g3d` or `.gr`; Guanacaste converts that data into an editable project when opened. Older `.g3dx` exchange files remain importable. Linked models remain in a sidecar, and external textures and other referenced files must remain accessible, so a project is not a self-contained asset package.
 
 The copied code and assets retain their existing licenses and third-party attribution from the Guanacaste 3D project.
 
@@ -31,4 +31,4 @@ Ejecuta `./scripts/verify.ps1` en PowerShell para compilar Release y comprobar e
 
 ## Instalar en Windows
 
-Publica con `dotnet publish guanacaste-render.csproj -c Release -r win-x64 --self-contained true -o release/win-x64` y ejecuta `./scripts/install.ps1`. El instalador coloca cada versión en LocalAppData/Programs/Guanacaste Render, verifica el ejecutable y las bibliotecas principales con SHA256 y crea el acceso del menú Inicio. Los proyectos se conservan fuera de la instalación.
+Publica con `dotnet publish guanacaste-render.csproj -c Release -r win-x64 --self-contained true -o release/win-x64` y ejecuta `./scripts/install.ps1`. El instalador coloca cada versión en LocalAppData/Programs/Guanacaste Render, verifica el ejecutable y las bibliotecas principales con SHA256, crea el acceso del menú Inicio y registra `.gr` para abrir proyectos con Guanacaste Render. Los proyectos se conservan fuera de la instalación.

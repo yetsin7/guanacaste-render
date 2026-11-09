@@ -28,11 +28,30 @@ internal static partial class InteractionChecks
         Environment.SetEnvironmentVariable("G3D_RECOVERY_DIR", Path.Combine(scratch, "recovery"));
         Environment.SetEnvironmentVariable("G3D_LOG_DIR", Path.Combine(scratch, "logs"));
         Environment.SetEnvironmentVariable("G3D_NO_EXPLORER", "1");
-        App.RenderOnly = Environment.GetEnvironmentVariable("G3D_ONLY") == "studio";
+        var check = Environment.GetEnvironmentVariable("G3D_ONLY");
+        App.RenderOnly = check is "studio" or "render-home";
         var application = new App();
         application.InitializeComponent();
         SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(application.Dispatcher));
         application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        if (Environment.GetEnvironmentVariable("G3D_ONLY") == "associated")
+        {
+            CheckAssociatedDocumentStartup();
+            Console.WriteLine("Desktop interaction checks passed (associated documents).");
+            return 0;
+        }
+        if (Environment.GetEnvironmentVariable("G3D_ONLY") == "save-name")
+        {
+            ProjectSaveNameChecks();
+            Console.WriteLine("Desktop interaction checks passed (project save names).");
+            return 0;
+        }
+        if (check == "render-home")
+        {
+            RenderHomeStartupChecks();
+            Console.WriteLine("Desktop interaction checks passed (Render home startup).");
+            return 0;
+        }
         if (App.RenderOnly)
         {
             RenderStudioChecks();

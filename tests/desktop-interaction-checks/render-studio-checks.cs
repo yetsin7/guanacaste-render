@@ -288,6 +288,12 @@ internal static partial class InteractionChecks
                 Check(Control<StackPanel>("ProjectCommands").IsEnabled && Control<Button>("StudioMovieModeButton").IsEnabled,
                     "Render completion restores workspace commands");
                 SaveBitmap("artifacts/studio-checks/07-rendered.png");
+                Click("ReturnToSceneButton");
+                Check(Control<Border>("FinalImageBorder").Visibility == Visibility.Collapsed,
+                    "Return to scene restores interactive navigation after rendering");
+                Click("ShowImageButton");
+                Check(Control<Border>("FinalImageBorder").Visibility == Visibility.Visible,
+                    "The last render remains available after returning to the scene");
             }
             finally { SynchronizationContext.SetSynchronizationContext(context); }
         }

@@ -1,0 +1,79 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Guanacaste3D.Desktop</AssemblyName>
+    <RootNamespace>Guanacaste3D.Desktop</RootNamespace>
+    <Product>Guanacaste 3D</Product>
+    <!-- Versions count 1.0.0 … 1.0.99, then 1.1.0 … 1.99.99, then 2.0.0 (see AppVersion). Bump both lines with each release. -->
+    <Version>1.0.3</Version>
+    <ReleaseDate>2026-11-04</ReleaseDate>
+    <!-- Embedded in the .exe so Explorer, the Start menu shortcut and the taskbar show the brand mark. -->
+    <ApplicationIcon>resources\brand\guanacaste3d.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="desktop-interaction-checks" />
+    <AssemblyMetadata Include="ReleaseDate" Value="$(ReleaseDate)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../GuanacasteRender.Core/GuanacasteRender.Core.csproj" />
+    <ProjectReference Include="../GuanacasteRender.Agent/GuanacasteRender.Agent.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Per-frame picture buffers (a few MB) are short-lived; keeping them out of the large-object heap lets cheap
+         collections reclaim them, so a long live preview does not grow the process by gigabytes. -->
+    <RuntimeHostConfigurationOption Include="System.GC.LOHThreshold" Value="8388608" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Window.Icon reads the same icon through a pack URI at run time. -->
+    <Resource Include="resources\brand\guanacaste3d.ico" />
+    <Content Include="resources\brand\guanacaste3d.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Resource Include="resources\brand\guanacaste3d-logo.png" />
+    <Resource Include="resources\samples\casa-del-cobogo.png" />
+    <Resource Include="resources\render-reference\effects.png" />
+    <!-- Shipped render textures, loaded from disk next to the executable by RenderTextureLibrary. -->
+    <Content Include="resources\textures\*.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="resources\textures\*.jpg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- Detailed mesh families (CC0 trees and cars, see docs/third-party-models.md) and the saved sample projects. -->
+    <Content Include="resources\families\*.g3df" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="resources\samples\*.g3d" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="resources\samples\casa-del-cobogo.g3d" LogicalName="Guanacaste3D.BreezeBlockHouse.g3d" />
+    <!-- Rendered pictures of the samples for the Home screen tiles. -->
+    <Content Include="resources\samples\*.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!--
+    The Revit bridge add-in reads .rvt projects through the user's Revit. It compiles against Revit's own API, so it is
+    built for each Revit version installed on the build machine and shipped in revit-bridge\Revit<year>\.
+    The bridge is optional for the application build, so a failure there does not stop it.
+  -->
+  <ItemGroup>
+    <RevitBridgeVersion Include="2025;2026;2027" />
+  </ItemGroup>
+  <PropertyGroup>
+    <!-- Its own output folder: Revit loads the installed copy in its Addins folder, so nothing here stays locked. -->
+    <RevitBridgeOutput>$(MSBuildThisFileDirectory)..\GuanacasteRender.RevitBridge\bin\$(Configuration)\desktop\</RevitBridgeOutput>
+  </PropertyGroup>
+  <Target Name="BuildRevitBridge" AfterTargets="Build">
+    <MSBuild Projects="..\GuanacasteRender.RevitBridge\GuanacasteRender.RevitBridge.csproj" Targets="Restore"
+             Properties="Configuration=$(Configuration);RevitVersion=%(RevitBridgeVersion.Identity);RestoreStage=1"
+             Condition="Exists('$(ProgramW6432)\Autodesk\Revit %(RevitBridgeVersion.Identity)\RevitAPI.dll')" />
+    <MSBuild Projects="..\GuanacasteRender.RevitBridge\GuanacasteRender.RevitBridge.csproj" ContinueOnError="true"
+             Properties="Configuration=$(Configuration);RevitVersion=%(RevitBridgeVersion.Identity);OutputPath=$(RevitBridgeOutput)Revit%(RevitBridgeVersion.Identity)\"
+             Condition="Exists('$(ProgramW6432)\Autodesk\Revit %(RevitBridgeVersion.Identity)\RevitAPI.dll')" />
+    <Copy SourceFiles="$(RevitBridgeOutput)Revit%(RevitBridgeVersion.Identity)\Guanacaste3D.RevitBridge.dll"
+          DestinationFolder="$(OutDir)revit-bridge\Revit%(RevitBridgeVersion.Identity)" SkipUnchangedFiles="true" ContinueOnError="true"
+          Condition="Exists('$(RevitBridgeOutput)Revit%(RevitBridgeVersion.Identity)\Guanacaste3D.RevitBridge.dll')" />
+  </Target>
+  <Target Name="PublishRevitBridge" AfterTargets="Publish">
+    <Copy SourceFiles="$(RevitBridgeOutput)Revit%(RevitBridgeVersion.Identity)\Guanacaste3D.RevitBridge.dll"
+          DestinationFolder="$(PublishDir)revit-bridge\Revit%(RevitBridgeVersion.Identity)" SkipUnchangedFiles="true"
+          Condition="Exists('$(RevitBridgeOutput)Revit%(RevitBridgeVersion.Identity)\Guanacaste3D.RevitBridge.dll')" />
+  </Target>
+  <Target Name="PublishThumbnailProvider" AfterTargets="Publish" Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+    <MSBuild Projects="../windows-thumbnails/windows-thumbnails.csproj" Targets="Restore;Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;SelfContained=false;PublishSingleFile=false;PublishDir=$(PublishDir)thumbnail-handler/" />
+  </Target>
+</Project>

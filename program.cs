@@ -7,6 +7,10 @@ internal static class Program
     [STAThread]
     private static void Main()
     {
+        using var instanceMutex = new System.Threading.Mutex(
+            initiallyOwned: true, name: @"Local\GuanacasteRender", createdNew: out var isFirstInstance);
+        if (!isFirstInstance) return;
+
         var state = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GuanacasteRender");
         if (Environment.GetEnvironmentVariable("G3D_RECOVERY_DIR") is null)
             Environment.SetEnvironmentVariable("G3D_RECOVERY_DIR", System.IO.Path.Combine(state, "recovery"));
@@ -15,6 +19,13 @@ internal static class Program
         Guanacaste3D.Desktop.App.RenderOnly = true;
         var application = new Guanacaste3D.Desktop.App();
         application.InitializeComponent();
-        application.Run();
+        try
+        {
+            application.Run();
+        }
+        finally
+        {
+            instanceMutex.ReleaseMutex();
+        }
     }
 }

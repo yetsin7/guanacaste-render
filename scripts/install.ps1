@@ -23,6 +23,23 @@ $shortcut.TargetPath = $executable
 $shortcut.WorkingDirectory = $destination
 $shortcut.Description = 'Guanacaste Render · Estudio de visualización'
 $shortcut.Save()
+$projectProgId = 'GuanacasteRender.Project'
+$classesPath = 'Software\Classes\'
+$projectClass = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($classesPath + $projectProgId)
+$projectClass.SetValue('', 'Proyecto de Guanacaste Render', [Microsoft.Win32.RegistryValueKind]::String)
+$projectClass.Dispose()
+$iconClass = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($classesPath + $projectProgId + '\DefaultIcon')
+$iconClass.SetValue('', $executable + ',0', [Microsoft.Win32.RegistryValueKind]::String)
+$iconClass.Dispose()
+$openCommand = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($classesPath + $projectProgId + '\shell\open\command')
+$openCommand.SetValue('', '"' + $executable + '" "%1"', [Microsoft.Win32.RegistryValueKind]::String)
+$openCommand.Dispose()
+$renderExtension = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($classesPath + '.gr')
+if (!$renderExtension.GetValue('')) { $renderExtension.SetValue('', $projectProgId, [Microsoft.Win32.RegistryValueKind]::String) }
+$renderExtension.Dispose()
+$openWith = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey($classesPath + '.gr\OpenWithProgids')
+$openWith.SetValue($projectProgId, '', [Microsoft.Win32.RegistryValueKind]::String)
+$openWith.Dispose()
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'uninstall.ps1') -Destination (Join-Path $installRoot 'uninstall.ps1') -Force
 $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\GuanacasteRender'
 New-Item -Path $key -Force | Out-Null
