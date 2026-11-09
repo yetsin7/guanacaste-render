@@ -210,9 +210,9 @@ internal static partial class InteractionChecks
         var sphere = (BitmapSource)sphereCreate.Invoke(null, [sphereSource, .85, 0.0, .6])!;
         Check(sphere.PixelWidth == 240 && sphere.PixelHeight == 180 && sphere.IsFrozen,
             "Material gallery generates a bounded, cross-thread-safe PBR sphere preview");
-        var spherePixels = new byte[132 * 84 * 4];
-        sphere.CopyPixels(spherePixels, 132 * 4, 0);
-        var middle = (42 * 132 + 66) * 4;
+        var spherePixels = new byte[240 * 180 * 4];
+        sphere.CopyPixels(spherePixels, 240 * 4, 0);
+        var middle = (90 * 240 + 120) * 4;
         Check(spherePixels[middle] != spherePixels[0] ||
               spherePixels[middle + 1] != spherePixels[1] ||
               spherePixels[middle + 2] != spherePixels[2],
