@@ -102,8 +102,9 @@ public partial class RenderPanel : UserControl
         RefreshRenderScenes();
         RefreshPhotos();
         SyncProjectSite();
-        source.QueryChanged += () => Dispatcher.BeginInvoke(ApplyCollision);
+        source.QueryChanged += () => Dispatcher.BeginInvoke(() => { ApplyCollision(); SyncEyeHeight(); });
         ApplyCollision();
+        SyncEyeHeight();
     }
 
     /// <summary>Lets the main window reuse the navigator's collision and key handling.</summary>

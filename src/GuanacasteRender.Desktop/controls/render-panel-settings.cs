@@ -340,6 +340,7 @@ public partial class RenderPanel
             if (PreviewToggle.IsChecked == true) ResumePreview();
         }
         SyncLensFromCamera();
+        SyncEyeHeight();
         UpdateInteractiveCamera();
         HideStyledPreview();
         ScheduleStyledPreview();

@@ -48,6 +48,7 @@ public partial class RenderPanel
         SceneInspector.IsEnabled = !busy;
         ModeOverlayHost.IsEnabled = PhotoStrip.IsEnabled = !busy;
         CreateToolsTab.IsEnabled = EditToolsTab.IsEnabled = ViewToolsTab.IsEnabled = !busy;
+        EyeHeightControls.IsEnabled = !busy && _source.HasScene;
         TransformGizmo.IsHitTestVisible = !busy;
         foreach (var window in new Window?[] { _materialPicker, _scatterWindow, _peopleWindow, _fireWindow })
             if (window is { IsLoaded: true }) window.IsEnabled = !busy;

@@ -63,6 +63,39 @@ internal static partial class InteractionChecks
                 "Bundled sample opens from the real button and becomes navigable");
             Check(Control<Border>("InteractiveLoading").Visibility == Visibility.Collapsed,
                 "The loading indicator clears when the 3D model is ready");
+            var originalCamera = source.Camera.Clone();
+            var eyeInput = Control<TextBox>("EyeHeightInput");
+            Check(eyeInput.IsVisible && Control<Button>("EyeHeightPresetButton").IsEnabled,
+                "Eye-height controls are available in the scene workspace");
+            eyeInput.Focus();
+            Pump();
+            Check(eyeInput.IsKeyboardFocusWithin, "Eye-height input accepts keyboard focus");
+            var ground = (double?)typeof(RenderPanel).GetField("_eyeHeightBase", PrivateInstance)!.GetValue(panel)
+                ?? throw new InvalidOperationException("No reference surface was captured.");
+            eyeInput.Text = "1,82";
+            Check(Math.Abs(source.Camera.Position.Z - (ground + 1.82)) < .001 &&
+                  source.Camera.Position.X == originalCamera.Position.X && source.Camera.Position.Y == originalCamera.Position.Y &&
+                  source.Camera.YawDegrees == originalCamera.YawDegrees && source.Camera.PitchDegrees == originalCamera.PitchDegrees,
+                "Typing an eye height immediately moves only the shared camera elevation");
+            Check(Control<Viewport3D>("InteractiveViewport").Camera is System.Windows.Media.Media3D.PerspectiveCamera visibleCamera &&
+                  Math.Abs(visibleCamera.Position.Y - source.Camera.Position.Z) < .001 &&
+                  Math.Abs(panel.CaptureSetup(source.Camera).CameraZ - source.Camera.Position.Z) < .001,
+                "Eye-height changes immediately reach the visible camera and saved render setup");
+            var validElevation = source.Camera.Position.Z;
+            eyeInput.Text = "altura inválida";
+            Check(source.Camera.Position.Z == validElevation, "Invalid eye-height text leaves the camera unchanged");
+            Control<Button>("EyeHeightPresetButton").Focus();
+            Pump();
+            panel.Navigator!.RestoreView(false);
+            Check(Math.Abs(source.Camera.Position.Z - originalCamera.Position.Z) < .001,
+                "One camera-history step restores the view before editing the eye height");
+            var presetBase = (double)Call("EyeHeightBase")!;
+            Click("EyeHeightPresetButton");
+            Check(Math.Abs(source.Camera.Position.Z - (presetBase + 1.7)) < .001,
+                "The eye-height preset immediately positions the camera at 1.70 metres");
+            panel.Navigator!.ApplyCamera(originalCamera.Position, originalCamera.YawDegrees, originalCamera.PitchDegrees,
+                originalCamera.FieldOfViewDegrees, recordHistory: false);
+            Pump();
             SaveBitmap("artifacts/studio-checks/02-scene.png");
             Check(!Control<Border>("InteractiveHintCard").IsVisible, "Navigation help stays out of the scene by default");
             Click("NavigationHelpButton");
@@ -279,7 +312,8 @@ internal static partial class InteractionChecks
                 var existing = Directory.Exists(output) ? Directory.GetFiles(output, "*.png").Length : 0;
                 var job = (Task)Call("RenderPhotosAsync", new PhotoRenderOptions([], "640x360", "Draft", false, output, false))!;
                 Check(!Control<StackPanel>("ProjectCommands").IsEnabled && !Control<Button>("StudioMovieModeButton").IsEnabled &&
-                      !Control<Button>("DuplicateObjectButton").IsEnabled, "Rendering disables project replacement, mode changes and object edits");
+                      !Control<Button>("DuplicateObjectButton").IsEnabled && !Control<StackPanel>("EyeHeightControls").IsEnabled,
+                    "Rendering disables project replacement, mode changes, eye height and object edits");
                 var renderDeadline = DateTime.UtcNow.AddMinutes(5);
                 var heartbeats = 0;
                 var heartbeat = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
