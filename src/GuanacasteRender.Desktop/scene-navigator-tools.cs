@@ -30,6 +30,15 @@ internal sealed partial class SceneNavigator
         NotifyChanged();
     }
 
+    /// <summary>Moves the eye vertically while retaining direction, lens and view history.</summary>
+    public void SetEyeElevation(float elevation)
+    {
+        if (IsLocked || !float.IsFinite(elevation)) return;
+        if (!_externalGesture) _history.Record(Camera);
+        Camera.Position = new System.Numerics.Vector3(Camera.Position.X, Camera.Position.Y, elevation);
+        NotifyChanged();
+    }
+
     /// <summary>Publishes camera changes, keeping pointer drags as a single history operation.</summary>
     private void NotifyChanged()
     {

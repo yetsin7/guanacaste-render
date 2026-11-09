@@ -348,6 +348,7 @@ public partial class RenderPanel
         }
         ScheduleSkyBackground();
         SyncLensFromCamera();
+        SyncEyeHeight();
         UpdateInteractiveCamera();
         HideStyledPreview();
         ScheduleStyledPreview();

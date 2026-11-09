@@ -1135,6 +1135,15 @@
               Padding="14,9" MinHeight="38" FontWeight="SemiBold"
               Background="#2A3543" Foreground="#DDE9F7" BorderBrush="#42546A"
               ToolTip="{DynamicResource RenderPanel.CopyViewForAiHint}"/>
+      <StackPanel x:Name="EyeHeightControls" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,4,0"
+                  ToolTip="Altura sobre la superficie bajo la cámara; si no hay superficie detectable, se mide desde el origen del proyecto.">
+        <TextBlock Text="Altura de ojo" Foreground="#DDE9F7" VerticalAlignment="Center" Margin="0,0,7,0"/>
+        <TextBox x:Name="EyeHeightInput" Width="58" Text="1,70" AutomationProperties.Name="Altura de ojo en metros"
+                 TextChanged="EyeHeightInput_Changed" GotKeyboardFocus="EyeHeightInput_GotKeyboardFocus" LostKeyboardFocus="EyeHeightInput_LostKeyboardFocus"/>
+        <TextBlock Text="m" Foreground="#DDE9F7" VerticalAlignment="Center" Margin="5,0,7,0"/>
+        <Button x:Name="EyeHeightPresetButton" Content="1,70 m" Click="EyeHeightPreset_Click" Padding="8,5" MinHeight="30"
+                ToolTip="Colocar la cámara a 1,70 m sobre la superficie"/>
+      </StackPanel>
                 <ContentControl x:Name="OutputModeHost" Visibility="Collapsed"/>
         <TextBlock x:Name="StudioWorkspaceHeading" Text="Foto · cámaras y efectos" Foreground="#CDD1D7" Margin="16,0" VerticalAlignment="Center"/>
       </DockPanel>
