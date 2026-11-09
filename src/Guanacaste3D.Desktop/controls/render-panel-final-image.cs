@@ -238,6 +238,14 @@ public partial class RenderPanel
         ShowInteractiveScene(false);
     }
 
+    private void ReturnToScene_Click(object sender, RoutedEventArgs e)
+    {
+        if (StudioBusy) { StatusText.Text = "Detén el render antes de volver a la escena."; return; }
+        _showingFinal = false;
+        ShowInteractiveScene(true);
+        StatusText.Text = "Vista interactiva. La última imagen sigue disponible en Imagen.";
+    }
+
     /// <summary>Keeps render controls consistent while final-image work is active.</summary>
     private void SetRendering(bool rendering)
     {

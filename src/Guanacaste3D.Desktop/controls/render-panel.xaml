@@ -1095,6 +1095,9 @@
         <Border.Effect><DropShadowEffect Color="#475569" BlurRadius="24" ShadowDepth="4" Opacity="0.22"/></Border.Effect>
         <Image x:Name="PreviewImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" Focusable="False"/>
       </Border>
+      <Button x:Name="ReturnToSceneButton" Content="←  Volver a la escena" Click="ReturnToScene_Click"
+              Visibility="{Binding Visibility, ElementName=FinalImageBorder}" HorizontalAlignment="Left" VerticalAlignment="Top"
+              Margin="38,34,0,0" Padding="12,8" Panel.ZIndex="2" ToolTip="Regresar a la vista interactiva; la imagen queda disponible en Imagen"/>
       <Canvas x:Name="SelectionOverlay" IsHitTestVisible="False" ClipToBounds="True"/>
       <Canvas x:Name="TransformGizmo" ClipToBounds="True"/>
 
