@@ -11,6 +11,12 @@ try {
     $env:G3D_ONLY = 'studio'
     dotnet run --project tests/desktop-interaction-checks -c Release
     if ($LASTEXITCODE -ne 0) { throw 'Fallaron las pruebas del estudio.' }
+    $env:G3D_ONLY = 'model-update'
+    dotnet run --no-build --project tests/desktop-interaction-checks -c Release
+    if ($LASTEXITCODE -ne 0) { throw 'Fallaron las pruebas de actualización del modelo.' }
+    $env:G3D_ONLY = 'render-recovery'
+    dotnet run --no-build --project tests/desktop-interaction-checks -c Release
+    if ($LASTEXITCODE -ne 0) { throw 'Fallaron las pruebas de recuperación.' }
     if ($IncludeVideo) {
         $env:G3D_ONLY = 'render'
         dotnet run --no-build --project tests/desktop-interaction-checks -c Release

@@ -84,6 +84,7 @@ public partial class MainWindow
                 case "open": window.Open_Click(window, args); window.EnterRenderWorkspace(); break;
                 case "save": window.Save_Click(window, args); break;
                 case "save-as": window.SaveAs_Click(window, args); break;
+                case "update-model": window.UpdateModelFromSource(); break;
                 case "sample":
                     if (window.ConfirmDiscard()) window.OpenBreezeBlockHouse();
                     window.EnterRenderWorkspace();

@@ -95,6 +95,9 @@ public static class RevitBridgeRunner
     public static void RecordApplicationPath(string? executable, bool renderOnly = false)
     {
         if (string.IsNullOrWhiteSpace(executable)) return;
+        // Test hosts and other embedders run the same startup code; only the real application may record itself.
+        var expected = renderOnly ? Interop.RenderApplication.ExecutableName : "Guanacaste3D.Desktop.exe";
+        if (!string.Equals(Path.GetFileName(executable), expected, StringComparison.OrdinalIgnoreCase)) return;
         try
         {
             var productFolder = renderOnly ? "GuanacasteRender" : "Guanacaste3D";

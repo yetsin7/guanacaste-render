@@ -19,7 +19,7 @@ public partial class MainWindow
             var component = document.StructuralElements.FirstOrDefault(x => x.Id == selected);
             return command switch
             {
-                "open" or "save" or "save-as" or "sample" or "import" => true,
+                "open" or "save" or "save-as" or "sample" or "import" or "update-model" => true,
                 "undo" => window._session.CanUndo,
                 "redo" => window._session.CanRedo,
                 "delete" => selected is not null && SceneItems().Any(x => x.Id == selected),

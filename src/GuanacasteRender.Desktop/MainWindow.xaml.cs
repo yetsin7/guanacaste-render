@@ -245,6 +245,7 @@ public partial class MainWindow : Window
             ProjectFile.Save(path!, _session.Document);
             _links.Save(path!);
             _filePath = path;
+            StoreModelLink(path!);
             RenderPanelControl.SetProjectFilePath(_filePath);
             _dirty = false;
             // The project is safe in its own file now, so its automatic copy has done its job.
@@ -293,6 +294,7 @@ public partial class MainWindow : Window
         _selectedSheetId = null;
         _selectedViewId = null;
         _filePath = filename;
+        AttachModelLink(document, filename);
         RenderPanelControl.SetProjectFilePath(_filePath);
         RenderPanelControl.ResetRenderedImageForDocument();
         // Prevent an async sky load from a previous document from leaking into the new project.

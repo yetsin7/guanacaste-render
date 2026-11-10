@@ -46,7 +46,7 @@ public partial class App : Application
             splash.Close();
             CrashReporter.OfferPendingReport(window);
             // A copy left by a session that ended without saving is offered before anything else is opened.
-            if (projectPath is null && !RenderOnly) window.OfferRecovery();
+            if (projectPath is null) window.OfferRecovery();
         }
         catch (Exception exception)
         {

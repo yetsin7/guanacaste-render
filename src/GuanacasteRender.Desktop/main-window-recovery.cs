@@ -42,7 +42,7 @@ public partial class MainWindow
             copy.SavedAtUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture));
         var accepted = _recoveryPromptSink is { } sink
             ? sink(question)
-            : MessageBox.Show(this, question, "Guanacaste 3D", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+            : MessageBox.Show(this, question, UiText.Get("App.Name"), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
         if (!accepted)
         {
             AutoRecovery.Discard(copy.DocumentId);
@@ -52,6 +52,12 @@ public partial class MainWindow
         {
             AttachDocument(AutoRecovery.Load(copy), null);
             _dirty = true;
+            if (App.RenderOnly)
+            {
+                // The copy has no file of its own yet, but the model it follows is still the one of its original.
+                EnterRenderWorkspace();
+                if (copy.OriginalPath is { } original && File.Exists(original)) AttachModelLink(_session.Document, original);
+            }
             UpdateWindowTitle();
             StatusText.Text = string.Format(CultureInfo.CurrentCulture, GetText("Status.CopyRecovered"),
                 copy.OriginalPath ?? GetText("Status.CopyRecovered.NoFile"));

@@ -679,6 +679,8 @@ TwoStoreyHouseChecks.Run(Check);
 ToiletFamilyChecks.Run(Check);
 RenderDetailChecks.Run(Check);
 RenderSceneBookmarkChecks.Run(Check);
+RenderModelUpdateChecks.Run(Check);
+RenderPanoramaChecks.Run(Check);
 ElectricalChecks.Run(Check);
 CatalogChecks.Run(Check);
 PbrMaterialAuditChecks.Run(Check);

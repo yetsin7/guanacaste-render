@@ -268,6 +268,7 @@
           <Button x:Name="StudioOpenButton" Content="Abrir proyecto" Tag="open" Click="SceneCommand_Click" Style="{StaticResource ViewportToolButton}" ToolTip="Abrir un proyecto .g3d · Ctrl+O"/>
           <Button x:Name="StudioSaveButton" Content="Guardar" Tag="save" Click="SceneCommand_Click" Style="{StaticResource ViewportToolButton}" ToolTip="Guardar proyecto, materiales y cámaras · Ctrl+S"/>
           <Button Content="Guardar como…" Tag="save-as" Click="SceneCommand_Click" Style="{StaticResource ViewportToolButton}"/>
+          <Button x:Name="StudioUpdateModelButton" Content="{DynamicResource ModelUpdate.Button}" Tag="update-model" Click="SceneCommand_Click" Style="{StaticResource ViewportToolButton}" ToolTip="{DynamicResource ModelUpdate.TooltipUnlinked}"/>
           <Button x:Name="StudioSampleButton" Content="Escena de ejemplo" Tag="sample" Click="SceneCommand_Click" Style="{StaticResource ViewportToolButton}"/>
         </StackPanel>
         <TextBlock x:Name="StudioProjectText" Foreground="#A8B3C2" VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis" Margin="18,0,8,0"/>

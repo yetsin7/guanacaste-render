@@ -56,3 +56,17 @@ Búsqueda visible, categorías por iconos, dieciséis miniaturas por página y p
 | Opciones avanzadas y ray tracing | Acciones compatibles con la selección, calidad y efectos reales del motor |
 
 Las capturas son la referencia visual; esta implementación conserva las capacidades del motor de Guanacaste. No presenta controles decorativos para propiedades que el motor no implementa. El giro es en el plano y no ofrece inclinación de objetos en X/Y.
+
+## Actualizar modelo
+
+Cuando Guanacaste 3D guarda de nuevo el modelo, la barra superior resalta «Actualizar modelo». Al pulsarlo, el muro añadido en el modelo aparece en la escena y se conservan la cámara, la foto, el material y los objetos colocados en el estudio. Capturas de la suite `model-update`.
+
+![Modelo con cambios pendientes](modelo-pendiente.png)
+
+![Modelo actualizado](modelo-actualizado.png)
+
+## Panorama 360°
+
+Imagen equirrectangular de la casa de demostración generada por `render-panorama-checks` (768 × 384, 24 muestras por píxel en CPU).
+
+![Panorama de la casa de demostración](panorama-casa.png)
