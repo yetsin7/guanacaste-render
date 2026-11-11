@@ -95,7 +95,7 @@ static class ShowcaseShot
     }
 
     /// <summary>The modern villa at golden hour, seen from the pool side: the look the photoreal pipeline aims for.</summary>
-    private static BenchmarkScene Villa()
+    internal static BenchmarkScene Villa()
     {
         var mesh = Guanacaste3D.Core.Geometry.BuildingMesher.Build(Guanacaste3D.Core.ModernHouseShowcase.Create(), includeGround: true);
         var settings = RenderPresets.Lighting(LightingScenario.Sunny, 10.6, 80, 15.5, RenderQuality.High);
@@ -107,7 +107,7 @@ static class ShowcaseShot
     /// The breeze-block house from across the street, the sun low in the west-southwest so the tree's shadow falls across
     /// the white volume; seen frontally with corrected verticals, the way architects photograph a street facade.
     /// </summary>
-    private static BenchmarkScene Cobogo()
+    internal static BenchmarkScene Cobogo()
     {
         // The detailed tree and car families ship with the desktop application; the bench reads them from its sources.
         var folder = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "GuanacasteRender.Desktop", "resources", "families");

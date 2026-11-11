@@ -22,6 +22,12 @@ if (args.Contains("--ab"))
     return;
 }
 
+if (args.Contains("--baseline"))
+{
+    EngineBaseline.Run(outputFolder ?? Path.Combine("artifacts", "engine-bench"));
+    return;
+}
+
 if (args.Contains("--portal-probe"))
 {
     PortalProbe.Run();

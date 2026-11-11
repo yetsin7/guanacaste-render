@@ -8,3 +8,6 @@ artifacts-publish.log
 
 artifacts-*.log
 *_wpftmp.csproj
+
+# Rust engine build output
+engine/target/
