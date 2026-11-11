@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/gr-core", "crates/gr-gpu", "crates/gr-bench"]
+members = ["crates/gr-core", "crates/gr-gpu", "crates/gr-studio", "crates/gr-bench"]
 
 [workspace.package]
 version = "0.1.0"
@@ -17,6 +17,8 @@ bytemuck = { version = "1.25", features = ["derive"] }
 wgpu = "30"
 pollster = "0.4"
 png = "0.18"
+eframe = { version = "0.36", default-features = false, features = ["wgpu", "default_fonts"] }
+rfd = "0.17"
 
 [profile.release]
 opt-level = 3

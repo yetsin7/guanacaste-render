@@ -54,7 +54,7 @@ and states that it is unused. Consequences that bound every row below:
 | Cameras, saved photos, lens shift, vertical correction | Working | `render-scene-bookmark-checks`, `render-photo-checks`, `studio` suite |
 | Depth of field (f-number and focus distance) | Working | `render-camera-effect-checks`; not shown in the interactive view |
 | Final still render with pause, stop and memory watchdog | Working | `studio` suite renders and decodes a real PNG; `render-engine-checks` |
-| Real-time ray-traced viewport | Missing | CPU-only renderer; see "Rendering technology" |
+| Real-time ray-traced viewport | Partial | Only in the separate Rust studio (`GuanacasteStudio.exe`, `engine/crates/gr-studio`): a progressive GPU path-traced view with navigation, inspected on Casa del Cobogó. It shows flat-coloured materials without textures, cut-out vegetation or artificial lights. The WPF studio's own viewport is unchanged |
 | GPU acceleration | Partial | A GPU path tracer exists in `engine/` (Rust, wgpu) and is verified from the command line (`docs/engine/OPTIMIZATION_RESULTS.md`). It is not connected to the application: renders made from the studio still run on the CPU, and the performance panel still reports the GPU as unused |
 | Denoising | Working | `denoiser-checks`: 4-spp indirect error cut by over 35 % |
 | Effects, looks, LUT colour grading | Working | `render-fx-checks`, `render-look-checks`; `.cube` LUT import |

@@ -16,6 +16,25 @@ foreach ($binary in @('GuanacasteRender.exe', 'GuanacasteRender.dll', 'Guanacast
     $actual = (Get-FileHash -LiteralPath (Join-Path $destination $binary) -Algorithm SHA256).Hash
     if ($actual -ne $expected) { throw "La verificación de la instalación falló: $binary" }
 }
+# The Rust studio is installed beside the application when it has been built (cargo build --release in engine/).
+$studioSource = Join-Path $PSScriptRoot '..\engine\target\release\GuanacasteStudio.exe'
+if (Test-Path -LiteralPath $studioSource) {
+    $studio = Join-Path $destination 'GuanacasteStudio.exe'
+    if (Get-Process GuanacasteStudio -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $studio }) {
+        throw 'Cierra Guanacaste Render Studio antes de actualizar esta versión.'
+    }
+    Copy-Item -LiteralPath $studioSource -Destination $studio -Force
+    if ((Get-FileHash -LiteralPath $studio -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $studioSource -Algorithm SHA256).Hash) {
+        throw 'La verificación de la instalación falló: GuanacasteStudio.exe'
+    }
+    $studioLink = (New-Object -ComObject WScript.Shell).CreateShortcut(
+        (Join-Path ([Environment]::GetFolderPath('Programs')) 'Guanacaste Render Studio.lnk'))
+    $studioLink.TargetPath = $studio
+    $studioLink.WorkingDirectory = $destination
+    $studioLink.Description = 'Guanacaste Render Studio · Visor con trazado de rayos en GPU'
+    $studioLink.Save()
+    Write-Output "Instalado: $studio"
+}
 $startMenu = Join-Path ([Environment]::GetFolderPath('Programs')) 'Guanacaste Render.lnk'
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($startMenu)

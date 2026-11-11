@@ -1,0 +1,22 @@
+[package]
+name = "gr-studio"
+description = "Guanacaste Render Studio: the desktop application, with an interactive GPU path-traced view."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "GuanacasteStudio"
+path = "src/main.rs"
+
+[dependencies]
+gr-core = { path = "../gr-core" }
+gr-gpu = { path = "../gr-gpu" }
+glam.workspace = true
+eframe.workspace = true
+rfd.workspace = true
+png.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"

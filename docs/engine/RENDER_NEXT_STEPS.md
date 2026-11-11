@@ -29,20 +29,38 @@ existe en `wgpu` como característica experimental y queda como aceleración opc
 | Exportación `.grscene` | Hecho (geometría, materiales básicos, cámara, sol) | Lectura validada en `scene_file.rs`, pruebas |
 | BVH de 4 vías en CPU | Hecho | 8 pruebas en `gr-core`; coincide con C# en 5 escenas |
 | Trazador GPU, prototipo | Hecho, por línea de comandos | Primer impacto verificado contra CPU; imágenes inspeccionadas |
-| Integración en la aplicación | **No hecho** | La app instalada usa el motor C# |
-| Estudio Rust (ventana e interfaz) | **No empezado** | |
+| Estudio Rust (`GuanacasteStudio.exe`) | Hecho, versión preliminar | Ventana con visor GPU progresivo, órbita, desplazamiento, zoom y caminar, sol, exposición, rebotes, perfiles y guardar PNG. Capturas inspeccionadas con Cobogó y con un proyecto `.gr` real |
+| Abrir proyectos `.gr`/`.g3d` en el estudio | Hecho mediante puente C# | `casa-render.gr` (2.6 M de triángulos) se convierte en 7.1 s y se traza a 144 muestras/s |
+| Perfiles de hardware | Hecho (sugerencia y presupuestos) | Pruebas en `hardware.rs`; falta calibración medida y lectura de VRAM |
+| Estudio WPF | Sigue instalado y sin cambios | Renderiza con el motor C# en CPU; convive con el estudio Rust |
+
+## Mapa de la migración
+
+El código C# suma 127 499 líneas en 819 archivos (2026-11-11). No se migra de una vez; este es el reparto y el estado:
+
+| Bloque C# | Líneas | Destino en Rust | Estado |
+|---|---:|---|---|
+| Motor de render (`Core/rendering`) | 13 280 | `gr-core`, `gr-gpu` | BVH y trazador GPU básico hechos; faltan texturas, cielo físico, luces, denoiser, efectos, película |
+| Interfaz WPF (`Desktop`) | ~50 000 | `gr-studio` (rediseño, no port línea a línea) | Visor y controles básicos hechos; faltan materiales, objetos, cámaras guardadas, salidas |
+| Geometría y mallado (`Core/geometry`) | 3 120 | crate nuevo `gr-model` | No empezado. Es lo que permite retirar el puente |
+| Modelo BIM y sesión (`Core` raíz, `architecture`, `families`, …) | ~25 000 | `gr-model` | No empezado |
+| Importadores (IFC, glTF, OBJ, Revit) | 6 803 | crate nuevo `gr-import` | No empezado |
+| Pruebas | ~24 000 | Pruebas junto a cada crate | 15 pruebas Rust hoy |
+
+Regla de trabajo: cada módulo portado se verifica contra el C# con los mismos datos antes de sustituirlo, como se
+hizo con el BVH (impactos idénticos) y el trazador (primer impacto idéntico).
 
 ## Siguientes pasos, en orden
 
 1. **Texturas y recorte alfa en `.grscene` y en el shader.** Sin esto la vegetación sale blanca; es el defecto más
-   visible. Requiere versión 2 del formato (coordenadas UV ya viajan; faltan las imágenes).
-2. **Estudio Rust mínimo:** ventana con el trazador GPU progresivo, órbita/pan/zoom y reinicio de la acumulación al
-   mover la cámara. Es el primer visor interactivo con iluminación real.
-3. **Denoiser en GPU** (À-trous guiado por normal y profundidad) para que 8–16 muestras ya sean presentables.
+   visible. Requiere versión 2 del formato (las coordenadas UV ya viajan; faltan las imágenes).
+2. **Denoiser en GPU** (À-trous guiado por normal y profundidad) para que 8–16 muestras ya sean presentables.
+3. **Lector de `.gr` y mallado en Rust** (`gr-model`): contenedor `G3DNATV1`, modelo, muros, losas, vanos. Elimina
+   los 7 s del puente y la dependencia de la aplicación C#.
 4. **Cielo físico y luces artificiales** portados del motor C# para poder comparar imágenes píxel a píxel.
-5. **Reducir la memoria del BVH de CPU** (338 MB en Cobogó): compactar hojas parcialmente llenas o cuantizar nodos.
-6. **Perfiles de hardware** (Económico, Equilibrado, Alto, Ultra) a partir de las capacidades reales del adaptador.
-7. **Lector de `.gr` en Rust** (contenedor `G3DNATV1`: cabecera, JSON en gzip, SHA-256) como inicio del paso 4.
+5. **Estudio: materiales y selección** (picar una superficie y cambiar su material) y cámaras guardadas.
+6. **Calibración de hardware** al primer arranque y lectura de VRAM para afinar el perfil sugerido.
+7. **Reducir la memoria del BVH de CPU** (338 MB en Cobogó).
 8. Llevar el mismo motor a Guanacaste 3D mediante el mismo `.grscene`, sin dependencia entre aplicaciones.
 
 ## Bloqueos y avisos
