@@ -18,7 +18,7 @@ engine/
 │   └── gr-bench/         Mediciones reproducibles contra el motor C#
 │       └── src/
 │           ├── main.rs             CPU: construcción del BVH y rayos por segundo
-│           └── bin/gpu.rs          GPU: verificación del primer impacto, render y rayos por segundo
+│           └── gpu.rs              GPU: verificación del primer impacto, render y rayos por segundo
 └── target/               Salida de compilación (no se versiona)
 ```
 
