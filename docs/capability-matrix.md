@@ -55,7 +55,7 @@ and states that it is unused. Consequences that bound every row below:
 | Depth of field (f-number and focus distance) | Working | `render-camera-effect-checks`; not shown in the interactive view |
 | Final still render with pause, stop and memory watchdog | Working | `studio` suite renders and decodes a real PNG; `render-engine-checks` |
 | Real-time ray-traced viewport | Missing | CPU-only renderer; see "Rendering technology" |
-| GPU acceleration | Missing | Reported honestly in the performance panel |
+| GPU acceleration | Partial | A GPU path tracer exists in `engine/` (Rust, wgpu) and is verified from the command line (`docs/engine/OPTIMIZATION_RESULTS.md`). It is not connected to the application: renders made from the studio still run on the CPU, and the performance panel still reports the GPU as unused |
 | Denoising | Working | `denoiser-checks`: 4-spp indirect error cut by over 35 % |
 | Effects, looks, LUT colour grading | Working | `render-fx-checks`, `render-look-checks`; `.cube` LUT import |
 | Panorama 360° (equirectangular) | Partial | `render-panorama-checks` renders the demonstration house at 768 × 384 and checks the seam, zenith and nadir; the picture in `artifacts/panorama-checks/` was inspected. The studio's 4096 × 2048 export button was not run on the review date |

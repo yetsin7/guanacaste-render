@@ -152,16 +152,7 @@ impl Bvh {
             let [a, b, c] = indices[triangle];
             (positions[a as usize], positions[b as usize], positions[c as usize])
         };
-        let boxes: Vec<PrimBox> = (0..count)
-            .into_par_iter()
-            .map(|triangle| {
-                let (a, b, c) = corners(triangle);
-                PrimBox { min: a.min(b).min(c), max: a.max(b).max(c) }
-            })
-            .collect();
-        let mut order: Vec<u32> = (0..count as u32).collect();
-        let binary = build_parallel(&boxes, &mut order, 0, 0);
-        drop(boxes);
+        let (binary, order) = build_binary(positions, indices);
 
         let mut collapse = Collapse {
             binary: &binary,
@@ -298,6 +289,59 @@ impl Bvh {
             current = stack[top];
         }
     }
+}
+
+/// Node of a [`FlatBvh`], laid out for a GPU storage buffer (32 bytes).
+#[derive(Clone, Copy, Debug, Default, bytemuck::Pod, bytemuck::Zeroable)]
+#[repr(C)]
+pub struct FlatNode {
+    pub min: [f32; 3],
+    /// Interior: index of the right child (the left child is the next node). Leaf: first slot in `triangle_order`.
+    pub right_or_first: u32,
+    pub max: [f32; 3],
+    /// Triangles in the leaf; zero for an interior node.
+    pub count: u32,
+}
+
+/// Binary hierarchy in depth-first order with at most four triangles per leaf: the form a shader can walk with a
+/// small stack. It comes from the same builder as [`Bvh`].
+pub struct FlatBvh {
+    pub nodes: Vec<FlatNode>,
+    /// Triangle numbers in leaf order; a leaf covers `triangle_order[first..first + count]`.
+    pub triangle_order: Vec<u32>,
+}
+
+impl FlatBvh {
+    pub fn build(positions: &[Vec3], indices: &[[u32; 3]]) -> FlatBvh {
+        if indices.is_empty() {
+            return FlatBvh { nodes: Vec::new(), triangle_order: Vec::new() };
+        }
+        let (binary, triangle_order) = build_binary(positions, indices);
+        let nodes = binary
+            .par_iter()
+            .map(|node| FlatNode {
+                min: node.min.to_array(),
+                right_or_first: if node.count > 0 { node.first } else { node.right },
+                max: node.max.to_array(),
+                count: node.count,
+            })
+            .collect();
+        FlatBvh { nodes, triangle_order }
+    }
+}
+
+/// Builds the binary tree over all triangles. Node 0 is the root and the left child of node `i` is node `i + 1`.
+fn build_binary(positions: &[Vec3], indices: &[[u32; 3]]) -> (Vec<BinaryNode>, Vec<u32>) {
+    let boxes: Vec<PrimBox> = indices
+        .par_iter()
+        .map(|&[a, b, c]| {
+            let (a, b, c) = (positions[a as usize], positions[b as usize], positions[c as usize]);
+            PrimBox { min: a.min(b).min(c), max: a.max(b).max(c) }
+        })
+        .collect();
+    let mut order: Vec<u32> = (0..indices.len() as u32).collect();
+    let binary = build_parallel(&boxes, &mut order, 0, 0);
+    (binary, order)
 }
 
 #[derive(Clone, Copy)]
@@ -725,6 +769,33 @@ mod tests {
                 assert_eq!(expected.is_some(), bvh.occluded(origin, direction, 1e-4, f32::MAX));
             }
         }
+    }
+
+    #[test]
+    fn flat_hierarchy_is_depth_first_and_covers_every_triangle() {
+        let (positions, indices) = soup(20_000, 5);
+        let flat = FlatBvh::build(&positions, &indices);
+        let mut seen = vec![false; indices.len()];
+        let mut stack = vec![0usize];
+        while let Some(index) = stack.pop() {
+            let node = flat.nodes[index];
+            if node.count == 0 {
+                assert!(node.right_or_first as usize > index + 1 && (node.right_or_first as usize) < flat.nodes.len());
+                stack.extend([index + 1, node.right_or_first as usize]);
+                continue;
+            }
+            assert!(node.count as usize <= LEAF_SIZE);
+            for slot in node.right_or_first..node.right_or_first + node.count {
+                let triangle = flat.triangle_order[slot as usize] as usize;
+                assert!(!seen[triangle], "triangle {triangle} is in two leaves");
+                seen[triangle] = true;
+                for corner in indices[triangle] {
+                    let p = positions[corner as usize];
+                    assert!(p.cmpge(Vec3::from(node.min)).all() && p.cmple(Vec3::from(node.max)).all());
+                }
+            }
+        }
+        assert!(seen.iter().all(|&covered| covered));
     }
 
     #[test]
