@@ -1,0 +1,15 @@
+[package]
+name = "gr-core"
+description = "Guanacaste Render engine core: scene exchange, acceleration structures and ray queries."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+glam.workspace = true
+rayon.workspace = true
+wide.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
