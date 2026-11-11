@@ -9,6 +9,7 @@ rust-version.workspace = true
 [dependencies]
 gr-core = { path = "../gr-core" }
 gr-gpu = { path = "../gr-gpu" }
+gr-model = { path = "../gr-model" }
 png.workspace = true
 glam.workspace = true
 rayon.workspace = true
@@ -24,3 +25,7 @@ path = "src/main.rs"
 [[bin]]
 name = "gpu"
 path = "src/gpu.rs"
+
+[[bin]]
+name = "mesh"
+path = "src/mesh.rs"

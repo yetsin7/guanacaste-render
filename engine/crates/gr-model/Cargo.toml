@@ -1,0 +1,18 @@
+[package]
+name = "gr-model"
+description = "Guanacaste project files and the building mesher: from a .gr project to triangles, without the C# application."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+gr-core = { path = "../gr-core" }
+glam.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+flate2.workspace = true
+sha2.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"

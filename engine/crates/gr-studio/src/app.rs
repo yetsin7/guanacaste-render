@@ -71,10 +71,13 @@ impl StudioApp {
             self.message = Some(("Esta ventana no tiene acceso a la tarjeta gráfica.".into(), true));
             return;
         };
-        match result.and_then(|(scene, path)| {
-            self.viewport.set_scene(state, &scene, self.tier.budget().max_bounces).map(|()| path)
+        match result.and_then(|opened| {
+            self.viewport.set_scene(state, &opened.scene, self.tier.budget().max_bounces).map(|()| (opened.path, opened.notice))
         }) {
-            Ok(path) => self.project = Some(path),
+            Ok((path, notice)) => {
+                self.project = Some(path);
+                self.message = notice.map(|text| (text, true));
+            }
             Err(reason) => self.message = Some((reason, true)),
         }
     }

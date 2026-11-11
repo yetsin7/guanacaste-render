@@ -30,7 +30,10 @@ existe en `wgpu` como característica experimental y queda como aceleración opc
 | BVH de 4 vías en CPU | Hecho | 8 pruebas en `gr-core`; coincide con C# en 5 escenas |
 | Trazador GPU, prototipo | Hecho, por línea de comandos | Primer impacto verificado contra CPU; imágenes inspeccionadas |
 | Estudio Rust (`GuanacasteStudio.exe`) | Hecho, versión preliminar | Ventana con visor GPU progresivo, órbita, desplazamiento, zoom y caminar, sol, exposición, rebotes, perfiles y guardar PNG. Capturas inspeccionadas con Cobogó y con un proyecto `.gr` real |
-| Abrir proyectos `.gr`/`.g3d` en el estudio | Hecho mediante puente C# | `casa-render.gr` (2.6 M de triángulos) se convierte en 7.1 s y se traza a 144 muestras/s |
+| Abrir proyectos `.gr`/`.g3d` en el estudio | Hecho: con Rust si está cubierto, si no con el puente C# | `casa-render.gr` (2.6 M de triángulos) se convierte en 7.1 s y se traza a 144 muestras/s |
+| Lector de `.gr`/`.g3d` en Rust | Hecho (esquema 15) | Contenedor con suma verificada; pruebas con archivos escritos por la aplicación. Esquemas anteriores necesitan las migraciones de C# |
+| Mallado en Rust: muros, vanos, losas planas, columnas, suelo | Hecho, idéntico a la aplicación | `tests/reference.rs` y `gr-bench --bin mesh`: diferencia 0 en los elementos cubiertos de 4 proyectos |
+| Mallado en Rust: resto de elementos | **No hecho** | Ver "Cobertura del mallado" |
 | Perfiles de hardware | Hecho (sugerencia y presupuestos) | Pruebas en `hardware.rs`; falta calibración medida y lectura de VRAM |
 | Estudio WPF | Sigue instalado y sin cambios | Renderiza con el motor C# en CPU; convive con el estudio Rust |
 
@@ -42,26 +45,54 @@ El código C# suma 127 499 líneas en 819 archivos (2026-11-11). No se migra de 
 |---|---:|---|---|
 | Motor de render (`Core/rendering`) | 13 280 | `gr-core`, `gr-gpu` | BVH y trazador GPU básico hechos; faltan texturas, cielo físico, luces, denoiser, efectos, película |
 | Interfaz WPF (`Desktop`) | ~50 000 | `gr-studio` (rediseño, no port línea a línea) | Visor y controles básicos hechos; faltan materiales, objetos, cámaras guardadas, salidas |
-| Geometría y mallado (`Core/geometry`) | 3 120 | crate nuevo `gr-model` | No empezado. Es lo que permite retirar el puente |
-| Modelo BIM y sesión (`Core` raíz, `architecture`, `families`, …) | ~25 000 | `gr-model` | No empezado |
+| Geometría y mallado (`Core/geometry`) | 3 120 | `gr-model` | Empezado: muros, uniones, vanos, losas planas, columnas y suelo, verificados. Faltan cubiertas inclinadas, terreno, vegetación y elementos estructurales |
+| Modelo BIM y sesión (`Core` raíz, `architecture`, `families`, …) | ~25 000 | `gr-model` | Solo lectura de lo que usa el mallador. Sin edición, validación ni migraciones de esquema |
 | Importadores (IFC, glTF, OBJ, Revit) | 6 803 | crate nuevo `gr-import` | No empezado |
-| Pruebas | ~24 000 | Pruebas junto a cada crate | 15 pruebas Rust hoy |
+| Pruebas | ~24 000 | Pruebas junto a cada crate | 42 pruebas Rust hoy |
 
 Regla de trabajo: cada módulo portado se verifica contra el C# con los mismos datos antes de sustituirlo, como se
 hizo con el BVH (impactos idénticos) y el trazador (primer impacto idéntico).
 
+## Cobertura del mallado
+
+Medido con `gr-bench --bin mesh` el 2026-11-11. "Elementos" son los rangos de la malla de la aplicación (un muro,
+una puerta, una losa, un árbol…).
+
+| Proyecto | Elementos idénticos | Triángulos Rust / aplicación | Elementos sin cubrir | Leer y mallar |
+|---|---:|---:|---:|---:|
+| demo-house | 18 de 18 | 2 696 / 2 698 (el resto es el suelo, que el estudio sí añade) | 0 | 0.7 ms |
+| showcase | 20 de 34 | 2 276 / 3 998 | 14 | 0.9 ms |
+| modern-house | 19 de 36 | 492 / 2 243 986 | 17 | 0.8 ms |
+| cobogo | 122 de 184 | 5 148 / 1 504 820 | 70 | 2.5 ms |
+
+Lectura honesta: por número de elementos la cobertura es de dos tercios, pero por triángulos es mínima en los
+proyectos con vegetación y mobiliario, porque un solo árbol de biblioteca son cientos de miles de triángulos. Un
+proyecto real casi siempre tiene algún elemento sin cubrir, así que hoy casi todos siguen pasando por el puente.
+
+Lo que falta, en el orden que más proyectos desbloquea:
+
+1. **Familias de componentes con malla** (`ComponentFamilyRules.MeshOf`, `families/`): vegetación, mobiliario,
+   vehículos. Es la mayor parte de los triángulos.
+2. **Elementos estructurales paramétricos** (`ElementGeometry.Parts`): vigas, escaleras, barandas, cimientos,
+   muros cortina. Incluye los huecos de losa (aberturas, ductos, ascensores), que hoy no se cortan.
+3. **Cubiertas inclinadas y hastiales** (`RoofGeometry`, 438 líneas).
+4. **Terreno** (`TopographyGeometry`, 351 líneas) y con él la cota real del suelo.
+5. **Instalaciones**: dispositivos eléctricos y fontanería, que dependen de sus análisis.
+6. **Familias en sitio** (`FamilyGeometry`).
+7. **Materiales asignados en el proyecto** y texturas: hoy el camino Rust usa el material de serie de cada tipo de
+   superficie; el puente sí aplica los asignados.
+
 ## Siguientes pasos, en orden
 
-1. **Texturas y recorte alfa en `.grscene` y en el shader.** Sin esto la vegetación sale blanca; es el defecto más
-   visible. Requiere versión 2 del formato (las coordenadas UV ya viajan; faltan las imágenes).
-2. **Denoiser en GPU** (À-trous guiado por normal y profundidad) para que 8–16 muestras ya sean presentables.
-3. **Lector de `.gr` y mallado en Rust** (`gr-model`): contenedor `G3DNATV1`, modelo, muros, losas, vanos. Elimina
-   los 7 s del puente y la dependencia de la aplicación C#.
-4. **Cielo físico y luces artificiales** portados del motor C# para poder comparar imágenes píxel a píxel.
-5. **Estudio: materiales y selección** (picar una superficie y cambiar su material) y cámaras guardadas.
-6. **Calibración de hardware** al primer arranque y lectura de VRAM para afinar el perfil sugerido.
-7. **Reducir la memoria del BVH de CPU** (338 MB en Cobogó).
-8. Llevar el mismo motor a Guanacaste 3D mediante el mismo `.grscene`, sin dependencia entre aplicaciones.
+1. **Familias de componentes con malla** en `gr-model`: es lo que más acerca a abrir proyectos reales sin el puente.
+2. **Texturas y recorte alfa en `.grscene` y en el shader.** Sin esto la vegetación sale blanca.
+3. **Elementos estructurales, cubiertas inclinadas y terreno** en `gr-model` (ver la lista de cobertura).
+4. **Denoiser en GPU** (À-trous guiado por normal y profundidad) para que 8–16 muestras ya sean presentables.
+5. **Cielo físico y luces artificiales** portados del motor C# para poder comparar imágenes píxel a píxel.
+6. **Estudio: materiales y selección** (picar una superficie y cambiar su material) y cámaras guardadas.
+7. **Calibración de hardware** al primer arranque y lectura de VRAM para afinar el perfil sugerido.
+8. **Reducir la memoria del BVH de CPU** (338 MB en Cobogó).
+9. Llevar el mismo motor a Guanacaste 3D, sin dependencia entre aplicaciones.
 
 ## Bloqueos y avisos
 

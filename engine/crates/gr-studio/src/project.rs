@@ -1,15 +1,26 @@
-//! Opening what the studio can show: `.grscene` files directly, and projects (`.gr`, `.g3d`) through the bridge.
+//! Opening what the studio can show: `.grscene` files, and projects (`.gr`, `.g3d`).
 //!
-//! The bridge is the installed C# application run without a window (`GuanacasteRender.exe --export-scene`). It is
-//! temporary: it goes away when the engine reads and meshes projects itself.
+//! A project is read and meshed here, by `gr-model`, when that mesher covers everything in it. Otherwise the
+//! installed C# application converts it, run without a window (`GuanacasteRender.exe --export-scene`). That bridge
+//! shrinks as `gr-model` covers more element kinds, and goes away when it covers them all.
 
 use gr_core::scene_file::Scene;
+use gr_model::document::Document;
+use gr_model::mesh::build_mesh;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::mpsc::{Receiver, channel};
 
+/// A scene ready to show.
+pub struct Opened {
+    pub scene: Scene,
+    pub path: PathBuf,
+    /// Something the user should know about how it was opened, such as elements that are missing.
+    pub notice: Option<String>,
+}
+
 /// A scene ready to show, or the reason it could not be opened, in words for the user.
-pub type Loaded = Result<(Scene, PathBuf), String>;
+pub type Loaded = Result<Opened, String>;
 
 /// File extensions the open dialog offers.
 pub const PROJECT_EXTENSIONS: [&str; 3] = ["gr", "g3d", "grscene"];
@@ -18,28 +29,56 @@ pub const PROJECT_EXTENSIONS: [&str; 3] = ["gr", "g3d", "grscene"];
 pub fn load_in_background(path: PathBuf, wake: impl Fn() + Send + 'static) -> Receiver<Loaded> {
     let (sender, receiver) = channel();
     std::thread::spawn(move || {
-        let result = load(&path).map(|scene| (scene, path));
+        let result = load(&path).map(|(scene, notice)| Opened { scene, path, notice });
         let _ = sender.send(result);
         wake();
     });
     receiver
 }
 
-fn load(path: &Path) -> Result<Scene, String> {
+fn load(path: &Path) -> Result<(Scene, Option<String>), String> {
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_lowercase();
     if extension == "grscene" {
-        return Scene::load(path).map_err(|error| format!("No se pudo leer la escena: {error}"));
+        return Scene::load(path).map(|scene| (scene, None)).map_err(|error| format!("No se pudo leer la escena: {error}"));
     }
-    let bridge = find_bridge().ok_or_else(|| {
-        "Para abrir proyectos .gr hace falta Guanacaste Render instalado (el puente de exportación no se encontró).".to_string()
-    })?;
+
+    // First choice: read and mesh the project here. Only a mesh that covers the whole project is shown as it is.
+    let native = Document::load(path).map(|document| {
+        let (building, coverage) = build_mesh(&document, false);
+        let bounds = building.bounds();
+        let (mesh, _) = build_mesh(&document, true);
+        (gr_model::scene::to_scene(mesh, bounds), coverage)
+    });
+    let native = match native {
+        Ok((scene, coverage)) if coverage.is_complete() => return Ok((scene, None)),
+        other => other,
+    };
+
+    let Some(bridge) = find_bridge() else {
+        // Without the application, a partial building is still better than nothing, as long as it says so.
+        return match native {
+            Ok((scene, coverage)) => Ok((
+                scene,
+                Some(format!(
+                    "Vista parcial: faltan {} elementos que este visor aún no genera (instala Guanacaste Render para verlos).",
+                    coverage.missing()
+                )),
+            )),
+            Err(error) => Err(format!("No se pudo abrir el proyecto: {error}")),
+        };
+    };
+    convert_with_bridge(&bridge, path).map(|scene| (scene, None))
+}
+
+/// Converts a project with the installed application and loads the scene it writes.
+fn convert_with_bridge(bridge: &Path, path: &Path) -> Result<Scene, String> {
     let folder = std::env::temp_dir().join("guanacaste-studio");
     std::fs::create_dir_all(&folder).map_err(|error| format!("No se pudo crear la carpeta temporal: {error}"))?;
     let exported = folder.join(format!("{}.grscene", std::process::id()));
     let error_file = PathBuf::from(format!("{}.error.txt", exported.display()));
     let _ = std::fs::remove_file(&error_file);
 
-    let status = Command::new(&bridge)
+    let status = Command::new(bridge)
         .arg("--export-scene")
         .arg(path)
         .arg(&exported)

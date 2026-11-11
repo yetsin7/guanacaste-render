@@ -22,6 +22,12 @@ if (args.Contains("--ab"))
     return;
 }
 
+if (args.Contains("--mesh-reference"))
+{
+    MeshReference.Run(outputFolder ?? Path.Combine("artifacts", "mesh-reference"));
+    return;
+}
+
 if (args.Contains("--baseline"))
 {
     EngineBaseline.Run(outputFolder ?? Path.Combine("artifacts", "engine-bench"));
