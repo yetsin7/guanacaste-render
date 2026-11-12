@@ -72,26 +72,37 @@ pub struct SceneMesh {
     /// corner. Created by the first smooth triangle.
     pub normals: Option<Vec<Vec3>>,
     pub kinds: Vec<SurfaceKind>,
+    /// Per-triangle light output, allocated only when an electrical dimmer reduces emission.
+    pub emission_scale: Option<Vec<f32>>,
     /// Sorted, non-overlapping; triangles outside every range belong to no element (the ground).
     pub element_ranges: Vec<ElementRange>,
 }
 
 impl SceneMesh {
+    /// Returns the number of surface triangles currently stored.
     pub fn triangle_count(&self) -> usize {
         self.kinds.len()
     }
 
     /// The three corners of a triangle.
     pub fn triangle(&self, index: usize) -> [Vec3; 3] {
-        [self.positions[index * 3], self.positions[index * 3 + 1], self.positions[index * 3 + 2]]
+        [
+            self.positions[index * 3],
+            self.positions[index * 3 + 1],
+            self.positions[index * 3 + 2],
+        ]
     }
 
+    /// Appends a flat triangle while preserving optional normal and emission alignment.
     pub fn add_triangle(&mut self, a: Vec3, b: Vec3, c: Vec3, kind: SurfaceKind) {
         if let Some(normals) = &mut self.normals {
             normals.extend([Vec3::ZERO; 3]);
         }
         self.positions.extend([a, b, c]);
         self.kinds.push(kind);
+        if let Some(scale) = &mut self.emission_scale {
+            scale.push(1.0);
+        }
     }
 
     /// A triangle shaded with interpolated normals, for curved surfaces such as trunks.
@@ -100,11 +111,16 @@ impl SceneMesh {
         self.normals.get_or_insert_with(|| vec![Vec3::ZERO; count]).extend(normals);
         self.positions.extend(corners);
         self.kinds.push(kind);
+        if let Some(scale) = &mut self.emission_scale {
+            scale.push(1.0);
+        }
     }
 
     /// Adds every triangle of another mesh after this one's. Element ranges of `other` are not carried over.
     pub fn append(&mut self, other: SceneMesh) {
         let count = self.positions.len();
+        let triangles = self.triangle_count();
+        let other_triangles = other.triangle_count();
         match (&mut self.normals, other.normals) {
             (Some(normals), Some(theirs)) => normals.extend(theirs),
             (Some(normals), None) => normals.resize(count + other.positions.len(), Vec3::ZERO),
@@ -117,6 +133,28 @@ impl SceneMesh {
         }
         self.positions.extend(other.positions);
         self.kinds.extend(other.kinds);
+        match (&mut self.emission_scale, other.emission_scale) {
+            (Some(scale), Some(theirs)) => scale.extend(theirs),
+            (Some(scale), None) => scale.resize(triangles + other_triangles, 1.0),
+            (None, Some(theirs)) => {
+                let mut scale = vec![1.0; triangles];
+                scale.extend(theirs);
+                self.emission_scale = Some(scale);
+            }
+            (None, None) => {}
+        }
+    }
+
+    /// Records a dimmer's output for the triangles added since an element began.
+    pub fn dim_since(&mut self, first: usize, output: f64) {
+        if output >= 1.0 {
+            return;
+        }
+        let triangles = self.triangle_count();
+        let scale = self.emission_scale.get_or_insert_with(|| vec![1.0; triangles]);
+        for value in &mut scale[first..triangles] {
+            *value = output.max(0.0) as f32;
+        }
     }
 
     /// A planar quad given counter-clockwise as seen from its front.
@@ -128,7 +166,11 @@ impl SceneMesh {
     /// Attributes every triangle added since `first` to one element.
     pub fn mark_element(&mut self, element: Id, first: usize) {
         if first < self.triangle_count() {
-            self.element_ranges.push(ElementRange { first, end: self.triangle_count(), element });
+            self.element_ranges.push(ElementRange {
+                first,
+                end: self.triangle_count(),
+                element,
+            });
         }
     }
 
@@ -137,6 +179,8 @@ impl SceneMesh {
         if self.positions.is_empty() {
             return (Vec3::ZERO, Vec3::ONE);
         }
-        self.positions.iter().fold((Vec3::MAX, Vec3::MIN), |(min, max), &p| (min.min(p), max.max(p)))
+        self.positions
+            .iter()
+            .fold((Vec3::MAX, Vec3::MIN), |(min, max), &p| (min.min(p), max.max(p)))
     }
 }

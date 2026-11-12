@@ -219,7 +219,7 @@ pub(super) fn add_electrical_device(mesh: &mut SceneMesh, device: &ElectricalDev
         }
         _ => return false,
     }
-    device.controls.is_empty()
+    true
 }
 
 /// Builds the motor, five blades, and light kit of a ceiling fan.

@@ -27,6 +27,12 @@ pub struct ElectricalDevice {
     #[serde(default)]
     pub circuit_id: Option<Id>,
     #[serde(default)]
+    pub watts: f64,
+    #[serde(default = "default_dim_level")]
+    pub dim_level: f64,
+    #[serde(default)]
+    pub main_breaker_amps: f64,
+    #[serde(default)]
     pub outdoor_position: Option<Point2>,
     #[serde(default)]
     pub panel_count: i32,
@@ -56,6 +62,11 @@ fn unknown_kind() -> i32 {
 /// Preserves the source application's default switch position.
 fn default_on() -> bool {
     true
+}
+
+/// Preserves full output for dimmers that predate an explicit setting.
+fn default_dim_level() -> f64 {
+    1.0
 }
 
 /// Catalog values serialized by the source application.

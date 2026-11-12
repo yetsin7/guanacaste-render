@@ -82,6 +82,12 @@ if (args.Contains("--electrical-reference"))
     return;
 }
 
+if (args.Contains("--electrical-simulation-reference"))
+{
+    ElectricalSimulationReference.Run(outputFolder ?? Path.Combine("artifacts", "electrical-simulation-reference"));
+    return;
+}
+
 if (args.Contains("--baseline"))
 {
     EngineBaseline.Run(outputFolder ?? Path.Combine("artifacts", "engine-bench"));

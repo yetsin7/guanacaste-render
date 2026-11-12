@@ -6,6 +6,7 @@
 
 use super::element_part::add_part;
 use super::electrical_geometry::add_electrical_device;
+use super::electrical_analysis::ElectricalAnalysis;
 use super::interior_test::InteriorTest;
 use super::elements::element_parts;
 use super::openings::{add_opening_assembly, add_security_bars};
@@ -21,7 +22,7 @@ use super::terrain_surface::TerrainSurface;
 use crate::document::{Document, FloorSlab, Id, Wall, WallOpening, element_kind, floor, wall};
 use crate::plan::{PlanRectangle, Point2, WallJoins, column_outline, contains_rectangle, counter_clockwise, slab_pieces, wall_solids};
 use glam::{Vec2, Vec3};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Elements of the project that the application meshes and this mesher does not yet. When any count is not zero
 /// the mesh is a partial building, and a complete one still needs the application.
@@ -173,16 +174,14 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         mesh.mark_element(column.id, first);
     }
 
-    let has_panel = document.electrical_devices.iter().any(|device| device.kind == crate::document::electrical_device_kind::PANEL);
-    let controlled: HashSet<Id> = document.electrical_devices.iter().flat_map(|device| device.controls.iter().copied()).collect();
+    let electrical = ElectricalAnalysis::new(document);
     for device in &document.electrical_devices {
         let first = mesh.triangle_count();
-        let brightness = if device.is_luminaire() {
-            if device.circuit_id.is_some() || controlled.contains(&device.id) { None } else { Some(!has_panel) }
-        } else { Some(false) };
-        if !elevations.get(&device.level_id).zip(brightness).is_some_and(|(&level, lit)| add_electrical_device(&mut mesh, device, level, lit)) {
+        let brightness = if device.is_luminaire() { electrical.brightness(device.id) } else { 0.0 };
+        if !elevations.get(&device.level_id).is_some_and(|&level| add_electrical_device(&mut mesh, device, level, brightness > 0.0)) {
             coverage.electrical_devices += 1;
         }
+        if brightness > 0.0 { mesh.dim_since(first, brightness); }
         mesh.mark_element(device.id, first);
     }
 
@@ -228,9 +227,12 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
             Some(parts) => {
                 let first = mesh.triangle_count();
                 let datum = elevation_of(element.level_id);
-                for part in &parts {
-                    add_part(&mut mesh, part, datum);
+                let brightness = if element.kind == element_kind::COMPONENT { electrical.brightness(element.id) } else { 1.0 };
+                for mut part in parts {
+                    if brightness <= 0.0 && part.kind == SurfaceKind::LightEmitter { part.kind = SurfaceKind::LightOff; }
+                    add_part(&mut mesh, &part, datum);
                 }
+                if brightness > 0.0 { mesh.dim_since(first, brightness); }
                 mesh.mark_element(element.id, first);
             }
             None => coverage.structural_elements += 1,

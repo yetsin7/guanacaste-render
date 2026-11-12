@@ -4,6 +4,8 @@ mod builder;
 mod dotnet;
 #[path = "electrical-geometry.rs"]
 mod electrical_geometry;
+#[path = "electrical-analysis.rs"]
+mod electrical_analysis;
 #[path = "electrical-solar.rs"]
 mod electrical_solar;
 #[path = "element-part.rs"]
