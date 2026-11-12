@@ -6,7 +6,7 @@ members = ["crates/gr-core", "crates/gr-model", "crates/gr-gpu", "crates/gr-stud
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-rust-version = "1.90"
+rust-version = "1.95"
 
 [workspace.dependencies]
 glam = { version = "0.30", features = ["bytemuck"] }
