@@ -10,7 +10,7 @@ pub const HISTORY: usize = 90;
 
 /// A gap between frames longer than this is the interface waiting for input, not drawing slowly: the view only
 /// redraws when something changes, so such gaps say nothing about how fast it can draw.
-const IDLE_GAP_MS: f32 = 90.0;
+const IDLE_GAP_MS: f32 = 50.0;
 
 #[derive(Clone, Debug, Default)]
 pub struct Hardware {
@@ -74,6 +74,11 @@ impl Telemetry {
         }
     }
 
+    /// True until the adapter and processor facts have been read.
+    pub fn is_reading_hardware(&self) -> bool {
+        self.pending.is_some()
+    }
+
     /// Mean, minimum and maximum of the recorded frame times.
     pub fn stats(&self) -> Option<(f32, f32, f32)> {
         if self.frame_ms.is_empty() {
@@ -111,9 +116,24 @@ impl Telemetry {
 fn read_hardware() -> Hardware {
     let adapters = query(
         r"HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}",
-        true,
+        false,
     )
-    .map(|output| parse_adapters(&output))
+    .map(|listing| {
+        // Each adapter is a numbered subkey (0000, 0001…). Querying them one by one takes under a second; a
+        // recursive query of the class walks every driver setting and took close to a minute.
+        let adapters: String = listing
+            .lines()
+            .map(str::trim)
+            .filter(|line| {
+                line.starts_with("HKEY_")
+                    && line.rsplit('\\').next().is_some_and(|last| {
+                        last.len() == 4 && last.bytes().all(|b| b.is_ascii_digit())
+                    })
+            })
+            .filter_map(|key| query(key, false))
+            .collect();
+        parse_adapters(&adapters)
+    })
     .unwrap_or_default();
     let processor = query(
         r"HKLM\HARDWARE\DESCRIPTION\System\CentralProcessor\0",

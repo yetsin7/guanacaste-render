@@ -561,6 +561,11 @@ impl eframe::App for Studio {
         self.telemetry
             .record(now.duration_since(self.last_frame).as_secs_f32() * 1000.0);
         self.last_frame = now;
+        if self.telemetry.is_reading_hardware() {
+            // The readouts that show the adapter's memory appear once Windows has answered.
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_millis(250));
+        }
         if !self.telemetry.is_idle() {
             // One more frame once the interface settles, so the readouts can say it is idle.
             ui.ctx()

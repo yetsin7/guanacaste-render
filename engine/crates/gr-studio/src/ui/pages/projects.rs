@@ -53,7 +53,7 @@ pub fn show(ui: &mut Ui, studio: &mut Studio, state: Option<&RenderState>, local
                 .show(ui, |ui| {
                     ui.set_width(ui.available_width());
                     let recent = filtered(studio, &local.search);
-                    section_header(ui, studio, recent.len());
+                    section_header(ui, &mut local.list, recent.len());
                     ui.add_space(12.0);
                     featured(ui, studio, state);
                     ui.add_space(20.0);
@@ -224,7 +224,7 @@ fn filter_bar(ui: &mut Ui, studio: &Studio, local: &mut ProjectsUi) {
     });
 }
 
-fn section_header(ui: &mut Ui, studio: &Studio, count: usize) {
+fn section_header(ui: &mut Ui, list: &mut bool, count: usize) {
     ui.horizontal(|ui| {
         let (bar, _) = ui.allocate_exact_size(vec2(4.0, 22.0), Sense::hover());
         ui.painter().rect_filled(bar, 0.0, theme::PRIMARY_CONTAINER);
@@ -246,14 +246,34 @@ fn section_header(ui: &mut Ui, studio: &Studio, count: usize) {
                     theme::TEXT_VARIANT,
                 );
             });
-        let _ = studio;
+        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+            let label = if *list {
+                "Ver como tarjetas"
+            } else {
+                "Ver todos en lista"
+            };
+            let link = widgets::button(
+                ui,
+                Style::Quiet,
+                Some(icons::ARROW_FORWARD),
+                label,
+                theme::mono_medium(14.0),
+                30.0,
+            );
+            if link.clicked() {
+                *list = !*list;
+            }
+        });
     });
 }
 
 /// The open project, large: its live navigation view on the left and its figures on the right.
 fn featured(ui: &mut Ui, studio: &mut Studio, state: Option<&RenderState>) {
     let width = ui.available_width();
-    let height = (width * 0.68 * 9.0 / 16.0).clamp(440.0, 620.0);
+    // Like the prototype, the featured project leaves the top of the recent cards in view.
+    let height = (width * 0.68 * 9.0 / 16.0)
+        .min(ui.clip_rect().height() - 150.0)
+        .clamp(380.0, 620.0);
     let (rect, _) = ui.allocate_exact_size(vec2(width, height), Sense::hover());
     ui.painter().rect_filled(rect, 4.0, theme::CARD);
     ui.painter()
@@ -381,8 +401,15 @@ fn featured(ui: &mut Ui, studio: &mut Studio, state: Option<&RenderState>) {
     text(ui, name, theme::heading(30.0), theme::TEXT);
     ui.add_space(4.0);
     let description = match (&studio.project, &studio.notice) {
-        (Some(path), Some(notice)) => format!("{}\n{notice}", path.display()),
-        (Some(path), None) => path.display().to_string(),
+        (Some(path), notice) => {
+            let folder = path.parent().map(|folder| folder.display().to_string()).unwrap_or_default();
+            let kind = path.extension().map(|ext| ext.to_string_lossy().to_uppercase()).unwrap_or_default();
+            let base = format!("Proyecto {kind} en {folder}");
+            match notice {
+                Some(notice) => format!("{base}\n{notice}"),
+                None => base,
+            }
+        }
         (None, _) => "Abre un proyecto .gr o .g3d de Guanacaste 3D para navegarlo, poblarlo de vegetación y renderizarlo.".into(),
     };
     ui.add(

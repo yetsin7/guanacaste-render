@@ -23,7 +23,9 @@ concurrency:
 jobs:
   rust:
     name: Format, lint, test and build (Rust)
-    runs-on: ubuntu-latest
+    # The studio is a Windows desktop application (GuanacasteStudio.exe); its window layer has no Linux backend
+    # enabled, so the whole workspace is checked where it ships.
+    runs-on: windows-latest
     timeout-minutes: 45
     defaults:
       run:

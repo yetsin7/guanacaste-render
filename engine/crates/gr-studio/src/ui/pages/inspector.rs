@@ -117,7 +117,12 @@ fn main_column(ui: &mut Ui, studio: &mut Studio, index: usize) {
     let species = &CATALOG[index];
     let width = ui.available_width();
     let (stage, _) = ui.allocate_exact_size(
-        vec2(width, (width * 0.6).clamp(320.0, 660.0)),
+        vec2(
+            width,
+            (width * 0.6)
+                .min(ui.clip_rect().height() * 0.52)
+                .clamp(300.0, 660.0),
+        ),
         Sense::hover(),
     );
     let painter = ui.painter_at(stage);

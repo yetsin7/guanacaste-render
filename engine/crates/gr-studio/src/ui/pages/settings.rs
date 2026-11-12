@@ -86,6 +86,21 @@ fn header_bar(ui: &mut Ui, studio: &mut Studio) {
     );
     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
         ui.spacing_mut().item_spacing.x = 8.0;
+        egui::Frame::new()
+            .fill(theme::CONTAINER)
+            .stroke(theme::hairline())
+            .corner_radius(2)
+            .inner_margin(egui::Margin::symmetric(10, 6))
+            .show(ui, |ui| {
+                widgets::icon_text(
+                    ui,
+                    icons::SAVE,
+                    "Se guarda solo",
+                    theme::mono_medium(13.0),
+                    theme::TELEMETRY,
+                )
+                .on_hover_text("Cada cambio se guarda al momento para la próxima sesión");
+            });
         if widgets::button(
             ui,
             Style::Ghost,
@@ -448,6 +463,36 @@ fn live_view(ui: &mut Ui, studio: &mut Studio, state: Option<&RenderState>) {
                         ),
                         theme::mono(13.0),
                         theme::TELEMETRY,
+                    );
+                    let footer =
+                        Rect::from_min_max(pos2(rect.left(), rect.bottom() - 28.0), rect.max);
+                    painter.rect_filled(footer, 0.0, theme::PANEL.gamma_multiply(0.85));
+                    let camera = studio.viewport.camera();
+                    let settings = &studio.viewport.settings;
+                    painter.text(
+                        footer.left_center() + vec2(10.0, 0.0),
+                        egui::Align2::LEFT_CENTER,
+                        format!(
+                            "CDV: {:.0}°  EXP: {:.2}  SOL: {:.0}°",
+                            camera.vertical_fov_degrees,
+                            settings.exposure,
+                            settings.sun_elevation_degrees
+                        ),
+                        theme::mono(13.0),
+                        theme::TEXT,
+                    );
+                    let (label, color) =
+                        if studio.viewport.mode() == crate::viewport::ViewMode::Navigate {
+                            ("TRAZADO APAGADO", theme::TEXT_VARIANT)
+                        } else {
+                            ("TRAZADO GPU", theme::PRIMARY)
+                        };
+                    painter.text(
+                        footer.right_center() - vec2(10.0, 0.0),
+                        egui::Align2::RIGHT_CENTER,
+                        label,
+                        theme::mono_medium(13.0),
+                        color,
                     );
                 }
                 None => {
