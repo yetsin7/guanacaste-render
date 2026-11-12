@@ -17,7 +17,7 @@
 
 use sha2::{Digest, Sha256};
 use std::fmt;
-use std::io::Read;
+use std::io::{Read, Write};
 
 const SIGNATURE: &[u8; 8] = b"G3DNATV1";
 const HEADER_BYTES: usize = 8 + 4 + 1 + 4 + 16 + 8 + 8 + 32;
@@ -62,6 +62,8 @@ pub enum DocumentKind {
 pub struct Container {
     pub kind: DocumentKind,
     pub schema_version: i32,
+    /// The document's identifier, kept as stored so a rewritten file is the same document.
+    pub document_id: [u8; 16],
     pub json: Vec<u8>,
 }
 
@@ -121,11 +123,37 @@ impl Container {
                 "the integrity checksum does not match",
             ));
         }
+        let mut document_id = [0u8; 16];
+        document_id.copy_from_slice(&bytes[17..33]);
         Ok(Container {
             kind,
             schema_version,
+            document_id,
             json,
         })
+    }
+
+    /// The file bytes of this container, laid out as the application writes them: the header, the SHA-256 of the
+    /// JSON and the JSON compressed with gzip.
+    pub fn encode(&self) -> std::io::Result<Vec<u8>> {
+        let mut encoder = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+        encoder.write_all(&self.json)?;
+        let compressed = encoder.finish()?;
+        let mut bytes = Vec::with_capacity(HEADER_BYTES + compressed.len());
+        bytes.extend_from_slice(SIGNATURE);
+        bytes.extend_from_slice(&1i32.to_le_bytes());
+        bytes.push(match self.kind {
+            DocumentKind::Project => 1,
+            DocumentKind::Family => 2,
+            DocumentKind::Template => 3,
+        });
+        bytes.extend_from_slice(&self.schema_version.to_le_bytes());
+        bytes.extend_from_slice(&self.document_id);
+        bytes.extend_from_slice(&(self.json.len() as i64).to_le_bytes());
+        bytes.extend_from_slice(&(compressed.len() as i64).to_le_bytes());
+        bytes.extend_from_slice(&Sha256::digest(&self.json));
+        bytes.extend_from_slice(&compressed);
+        Ok(bytes)
     }
 }
 
@@ -141,6 +169,18 @@ mod tests {
         assert_eq!(container.kind, DocumentKind::Project);
         assert_eq!(container.schema_version, 15);
         assert!(container.json.starts_with(b"{"));
+    }
+
+    #[test]
+    fn a_container_written_back_reads_the_same() {
+        let container = Container::parse(HOUSE).expect("the fixture is a valid project");
+        let again = Container::parse(&container.encode().expect("encodes")).expect("reads back");
+        assert_eq!(again.kind, container.kind);
+        assert_eq!(again.schema_version, container.schema_version);
+        assert_eq!(again.document_id, container.document_id);
+        assert_eq!(again.json, container.json);
+        // Signature, version, kind, schema, document id and length; the compressed length depends on the compressor.
+        assert_eq!(&HOUSE[..41], &container.encode().expect("encodes")[..41]);
     }
 
     #[test]

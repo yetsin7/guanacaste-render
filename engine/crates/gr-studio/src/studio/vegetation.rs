@@ -104,22 +104,42 @@ pub const CATALOG: [Species; 5] = [
 ];
 
 impl Species {
+    /// The identifier of the `instance`-th copy placed in the studio. A plant grows from its identifier, so this is
+    /// also its shape, here and in the application once saved.
+    pub fn instance_id(&self, instance: u128) -> u128 {
+        self.seed ^ instance.wrapping_mul(0x9e37_79b9_7f4a_7c15)
+    }
+
     /// The plant grown at `at`, `height` metres tall. `instance` varies the shape between copies.
     pub fn mesh(&self, at: Vec3, height: f64, spread: f64, instance: u128) -> SceneMesh {
-        let plant = StructuralElement {
-            id: Id(self.seed ^ instance.wrapping_mul(0x9e37_79b9_7f4a_7c15)),
-            kind: element_kind::PLANTING,
-            start: gr_model::plan::Point2::new(at.x as f64, at.y as f64),
-            end: gr_model::plan::Point2::new(at.x as f64, at.y as f64),
-            width: spread,
-            height,
-            style: self.style,
-            ..Default::default()
-        };
-        let mut mesh = SceneMesh::default();
-        add_plant(&mut mesh, &plant, at.z as f64);
-        mesh
+        grow(self.style, self.instance_id(instance), at, height, spread)
     }
+}
+
+/// A plant of growth form `style` with identifier `id`, its root at `at`: the same triangles as the project mesher
+/// makes for a planting rooted there.
+pub fn grow(style: i32, id: u128, at: Vec3, height: f64, spread: f64) -> SceneMesh {
+    let plant = StructuralElement {
+        id: Id(id),
+        kind: element_kind::PLANTING,
+        start: gr_model::plan::Point2::new(at.x as f64, at.y as f64),
+        end: gr_model::plan::Point2::new(at.x as f64, at.y as f64),
+        width: spread,
+        height,
+        style,
+        ..Default::default()
+    };
+    let mut mesh = SceneMesh::default();
+    add_plant(&mut mesh, &plant, at.z as f64);
+    mesh
+}
+
+/// The catalog species of a growth form; forms the catalog does not list grow as the broadleaf tree.
+pub fn species_for_style(style: i32) -> usize {
+    CATALOG
+        .iter()
+        .position(|species| species.style == style)
+        .unwrap_or(1)
 }
 
 /// Facts about a grown specimen, for the cards and the inspector.

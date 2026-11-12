@@ -59,7 +59,7 @@ mod terrain_mesh;
 #[path = "terrain-surface.rs"]
 mod terrain_surface;
 
-pub use builder::{Coverage, build_mesh};
+pub use builder::{Coverage, build_mesh, planting_base};
 pub use element_part::ElementPart;
 pub use plants::add_plant;
 pub use scene_mesh::{ElementRange, SceneMesh, SurfaceKind};

@@ -399,6 +399,24 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
 
 /// A glass partition between two stations of its wall: a tempered pane in aluminium head and sill channels, with
 /// a mullion at least every 1.2 m.
+/// Where [`build_mesh`] roots a procedural plant on `level` at `at`, before its own offset: the level's elevation,
+/// plus the first site of that level containing the point, less the small embed that hides the gap under a trunk.
+/// A plant whose `Offset` is `z - planting_base(..)` is grown with its root at `z`.
+pub fn planting_base(document: &Document, level: Id, at: Point2) -> f64 {
+    let elevation = document
+        .levels
+        .iter()
+        .find(|candidate| candidate.id == level)
+        .map_or(0.0, |found| found.elevation);
+    let ground = document
+        .floors
+        .iter()
+        .filter(|slab| slab.is_toposolid() && slab.boundary.len() >= 3)
+        .find(|slab| slab.level_id == level && terrain_contains(&slab.boundary, at))
+        .map_or(0.0, |slab| TerrainSurface::new(slab).elevation_at(at));
+    elevation + ground - 0.08
+}
+
 fn add_glass_wall(mesh: &mut SceneMesh, wall: &Wall, from: f64, to: f64, bottom: f64, top: f64) {
     let frame = WallFrame::new(wall);
     let half = (wall.thickness / 2.0).max(0.025);

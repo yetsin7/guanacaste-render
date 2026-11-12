@@ -48,10 +48,15 @@ pub enum Tool {
 #[derive(Clone, Copy, Debug)]
 pub struct Placed {
     pub species: usize,
+    /// Growth form; the species' own, or the one saved in the project.
+    pub style: i32,
     pub at: Vec3,
     pub height: f64,
     pub spread: f64,
-    pub instance: u128,
+    /// The plant's identifier in the project, and the seed of its shape.
+    pub id: u128,
+    /// Whether the project file has this plant already.
+    pub saved: bool,
 }
 
 pub struct BuildState {
@@ -66,6 +71,8 @@ pub struct BuildState {
     /// 0 off, 1 on (±10 %), 2 random (±25 %).
     pub variation: usize,
     next_instance: u128,
+    /// Plants that are in the project file and were deleted in this session.
+    pub removed: Vec<u128>,
 }
 
 pub struct MaterialState {
@@ -110,6 +117,8 @@ pub struct Studio {
     /// The scene as opened, before any vegetation was placed; edits are rebuilt from it.
     base_scene: Option<Arc<Scene>>,
     capture_thumbnail: bool,
+    /// Set after warning about unsaved plants; the next attempt to leave goes ahead.
+    discard_armed: bool,
     opened_at: Option<std::time::SystemTime>,
     last_frame: Instant,
 }
@@ -174,6 +183,7 @@ impl Studio {
                 spread: CATALOG[0].spread as f32,
                 variation: 2,
                 next_instance: 1,
+                removed: Vec::new(),
             },
             materials: MaterialState {
                 selected: 0,
@@ -191,6 +201,7 @@ impl Studio {
             saved_settings: None,
             base_scene: None,
             capture_thumbnail: false,
+            discard_armed: false,
             opened_at: None,
             last_frame: Instant::now(),
         };
@@ -227,11 +238,124 @@ impl Studio {
     }
 
     pub fn open_dialog(&mut self, context: &egui::Context) {
+        if !self.may_discard("abrir otro proyecto") {
+            return;
+        }
         if let Some(path) = rfd::FileDialog::new()
             .add_filter("Proyectos de Guanacaste", &project::PROJECT_EXTENSIONS)
             .pick_file()
         {
             self.open(path, context);
+        }
+    }
+
+    /// Whether the open project is a native file the studio can write plants into.
+    pub fn can_save_project(&self) -> bool {
+        self.project.as_ref().is_some_and(|path| {
+            path.extension()
+                .and_then(|ext| ext.to_str())
+                .is_some_and(|ext| {
+                    ext.eq_ignore_ascii_case("gr") || ext.eq_ignore_ascii_case("g3d")
+                })
+        })
+    }
+
+    /// Plants added or deleted since the project was opened or last saved.
+    pub fn unsaved_changes(&self) -> usize {
+        self.build
+            .placed
+            .iter()
+            .filter(|plant| !plant.saved)
+            .count()
+            + self.build.removed.len()
+    }
+
+    /// True when the project may be left: nothing is unsaved, or the user was already warned and repeats the
+    /// action.
+    pub fn may_discard(&mut self, action: &str) -> bool {
+        let pending = self.unsaved_changes();
+        if pending == 0 || self.discard_armed {
+            self.discard_armed = false;
+            return true;
+        }
+        self.discard_armed = true;
+        self.message = Some((
+            format!(
+                "Hay {pending} cambios de vegetación sin guardar. Pulsa Guardar (Ctrl+S), o repite la acción para {action} sin guardarlos."
+            ),
+            true,
+        ));
+        false
+    }
+
+    /// Writes the plants added and deleted in this session into the project file.
+    pub fn save_project(&mut self) {
+        let Some(path) = self.project.clone().filter(|_| self.can_save_project()) else {
+            self.message = Some((
+                "Solo los proyectos .gr y .g3d guardan vegetación; una escena .grscene es de solo lectura.".into(),
+                true,
+            ));
+            return;
+        };
+        if self.unsaved_changes() == 0 {
+            self.message = Some(("No hay cambios de vegetación por guardar.".into(), false));
+            return;
+        }
+        let document = match gr_model::document::Document::load(&path) {
+            Ok(document) => document,
+            Err(error) => {
+                self.message = Some((
+                    format!("No se pudo leer el proyecto para guardar: {error}"),
+                    true,
+                ));
+                return;
+            }
+        };
+        let add: Vec<gr_model::edit::Planting> = self
+            .build
+            .placed
+            .iter()
+            .filter(|plant| !plant.saved)
+            .map(|plant| {
+                gr_model::edit::Planting::new(
+                    gr_model::document::Id(plant.id),
+                    CATALOG[plant.species].name,
+                    gr_model::plan::Point2::new(plant.at.x as f64, plant.at.y as f64),
+                    plant.spread,
+                    plant.height,
+                    plant.style,
+                )
+                .rooted(&document, plant.at.z as f64)
+            })
+            .collect();
+        let remove: Vec<gr_model::document::Id> = self
+            .build
+            .removed
+            .iter()
+            .map(|&id| gr_model::document::Id(id))
+            .collect();
+        match gr_model::edit::save_plantings(&path, &add, &remove) {
+            Ok(()) => {
+                let (added, removed) = (add.len(), remove.len());
+                for plant in &mut self.build.placed {
+                    plant.saved = true;
+                }
+                self.build.removed.clear();
+                self.discard_armed = false;
+                self.opened_at = std::fs::metadata(&path)
+                    .and_then(|meta| meta.modified())
+                    .ok();
+                self.message = Some((
+                    format!(
+                        "Proyecto guardado: {added} plantas añadidas, {removed} quitadas. Copia anterior en {}",
+                        gr_model::edit::backup_path(&path).display()
+                    ),
+                    false,
+                ));
+            }
+            Err(error) => {
+                self.message = Some((format!("No se pudo guardar el proyecto: {error}"), true))
+            }
         }
     }
 
@@ -275,7 +399,7 @@ impl Studio {
                 return;
             }
         };
-        let base = Arc::new(opened.scene.clone());
+        let base = Arc::new(opened.base.clone().unwrap_or_else(|| opened.scene.clone()));
         match self.viewport.set_scene(state, opened.scene) {
             Ok(()) => {
                 recent_projects::remember(&mut self.recent, &opened.path);
@@ -286,7 +410,21 @@ impl Studio {
                 self.project = Some(opened.path);
                 self.notice = opened.notice;
                 self.base_scene = Some(base);
-                self.build.placed.clear();
+                self.build.placed = opened
+                    .plants
+                    .iter()
+                    .map(|plant| Placed {
+                        species: vegetation::species_for_style(plant.style),
+                        style: plant.style,
+                        at: plant.at,
+                        height: plant.height,
+                        spread: plant.spread,
+                        id: plant.id,
+                        saved: true,
+                    })
+                    .collect();
+                self.build.removed.clear();
+                self.discard_armed = false;
                 self.build.selected = None;
                 self.timeline = Timeline::default();
                 self.refresh_material_names();
@@ -382,12 +520,15 @@ impl Studio {
             1 => 0.9 + 0.2 * unit_noise(instance),
             _ => 0.75 + 0.5 * unit_noise(instance),
         };
+        let species = &CATALOG[self.build.species];
         self.build.placed.push(Placed {
             species: self.build.species,
+            style: species.style,
             at,
             height: (self.build.height * factor) as f64,
             spread: (self.build.spread * factor) as f64,
-            instance,
+            id: species.instance_id(instance),
+            saved: false,
         });
         self.build.selected = Some(self.build.placed.len() - 1);
         self.rebuild_scene(state);
@@ -413,7 +554,10 @@ impl Studio {
 
     pub fn delete_placed(&mut self, state: &RenderState, index: usize) {
         if index < self.build.placed.len() {
-            self.build.placed.remove(index);
+            let plant = self.build.placed.remove(index);
+            if plant.saved {
+                self.build.removed.push(plant.id);
+            }
             self.build.selected = None;
             self.rebuild_scene(state);
         }
@@ -432,7 +576,7 @@ impl Studio {
             .collect();
         for plant in &self.build.placed {
             let mesh =
-                CATALOG[plant.species].mesh(plant.at, plant.height, plant.spread, plant.instance);
+                vegetation::grow(plant.style, plant.id, plant.at, plant.height, plant.spread);
             vegetation::append_mesh(&mut scene, &mesh);
         }
         self.viewport.replace_scene(state, scene);
@@ -565,6 +709,12 @@ impl eframe::App for Studio {
             // The readouts that show the adapter's memory appear once Windows has answered.
             ui.ctx()
                 .request_repaint_after(std::time::Duration::from_millis(250));
+        }
+        if ui.ctx().input(|input| input.viewport().close_requested())
+            && !self.may_discard("cerrar el estudio")
+        {
+            ui.ctx()
+                .send_viewport_cmd(egui::ViewportCommand::CancelClose);
         }
         if !self.telemetry.is_idle() {
             // One more frame once the interface settles, so the readouts can say it is idle.

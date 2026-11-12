@@ -18,6 +18,7 @@ engine/
 │   │   ├── src/
 │   │   │   ├── container.rs        Contenedor `G3DNATV1`: cabecera, gzip y suma SHA-256
 │   │   │   ├── document.rs         El modelo que lee el mallador (niveles, muros, vanos, losas, columnas)
+│   │   │   ├── edit.rs             Guardar vegetación en el proyecto sin tocar el resto del documento
 │   │   │   ├── scene.rs            De la malla a la escena del motor: materiales, cámara y luz
 │   │   │   ├── plan/               Geometría en planta (metros, `f64`)
 │   │   │   │   ├── polygon.rs          Puntos, orientación y triangulación por orejas
@@ -94,6 +95,20 @@ El visor tiene tres modos, para no gastar la tarjeta gráfica en trazado mientra
    (64 muestras y 60 % por defecto) con eliminación de ruido, para ver cómo quedará la luz. Se detiene al llegar.
 3. **Render** (botón «Render» o tecla R): el trazado final a la resolución de salida elegida (512 muestras por
    defecto). Mover la cámara vuelve a la navegación.
+
+## Guardar vegetación
+
+Las plantas de un proyecto `.gr`/`.g3d` se abren como ejemplares editables en Construcción, también las colocadas
+en Guanacaste 3D. «Guardar» (Ctrl+S) las escribe en el archivo como elementos `Planting` (tipo 28), con los mismos
+campos que escribe la aplicación C# y sin cambiar la versión del esquema:
+
+- Solo se editan las plantas; el resto del JSON se reescribe igual y en el mismo orden de claves.
+- La versión anterior queda como `<proyecto>.bak`; el archivo nuevo se lee y verifica antes de darlo por guardado.
+- La altura de cada planta se guarda como `Offset` sobre el nivel y el terreno, de modo que el mallador la hace
+  crecer exactamente donde se colocó (comprobado vértice a vértice en `gr-model/src/edit.rs`).
+- Cerrar o abrir otro proyecto con cambios sin guardar avisa una vez; repetir la acción los descarta.
+
+Las escenas `.grscene` son de solo lectura.
 
 ## Cómo abre proyectos el estudio
 

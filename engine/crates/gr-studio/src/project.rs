@@ -4,6 +4,8 @@
 //! installed C# application converts it, run without a window (`GuanacasteRender.exe --export-scene`). That bridge
 //! shrinks as `gr-model` covers more element kinds, and goes away when it covers them all.
 
+use crate::studio::vegetation;
+use glam::Vec3;
 use gr_core::scene_file::Scene;
 use gr_model::document::Document;
 use gr_model::mesh::build_mesh;
@@ -15,9 +17,42 @@ use std::sync::mpsc::{Receiver, channel};
 /// A scene ready to show.
 pub struct Opened {
     pub scene: Scene,
+    /// The scene without the project's plants, when they were taken out to be edited; `scene` adds them back.
+    pub base: Option<Scene>,
+    /// The procedural plants of a project meshed here, editable in Build.
+    pub plants: Vec<OpenedPlant>,
     pub path: PathBuf,
     /// Something the user should know about how it was opened, such as elements that are missing.
     pub notice: Option<String>,
+}
+
+/// A plant saved in the project, with its root where the project mesher grows it.
+#[derive(Clone, Copy, Debug)]
+pub struct OpenedPlant {
+    pub id: u128,
+    pub style: i32,
+    pub at: Vec3,
+    pub height: f64,
+    pub spread: f64,
+}
+
+/// What [`load`] produces before it becomes an [`Opened`].
+struct Read {
+    scene: Scene,
+    base: Option<Scene>,
+    plants: Vec<OpenedPlant>,
+    notice: Option<String>,
+}
+
+impl Read {
+    fn scene(scene: Scene, notice: Option<String>) -> Read {
+        Read {
+            scene,
+            base: None,
+            plants: Vec::new(),
+            notice,
+        }
+    }
 }
 
 /// A scene ready to show, or the reason it could not be opened, in words for the user.
@@ -30,10 +65,12 @@ pub const PROJECT_EXTENSIONS: [&str; 3] = ["gr", "g3d", "grscene"];
 pub fn load_in_background(path: PathBuf, wake: impl Fn() + Send + 'static) -> Receiver<Loaded> {
     let (sender, receiver) = channel();
     std::thread::spawn(move || {
-        let result = load(&path).map(|(scene, notice)| Opened {
-            scene,
+        let result = load(&path).map(|read| Opened {
+            scene: read.scene,
+            base: read.base,
+            plants: read.plants,
             path,
-            notice,
+            notice: read.notice,
         });
         let _ = sender.send(result);
         wake();
@@ -42,7 +79,7 @@ pub fn load_in_background(path: PathBuf, wake: impl Fn() + Send + 'static) -> Re
 }
 
 /// Opens a native scene only when its geometry and saved appearance are both supported.
-fn load(path: &Path) -> Result<(Scene, Option<String>), String> {
+fn load(path: &Path) -> Result<Read, String> {
     let extension = path
         .extension()
         .and_then(|e| e.to_str())
@@ -50,33 +87,70 @@ fn load(path: &Path) -> Result<(Scene, Option<String>), String> {
         .to_lowercase();
     if extension == "grscene" {
         return Scene::load(path)
-            .map(|scene| (scene, None))
+            .map(|scene| Read::scene(scene, None))
             .map_err(|error| {
                 localized("scene_read_error").replace("{reason}", &error.to_string())
             });
     }
 
     // First choice: read and mesh the project here. Only a mesh that covers the whole project is shown as it is.
-    let native = Document::load(path).map(|document| {
+    let native = Document::load(path).map(|mut document| {
         let custom_scene = document.has_scene_customizations() || has_model_links(path);
+        // The plants are meshed apart so Build can move and delete them; the scene adds them back as they were.
+        let plants: Vec<OpenedPlant> = gr_model::edit::procedural_plants(&document)
+            .into_iter()
+            .map(|(plant, z)| OpenedPlant {
+                id: plant.id.0,
+                style: plant.style,
+                at: Vec3::new(plant.start.x as f32, plant.start.y as f32, z as f32),
+                height: plant.height,
+                spread: plant.width,
+            })
+            .collect();
+        document
+            .structural_elements
+            .retain(|element| !element.is_procedural_plant());
         let (building, coverage) = build_mesh(&document, false);
-        let bounds = building.bounds();
+        // The camera frames the building and the plants, as it did when the plants were part of the mesh.
+        let canopies = plants.iter().flat_map(|plant| {
+            let reach = Vec3::new(plant.spread as f32 / 2.0, plant.spread as f32 / 2.0, 0.0);
+            [
+                plant.at - reach,
+                plant.at + reach + Vec3::Z * plant.height as f32,
+            ]
+        });
+        let bounds = if building.positions.is_empty() {
+            canopies
+                .fold(None, |bounds: Option<(Vec3, Vec3)>, point| {
+                    Some(bounds.map_or((point, point), |(min, max)| {
+                        (min.min(point), max.max(point))
+                    }))
+                })
+                .unwrap_or_else(|| building.bounds())
+        } else {
+            canopies.fold(building.bounds(), |(min, max), point| {
+                (min.min(point), max.max(point))
+            })
+        };
         let (mesh, _) = build_mesh(&document, true);
         (
             gr_model::scene::to_scene(mesh, bounds),
             coverage,
             custom_scene,
+            plants,
         )
     });
     let native = match native {
-        Ok((scene, coverage, false)) if coverage.is_complete() => return Ok((scene, None)),
+        Ok((base, coverage, false, plants)) if coverage.is_complete() => {
+            return Ok(with_plants(base, plants, None));
+        }
         other => other,
     };
 
     let Some(bridge) = find_bridge() else {
         // Without the application, a partial building is still better than nothing, as long as it says so.
         return match native {
-            Ok((scene, coverage, custom_scene)) => {
+            Ok((base, coverage, custom_scene, plants)) => {
                 let message = match (coverage.is_complete(), custom_scene) {
                     (true, true) => localized("partial_appearance").to_owned(),
                     (false, true) => localized("partial_both")
@@ -84,7 +158,7 @@ fn load(path: &Path) -> Result<(Scene, Option<String>), String> {
                     _ => localized("partial_geometry")
                         .replace("{count}", &coverage.missing().to_string()),
                 };
-                Ok((scene, Some(message)))
+                Ok(with_plants(base, plants, Some(message)))
             }
             Err(error) => {
                 Err(localized("project_open_error").replace("{reason}", &error.to_string()))
@@ -92,7 +166,25 @@ fn load(path: &Path) -> Result<(Scene, Option<String>), String> {
         };
     };
     convert_with_bridge(&bridge, path)
-        .map(|scene| (scene, Some(localized("bridge_preview").to_owned())))
+        .map(|scene| Read::scene(scene, Some(localized("bridge_preview").to_owned())))
+}
+
+/// The scene of a project with its plants grown back in, keeping the scene without them for edits.
+fn with_plants(base: Scene, plants: Vec<OpenedPlant>, notice: Option<String>) -> Read {
+    if plants.is_empty() {
+        return Read::scene(base, notice);
+    }
+    let mut scene = base.clone();
+    for plant in &plants {
+        let mesh = vegetation::grow(plant.style, plant.id, plant.at, plant.height, plant.spread);
+        vegetation::append_mesh(&mut scene, &mesh);
+    }
+    Read {
+        scene,
+        base: Some(base),
+        plants,
+        notice,
+    }
 }
 
 /// Detects the original application's sidecar for linked external models without modifying it.

@@ -24,7 +24,9 @@ The installed C# application remains the source of truth for project features an
   from the project; features the engine does not have yet (wind, levels of detail, seasons, depth of field, textures,
   batch rendering, cloud sync, people and vehicle assets, move/rotate/scale gizmos) are shown disabled with the reason.
 - Navigation is rasterized and redraws only on change; ray tracing runs only for "Vista previa" and "Render".
-- Vegetation placed in Build exists only for the session; it is not yet written back to the `.gr` project.
+- Procedural plants are edited in Build and saved into `.gr`/`.g3d` projects as planting elements, keeping the
+  rest of the document byte-for-byte in content and key order, with a `.bak` copy and read-back verification. A
+  saved project was opened and exported without errors by the installed C# application.
 
 ## Evidence and limits
 
@@ -60,7 +62,7 @@ so its studio preview still uses the bridge even though its measured geometry is
   denoising, and the other render features that the existing scene bridge does not carry.
 - Rebuild the remainder of the desktop application and import/export workflows in Rust. The present studio covers
   navigation, preview and final rendering, vegetation placement, material edits, camera animation with PNG-sequence
-  export, and settings; it does not save edits into projects and is not full WPF feature parity.
+  export, and settings. Of all project edits it saves only vegetation; it is not full WPF feature parity.
 - Validate real user projects, visual fidelity, installations, and interoperability before retiring the C# application.
 
 The separate `guanacaste-render` checkout contains unrelated uncommitted work. Do not reset or overwrite that checkout,

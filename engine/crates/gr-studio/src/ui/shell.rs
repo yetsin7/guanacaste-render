@@ -58,13 +58,18 @@ pub fn title_bar(ui: &mut Ui, studio: &mut Studio) {
                     ui.spacing_mut().item_spacing.x = 4.0;
                     widgets::icon(ui, icons::LAYERS, 12.0, theme::OUTLINE);
                     text(ui, project, theme::mono(11.0), theme::TEXT_VARIANT);
+                    let pending = studio.unsaved_changes();
+                    if pending > 0 {
+                        text(ui, "●", theme::mono(11.0), theme::WARNING)
+                            .on_hover_text(format!("{pending} cambios de vegetación sin guardar"));
+                    }
                     widgets::icon(ui, icons::EXPAND_MORE, 12.0, theme::OUTLINE);
                 });
             });
 
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
             ui.spacing_mut().item_spacing.x = 0.0;
-            window_buttons(ui);
+            window_buttons(ui, studio);
             ui.add_space(6.0);
             ui.spacing_mut().item_spacing.x = 8.0;
             let (rect, _) = ui.allocate_exact_size(vec2(20.0, 20.0), Sense::hover());
@@ -121,7 +126,7 @@ fn frame_rate_pill(ui: &mut Ui, studio: &Studio) {
         });
 }
 
-fn window_buttons(ui: &mut Ui) {
+fn window_buttons(ui: &mut Ui, studio: &mut Studio) {
     let maximized = ui
         .ctx()
         .input(|input| input.viewport().maximized.unwrap_or(false));
@@ -159,7 +164,7 @@ fn window_buttons(ui: &mut Ui) {
             theme::icon(15.0),
             color,
         );
-        if response.clicked() {
+        if response.clicked() && (!danger || studio.may_discard("cerrar el estudio")) {
             ui.ctx().send_viewport_cmd(command);
         }
     }

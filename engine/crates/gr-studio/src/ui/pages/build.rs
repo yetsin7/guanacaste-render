@@ -230,6 +230,23 @@ fn title_pill(ui: &Ui, studio: &mut Studio, rect: Rect) {
                     theme::mono(13.0),
                     theme::TEXT_VARIANT,
                 );
+                let pending = studio.unsaved_changes();
+                let savable = studio.can_save_project();
+                let label = if pending > 0 { format!("Guardar ({pending})") } else { "Guardado".to_owned() };
+                let style = if pending > 0 { Style::Primary } else { Style::Ghost };
+                let response = ui
+                    .add_enabled_ui(savable && pending > 0, |ui| {
+                        widgets::button(ui, style, Some(icons::SAVE), &label, theme::mono_medium(13.0), 28.0)
+                    })
+                    .inner;
+                let response = if savable {
+                    response.on_hover_text("Escribe las plantas en el proyecto (Ctrl+S); la versión anterior queda como .bak")
+                } else {
+                    response.on_disabled_hover_text("Las escenas .grscene son de solo lectura: abre un proyecto .gr o .g3d para guardar la vegetación")
+                };
+                if response.clicked() {
+                    studio.save_project();
+                }
                 if studio.viewport.is_updating() {
                     ui.add(egui::Spinner::new().size(14.0).color(theme::PRIMARY));
                     text(
@@ -264,8 +281,14 @@ fn view_toolbar(ui: &Ui, studio: &mut Studio, rect: Rect, local: &mut BuildUi) {
                 );
                 ui.add_space(4.0);
                 common::trace_buttons(ui, studio);
-                if widgets::icon_button(ui, icons::SAVE, 30.0, false, "Guardar imagen (Ctrl+S)")
-                    .clicked()
+                if widgets::icon_button(
+                    ui,
+                    icons::IMAGE,
+                    30.0,
+                    false,
+                    "Guardar imagen (Ctrl+Mayús+S)",
+                )
+                .clicked()
                 {
                     studio.save_image_dialog();
                 }

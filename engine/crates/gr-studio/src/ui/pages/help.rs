@@ -94,7 +94,7 @@ pub fn show(ui: &mut Ui, studio: &mut Studio, state: Option<&RenderState>) {
                                 &[
                                     ("Herramienta Colocar", "P"),
                                     ("Plantar en el punto", "Clic"),
-                                    ("Volver a Seleccionar", "Esc"),
+                                    ("Guardar en el proyecto", "Ctrl + S"),
                                     ("Borrar planta elegida", "Supr"),
                                 ],
                             );
@@ -106,7 +106,7 @@ pub fn show(ui: &mut Ui, studio: &mut Studio, state: Option<&RenderState>) {
                                     ("Vista previa trazada", "V"),
                                     ("Render final", "R"),
                                     ("Vista inicial", "H"),
-                                    ("Guardar imagen", "Ctrl + S"),
+                                    ("Guardar imagen", "Ctrl + Mayús + S"),
                                 ],
                             );
                         });

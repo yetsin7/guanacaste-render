@@ -170,17 +170,20 @@ pub fn trace_buttons_row(ui: &mut Ui, studio: &mut Studio) {
     ui.horizontal(|ui| trace_buttons(ui, studio));
 }
 
-/// Keys that work over every view: V preview, R render, H home view, Ctrl+S save the picture.
+/// Keys that work over every view: V preview, R render, H home view, Ctrl+S save the project (or the picture when
+/// the scene cannot be saved), Ctrl+Shift+S save the picture.
 pub fn view_shortcuts(ui: &Ui, studio: &mut Studio) {
     if ui.ctx().egui_wants_keyboard_input() {
         return;
     }
-    let (preview, render, home, save) = ui.input(|input| {
+    let (preview, render, home, save, picture) = ui.input(|input| {
+        let save = input.modifiers.command && input.key_pressed(egui::Key::S);
         (
-            input.key_pressed(egui::Key::V),
-            input.key_pressed(egui::Key::R),
-            input.key_pressed(egui::Key::H),
-            input.modifiers.command && input.key_pressed(egui::Key::S),
+            input.key_pressed(egui::Key::V) && !input.modifiers.command,
+            input.key_pressed(egui::Key::R) && !input.modifiers.command,
+            input.key_pressed(egui::Key::H) && !input.modifiers.command,
+            save && !input.modifiers.shift,
+            save && input.modifiers.shift,
         )
     });
     let mode = studio.viewport.mode();
@@ -201,7 +204,9 @@ pub fn view_shortcuts(ui: &Ui, studio: &mut Studio) {
     if home {
         studio.viewport.go_home();
     }
-    if save && studio.viewport.has_scene() {
+    if save && studio.can_save_project() {
+        studio.save_project();
+    } else if (save || picture) && studio.viewport.has_scene() {
         studio.save_image_dialog();
     }
 }

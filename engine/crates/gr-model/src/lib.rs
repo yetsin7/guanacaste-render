@@ -6,6 +6,7 @@
 
 pub mod container;
 pub mod document;
+pub mod edit;
 pub mod mesh;
 pub mod plan;
 pub mod scene;
