@@ -12,6 +12,7 @@ using Guanacaste3D.Core.Rendering;
 /// </summary>
 static class MeshReference
 {
+    /// <summary>Exports sample projects, their reference meshes, and the stock surface materials.</summary>
     public static void Run(string folder)
     {
         Directory.CreateDirectory(folder);
@@ -47,14 +48,15 @@ static class MeshReference
     /// </summary>
     private static BuildingDocument Garden()
     {
-        var document = BuildingDocument.Create("Jardín de referencia");
+        var document = BuildingDocument.Create("Reference garden");
         var level = document.Levels[0].Id;
+        /// <summary>Adds a seeded procedural plant to the reference level.</summary>
         void Plant(string id, string name, double x, double height, double spread, ElementStyle style) =>
             document.StructuralElements.Add(new StructuralElement(Guid.Parse(id), level, StructuralElementKind.Planting, name,
                 new Point2(x, 1.5), new Point2(x, 1.5), spread, height, 0) { Style = style });
-        Plant("0a6f3c52-7b1e-4d0a-9c35-51e7f2a4b801", "Arbusto", 0, 0.5, 0.5, ElementStyle.Shrub);
-        Plant("1b7a4d63-8c2f-4e1b-ad46-62f803b5c912", "Palma", 3, 2.2, 1.6, ElementStyle.Palm);
-        Plant("2c8b5e74-9d30-4f2c-be57-730914c6da23", "Conífera", 6, 1.3, 0.8, ElementStyle.Conifer);
+        Plant("0a6f3c52-7b1e-4d0a-9c35-51e7f2a4b801", "Shrub", 0, 0.5, 0.5, ElementStyle.Shrub);
+        Plant("1b7a4d63-8c2f-4e1b-ad46-62f803b5c912", "Palm", 3, 2.2, 1.6, ElementStyle.Palm);
+        Plant("2c8b5e74-9d30-4f2c-be57-730914c6da23", "Conifer", 6, 1.3, 0.8, ElementStyle.Conifer);
         return document;
     }
 
@@ -62,7 +64,7 @@ static class MeshReference
     /// "GRMESH01", triangle count, range count; then per range a 36-character element id, first and end triangle; then
     /// nine floats per triangle (its own three corners) and one surface-kind byte per triangle. Little endian.
     /// </summary>
-    private static void WriteMesh(string path, SceneMesh mesh)
+    internal static void WriteMesh(string path, SceneMesh mesh)
     {
         using var writer = new BinaryWriter(File.Create(path), Encoding.ASCII);
         writer.Write("GRMESH01"u8);
@@ -84,10 +86,12 @@ static class MeshReference
         foreach (var kind in mesh.TriangleKinds) writer.Write((byte)kind);
     }
 
+    /// <summary>Exports the material properties associated with each surface category.</summary>
     private static void WriteMaterials(string path)
     {
         var text = new StringBuilder(
             "kind\tname\tbase_r\tbase_g\tbase_b\troughness\tmetallic\tior\temit_r\temit_g\temit_b\ttransmission\ttint_r\ttint_g\ttint_b\ttranslucency\talpha_cutoff\tpattern\n");
+        /// <summary>Formats a float without losing precision or depending on the current locale.</summary>
         string F(float value) => value.ToString("R", CultureInfo.InvariantCulture);
         foreach (var kind in Enum.GetValues<SurfaceKind>())
         {

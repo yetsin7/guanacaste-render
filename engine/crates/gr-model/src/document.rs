@@ -5,9 +5,23 @@
 //! declared; `serde` skips them. Enumerations are stored as their numbers, so they are constants here rather than
 //! Rust enums: an unknown number from a newer application must not make the whole file unreadable.
 
+#[path = "component-shapes.rs"]
+pub mod component_shape;
+#[path = "floor-slab.rs"]
+mod floor_slab;
+#[path = "plumbing-point.rs"]
+mod plumbing_point;
+#[path = "structural-element.rs"]
+mod structural_element;
+
+pub use floor_slab::{FloorSlab, TopographyPoint, floor};
+pub use plumbing_point::{PlumbingPoint, PlumbingSystem, plumbing_point_kind, plumbing_system_kind};
+pub use structural_element::{StructuralElement, element_kind, element_style};
+
 use crate::container::{Container, ContainerError, DocumentKind};
 use crate::plan::Point2;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fmt;
 
 /// The only schema this reader understands. Older files need the migrations of the C# application.
@@ -19,6 +33,7 @@ pub struct Id(pub u128);
 
 impl Id {
     /// Parses the canonical `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` form.
+    /// Reads and verifies a native project already held in memory.
     pub fn parse(text: &str) -> Option<Id> {
         let bytes = text.as_bytes();
         if bytes.len() != 36 || [8, 13, 18, 23].iter().any(|&at| bytes[at] != b'-') {
@@ -36,6 +51,7 @@ impl Id {
 }
 
 impl fmt::Display for Id {
+    /// Formats this value using its canonical representation.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let v = self.0;
         write!(
@@ -51,6 +67,7 @@ impl fmt::Display for Id {
 }
 
 impl<'de> Deserialize<'de> for Id {
+    /// Rejects malformed identifiers while reading project JSON.
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Id, D::Error> {
         let text = <&str>::deserialize(deserializer)?;
         Id::parse(text).ok_or_else(|| serde::de::Error::custom("an element identifier is not a GUID"))
@@ -62,6 +79,8 @@ impl<'de> Deserialize<'de> for Id {
 pub struct Level {
     pub id: Id,
     pub elevation: f64,
+    #[serde(default)]
+    pub role: i32,
 }
 
 /// `WallJoinSetting`: how one end of a wall treats the wall it meets.
@@ -94,6 +113,7 @@ pub struct Wall {
 }
 
 impl Wall {
+    /// Measures the wall centerline in plan coordinates.
     pub fn length(&self) -> f64 {
         self.start.distance_to(self.end)
     }
@@ -154,10 +174,12 @@ pub struct WallOpening {
 }
 
 impl WallOpening {
+    /// Returns the opening station nearest the wall start.
     pub fn begin(&self) -> f64 {
         self.offset - self.width / 2.0
     }
 
+    /// Returns the opening station farthest from the wall start.
     pub fn end(&self) -> f64 {
         self.offset + self.width / 2.0
     }
@@ -229,53 +251,9 @@ pub struct OpeningType {
     pub security_bars: bool,
 }
 
+/// Matches the application default for older opening types.
 fn default_frame_width() -> f64 {
     0.06
-}
-
-/// `FloorKind`, `RoofShape` and `FinishKind`.
-pub mod floor {
-    pub const KIND_FLOOR: i32 = 0;
-    pub const KIND_ROOF: i32 = 2;
-    pub const KIND_WATER: i32 = 3;
-    pub const KIND_TOPOSOLID: i32 = 4;
-    pub const SHAPE_FLAT: i32 = 0;
-    pub const FINISH_PAINT: i32 = 1;
-    pub const FINISH_EXPOSED_CONCRETE: i32 = 4;
-    pub const FINISH_ASPHALT: i32 = 5;
-    pub const FINISH_GRASS: i32 = 6;
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct FloorSlab {
-    pub id: Id,
-    pub level_id: Id,
-    pub boundary: Vec<Point2>,
-    pub thickness: f64,
-    #[serde(default)]
-    pub shape: i32,
-    #[serde(default)]
-    pub pitch: f64,
-    #[serde(default)]
-    pub finish: i32,
-    #[serde(default)]
-    pub kind: i32,
-    #[serde(default)]
-    pub elevation_offset: f64,
-    #[serde(default)]
-    pub overhang: f64,
-}
-
-impl FloorSlab {
-    pub fn is_toposolid(&self) -> bool {
-        self.kind == floor::KIND_TOPOSOLID
-    }
-
-    /// A roof that rises above its eave.
-    pub fn is_pitched(&self) -> bool {
-        self.kind == floor::KIND_ROOF && self.shape != floor::SHAPE_FLAT && self.pitch > 0.0
-    }
 }
 
 /// `ColumnShape`.
@@ -297,52 +275,6 @@ pub struct Column {
     pub height: f64,
     #[serde(default)]
     pub shape: i32,
-}
-
-/// `StructuralElementKind` numbers the mesher handles itself.
-pub mod element_kind {
-    pub const PLANTING: i32 = 28;
-}
-
-/// `ElementStyle`: for a planting, its growth form.
-pub mod element_style {
-    pub const DEFAULT: i32 = 0;
-    pub const GUANACASTE: i32 = 9;
-    pub const PALM: i32 = 10;
-    pub const CONIFER: i32 = 11;
-    pub const SHRUB: i32 = 12;
-}
-
-/// A structural element: beams, stairs, furniture, plantings and the like. Only the fields the mesher reads.
-#[derive(Debug, Default, Deserialize)]
-#[serde(rename_all = "PascalCase", default)]
-pub struct StructuralElement {
-    pub id: Id,
-    pub level_id: Id,
-    pub kind: i32,
-    pub start: Point2,
-    pub width: f64,
-    pub height: f64,
-    /// Metres above the ground the element stands on.
-    pub offset: f64,
-    pub style: i32,
-    /// The component family whose mesh the element draws instead of its procedural geometry.
-    pub family_id: Option<Id>,
-}
-
-impl StructuralElement {
-    /// `StructuralElementKind` numbers that never produce a solid and never cut a slab: drafting and annotation.
-    const DRAFTING_ONLY: [i32; 17] = [7, 10, 19, 20, 21, 22, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41];
-
-    /// Whether the mesher of the application would do anything with this element.
-    pub fn affects_geometry(&self) -> bool {
-        !Self::DRAFTING_ONLY.contains(&self.kind)
-    }
-
-    /// A planting grown procedurally, rather than drawn from the mesh of a component family.
-    pub fn is_procedural_plant(&self) -> bool {
-        self.kind == element_kind::PLANTING && self.family_id.is_none()
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -368,9 +300,19 @@ pub struct Document {
     #[serde(default)]
     pub electrical_devices: Vec<serde::de::IgnoredAny>,
     #[serde(default)]
-    pub plumbing_points: Vec<serde::de::IgnoredAny>,
+    pub plumbing_points: Vec<PlumbingPoint>,
+    #[serde(default)]
+    pub plumbing_systems: Vec<PlumbingSystem>,
     #[serde(default)]
     pub in_place_families: Vec<serde::de::IgnoredAny>,
+    #[serde(default)]
+    pub render_materials: Vec<serde::de::IgnoredAny>,
+    #[serde(default)]
+    pub render_setup: Option<serde::de::IgnoredAny>,
+    #[serde(default)]
+    pub render_scenes: Vec<serde::de::IgnoredAny>,
+    #[serde(default)]
+    pub extensions: HashMap<String, serde::de::IgnoredAny>,
 }
 
 #[derive(Debug)]
@@ -382,6 +324,7 @@ pub enum DocumentError {
 }
 
 impl fmt::Display for DocumentError {
+    /// Formats this value using its canonical representation.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             DocumentError::Container(error) => error.fmt(f),
@@ -394,14 +337,25 @@ impl fmt::Display for DocumentError {
 impl std::error::Error for DocumentError {}
 
 impl Document {
+    /// Identifies saved render features that the native scene builder does not yet reproduce.
+    pub fn has_scene_customizations(&self) -> bool {
+        !self.render_materials.is_empty()
+            || self.render_setup.is_some()
+            || !self.render_scenes.is_empty()
+            || self.extensions.keys().any(|key| key.starts_with("render.") && key != "render.modelsync")
+    }
+
+    /// Reads and verifies a native project from disk.
     pub fn load(path: impl AsRef<std::path::Path>) -> Result<Document, DocumentError> {
         Document::from_container(Container::read(path).map_err(DocumentError::Container)?)
     }
 
+    /// Reads and verifies a native project already held in memory.
     pub fn parse(bytes: &[u8]) -> Result<Document, DocumentError> {
         Document::from_container(Container::parse(bytes).map_err(DocumentError::Container)?)
     }
 
+    /// Accepts only project containers whose header and schema agree.
     fn from_container(container: Container) -> Result<Document, DocumentError> {
         if container.kind != DocumentKind::Project {
             return Err(DocumentError::Unsupported("the file is a family or a template, not a project".into()));
@@ -421,37 +375,5 @@ impl Document {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn identifiers_round_trip_through_text() {
-        let text = "7d256c39-bda6-4166-b3c7-5ecde5c223ac";
-        assert_eq!(Id::parse(text).expect("canonical GUID").to_string(), text);
-        assert!(Id::parse("7d256c39bda64166b3c75ecde5c223ac").is_none());
-        assert!(Id::parse("7d256c39-bda6-4166-b3c7-5ecde5c223zz").is_none());
-    }
-
-    #[test]
-    fn loads_the_demonstration_house() {
-        let document = Document::parse(include_bytes!("../tests/fixtures/demo-house.gr")).expect("valid project");
-        assert_eq!((document.levels.len(), document.walls.len(), document.openings.len()), (2, 6, 11));
-        assert_eq!(document.floors.len(), 1);
-        assert!(document.walls.iter().all(|wall| wall.length() > 0.0));
-    }
-
-    #[test]
-    fn a_profiled_wall_top_is_interpolated_and_capped() {
-        let wall: Wall = serde_json::from_str(
-            r#"{"Id":"7d256c39-bda6-4166-b3c7-5ecde5c223ac","LevelId":"7d256c39-bda6-4166-b3c7-5ecde5c223ac",
-                "Start":{"X":0,"Y":0},"End":{"X":4,"Y":0},"Thickness":0.2,"Height":3,
-                "WallTypeId":"7d256c39-bda6-4166-b3c7-5ecde5c223ac",
-                "TopProfile":[{"X":0,"Y":2},{"X":2,"Y":4},{"X":4,"Y":2}]}"#,
-        )
-        .expect("valid wall");
-        assert_eq!(wall.top_height_at(-1.0), 2.0);
-        assert_eq!(wall.top_height_at(1.0), 3.0); // 3 on the profile, and exactly the cap
-        assert_eq!(wall.top_height_at(2.0), 3.0); // the profile reaches 4, the wall is 3 tall
-        assert_eq!(wall.top_height_at(3.5), 2.5);
-    }
-}
+#[path = "document-tests.rs"]
+mod tests;

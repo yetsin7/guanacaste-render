@@ -1,15 +1,23 @@
 //! Turns a project into triangles: walls split around their openings, the openings themselves, flat slabs,
-//! columns, procedural vegetation and the ground.
+//! columns, residential components, terrain, plumbing, procedural vegetation, and the ground.
 //!
 //! Ported from `BuildingMesher.Build` in `geometry/building-mesher.cs`, element kind by element kind and in the
 //! same order. What is not ported yet is counted in [`Coverage`], never silently left out.
 
+use super::element_part::add_part;
+use super::interior_test::InteriorTest;
+use super::elements::element_parts;
 use super::openings::{add_opening_assembly, add_security_bars};
 use super::plants::add_plant;
+use super::pitched_roof::add_pitched_roof;
+use super::plumbing_geometry::{add_service_point, add_system};
+use super::plumbing_routing::route_system;
 use super::prism::{PrismShape, WallFrame, add_prism, to_f32};
 use super::scene_mesh::{SceneMesh, SurfaceKind};
-use crate::document::{Document, FloorSlab, Id, Wall, WallOpening, floor, wall};
-use crate::plan::{Point2, WallJoins, column_outline, counter_clockwise, wall_solids};
+use super::terrain_mesh::{add_terrain, contains as terrain_contains};
+use super::terrain_surface::TerrainSurface;
+use crate::document::{Document, FloorSlab, Id, Wall, WallOpening, element_kind, floor, wall};
+use crate::plan::{PlanRectangle, Point2, WallJoins, column_outline, contains_rectangle, counter_clockwise, slab_pieces, wall_solids};
 use glam::{Vec2, Vec3};
 use std::collections::HashMap;
 
@@ -19,15 +27,16 @@ use std::collections::HashMap;
 pub struct Coverage {
     pub toposolids: usize,
     pub pitched_roofs: usize,
-    /// Structural elements with a solid (beams, stairs, furniture, family meshes…) or that cut a slab (openings,
-    /// shafts). Procedural plants on flat ground are meshed and not counted.
+    /// Structural elements that are not generated yet, such as family meshes, elevators, and members with cuts.
     pub structural_elements: usize,
     pub electrical_devices: usize,
     pub plumbing_points: usize,
+    pub plumbing_systems: usize,
     pub in_place_families: usize,
 }
 
 impl Coverage {
+    /// Reports whether any geometry still requires the original application.
     pub fn is_complete(&self) -> bool {
         *self == Coverage::default()
     }
@@ -39,6 +48,7 @@ impl Coverage {
             + self.structural_elements
             + self.electrical_devices
             + self.plumbing_points
+            + self.plumbing_systems
             + self.in_place_families
     }
 }
@@ -117,19 +127,39 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
     }
 
     let mut coverage = Coverage::default();
+    let mut terrain_surfaces = Vec::new();
+    let mut site_edge: Option<f64> = None;
     for slab in &document.floors {
         if slab.is_toposolid() {
-            coverage.toposolids += 1;
+            if slab.boundary.len() < 3 {
+                coverage.toposolids += 1;
+                continue;
+            }
+            let first = mesh.triangle_count();
+            let surface = TerrainSurface::new(slab);
+            if let Some(edge) = add_terrain(&mut mesh, slab, &surface, elevation_of(slab.level_id)) {
+                site_edge = Some(site_edge.map_or(edge, |existing| existing.min(edge)));
+                mesh.mark_element(slab.id, first);
+                terrain_surfaces.push((slab, surface));
+            } else {
+                coverage.toposolids += 1;
+            }
             continue;
         }
         if slab.is_pitched() {
-            coverage.pitched_roofs += 1;
+            if !matches!(slab.shape, floor::SHAPE_SHED | floor::SHAPE_GABLE | floor::SHAPE_HIP) {
+                coverage.pitched_roofs += 1;
+                continue;
+            }
+            let first = mesh.triangle_count();
+            add_pitched_roof(&mut mesh, slab, &with_overhang(slab), elevation_of(slab.level_id));
+            mesh.mark_element(slab.id, first);
             continue;
         }
         let first = mesh.triangle_count();
         let top = elevation_of(slab.level_id) + slab.elevation_offset;
-        let outline = to_f32(&with_overhang(slab));
-        add_prism(&mut mesh, &outline, (top - slab.thickness) as f32, top as f32, slab_surface(slab), &PrismShape::default());
+        let openings = slab_openings(document, slab, &elevation_of);
+        add_slab(&mut mesh, &with_overhang(slab), top, slab.thickness, &openings, slab_surface(slab));
         mesh.mark_element(slab.id, first);
     }
 
@@ -141,19 +171,52 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         mesh.mark_element(column.id, first);
     }
 
+    // Buried service geometry contributes to the framing bounds but must not lower the ground plane.
+    let buried_from = mesh.positions.len();
+    for kind in 0..=3 {
+        for system in document.plumbing_systems.iter().filter(|system| system.kind == kind) {
+            if let Some(layout) = route_system(document, system, &elevations) {
+                add_system(&mut mesh, &layout);
+            } else {
+                coverage.plumbing_systems += 1;
+            }
+        }
+    }
+    coverage.plumbing_systems += document.plumbing_systems.iter().filter(|system| !(0..=3).contains(&system.kind)).count();
+    for point in &document.plumbing_points {
+        if !elevations.get(&point.level_id).is_some_and(|&level| add_service_point(&mut mesh, point, level)) {
+            coverage.plumbing_points += 1;
+        }
+    }
+    let buried_to = mesh.positions.len();
+
     for element in &document.structural_elements {
-        // A plant stands on the terrain under it; until toposolids are meshed, only plants on flat ground are grown.
+        // Plants use the first site on their own level that contains their insertion point.
         if element.is_procedural_plant() && coverage.toposolids == 0 {
             let first = mesh.triangle_count();
+            let ground = terrain_surfaces.iter()
+                .find(|(slab, _)| slab.level_id == element.level_id && terrain_contains(&slab.boundary, element.start))
+                .map_or(0.0, |(_, surface)| surface.elevation_at(element.start));
             // A small embed hides the gap between a trunk and uneven ground.
-            add_plant(&mut mesh, element, elevation_of(element.level_id) - 0.08);
+            add_plant(&mut mesh, element, elevation_of(element.level_id) + ground - 0.08);
             mesh.mark_element(element.id, first);
-        } else if element.affects_geometry() {
-            coverage.structural_elements += 1;
+            continue;
+        }
+        // Family meshes, unhandled plant placements, elevators, and members with cuts remain unsupported.
+        let parts = if element.family_id.is_some() || element.kind == element_kind::PLANTING { None } else { element_parts(element) };
+        match parts {
+            Some(parts) => {
+                let first = mesh.triangle_count();
+                let datum = elevation_of(element.level_id);
+                for part in &parts {
+                    add_part(&mut mesh, part, datum);
+                }
+                mesh.mark_element(element.id, first);
+            }
+            None => coverage.structural_elements += 1,
         }
     }
     coverage.electrical_devices = document.electrical_devices.len();
-    coverage.plumbing_points = document.plumbing_points.len();
     coverage.in_place_families = document.in_place_families.len();
 
     if include_ground {
@@ -161,8 +224,13 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         let center = (min + max) / 2.0;
         // Large enough that the ground meets the sky at the horizon from typical orbit distances.
         let extent = ((max - min).length() * 20.0).max(500.0);
-        let lowest = mesh.positions.iter().map(|position| position.z).fold(f32::MAX, f32::min);
-        let z = (if lowest == f32::MAX { 0.0 } else { lowest }).min(0.0) - 0.01;
+        let lowest = mesh.positions.iter().enumerate()
+            .filter(|(index, _)| *index < buried_from || *index >= buried_to)
+            .map(|(_, position)| position.z).fold(f32::MAX, f32::min);
+        let z = site_edge.map_or_else(
+            || (if lowest == f32::MAX { 0.0 } else { lowest }).min(0.0) - 0.01,
+            |edge| edge as f32 - 0.02,
+        );
         mesh.add_quad(
             Vec3::new(center.x - extent, center.y - extent, z),
             Vec3::new(center.x + extent, center.y - extent, z),
@@ -172,44 +240,6 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         );
     }
     (mesh, coverage)
-}
-
-/// Whether a plan point of one level lies inside the building: enclosed by walls, meaning a ray from it in each
-/// of eight directions meets a wall of the level. A terrace open on one side is outside; doors and windows do not
-/// let the rays out, because walls are tested along their whole length.
-struct InteriorTest {
-    walls: Vec<(Point2, Point2)>,
-}
-
-impl InteriorTest {
-    fn new(document: &Document, level: Id) -> InteriorTest {
-        let walls: Vec<_> = document.walls.iter().filter(|wall| wall.level_id == level).map(|wall| (wall.start, wall.end)).collect();
-        // Fewer than three walls cannot enclose anything.
-        InteriorTest { walls: if walls.len() < 3 { Vec::new() } else { walls } }
-    }
-
-    fn contains(&self, point: Point2) -> bool {
-        if self.walls.is_empty() {
-            return false;
-        }
-        (0..8).all(|index| {
-            let angle = index as f64 * std::f64::consts::PI / 4.0 + 0.1;
-            let direction = (angle.cos(), angle.sin());
-            self.walls.iter().any(|&(a, b)| ray_hits(point, direction, a, b))
-        })
-    }
-}
-
-fn ray_hits(origin: Point2, direction: (f64, f64), a: Point2, b: Point2) -> bool {
-    let (ex, ey) = (b.x - a.x, b.y - a.y);
-    let denominator = direction.0 * ey - direction.1 * ex;
-    if denominator.abs() < 1e-12 {
-        return false;
-    }
-    let (ox, oy) = (a.x - origin.x, a.y - origin.y);
-    let t = (ox * ey - oy * ex) / denominator;
-    let u = (ox * direction.1 - oy * direction.0) / denominator;
-    t > 0.0 && t < 60.0 && (-1e-6..=1.0 + 1e-6).contains(&u)
 }
 
 /// A glass partition between two stations of its wall: a tempered pane in aluminium head and sill channels, with
@@ -225,6 +255,57 @@ fn add_glass_wall(mesh: &mut SceneMesh, wall: &Wall, from: f64, to: f64, bottom:
     for index in 0..=bays {
         let at = from + (to - from) * index as f64 / bays as f64;
         frame.block(mesh, from.max(at - 0.025), to.min(at + 0.025), -half, half, bottom + CHANNEL, top - CHANNEL, SurfaceKind::Metal);
+    }
+}
+
+/// The openings that cut a slab: openings of its own level (floors only), shafts from at or below it, and the
+/// dormers and skylights of a roof. An opening that is not wholly inside the slab does not cut it.
+fn slab_openings(document: &Document, slab: &FloorSlab, elevation_of: &dyn Fn(Id) -> f64) -> Vec<PlanRectangle> {
+    let slab_elevation = elevation_of(slab.level_id);
+    document
+        .structural_elements
+        .iter()
+        .filter(|element| match element.kind {
+            element_kind::OPENING => slab.kind == floor::KIND_FLOOR && element.level_id == slab.level_id,
+            element_kind::SHAFT => elevation_of(element.level_id) <= slab_elevation,
+            element_kind::DORMER | element_kind::SKYLIGHT => slab.kind == floor::KIND_ROOF && element.level_id == slab.level_id,
+            _ => false,
+        })
+        .filter_map(|element| PlanRectangle::of(&element.footprint()))
+        .filter(|rectangle| contains_rectangle(&slab.boundary, rectangle).unwrap_or(false))
+        .collect()
+}
+
+/// Adds a slab whose top face is at `elevation`. Openings are cut out: the top and bottom faces are built from
+/// convex pieces, and each opening gets its own inner walls.
+fn add_slab(mesh: &mut SceneMesh, boundary: &[Point2], elevation: f64, thickness: f64, openings: &[PlanRectangle], surface: SurfaceKind) {
+    let (bottom, top) = ((elevation - thickness) as f32, elevation as f32);
+    let ordered = counter_clockwise(boundary);
+    let pieces = if openings.is_empty() { None } else { slab_pieces(&ordered, openings).ok() };
+    let Some(pieces) = pieces else {
+        add_prism(mesh, &to_f32(boundary), bottom, top, surface, &PrismShape::default());
+        return;
+    };
+    let lift = |point: Point2, z: f32| Vec3::new(point.x as f32, point.y as f32, z);
+    // A cut slab is drawn as flooring whatever its finish, as in the application.
+    for piece in &pieces {
+        for corner in 1..piece.len() - 1 {
+            mesh.add_triangle(lift(piece[0], top), lift(piece[corner], top), lift(piece[corner + 1], top), SurfaceKind::Floor);
+            mesh.add_triangle(lift(piece[corner + 1], bottom), lift(piece[corner], bottom), lift(piece[0], bottom), SurfaceKind::Floor);
+        }
+    }
+    let mut side_walls = |outline: &[Point2]| {
+        for index in 0..outline.len() {
+            let (current, next) = (outline[index], outline[(index + 1) % outline.len()]);
+            mesh.add_quad(lift(current, bottom), lift(next, bottom), lift(next, top), lift(current, top), SurfaceKind::Floor);
+        }
+    };
+    side_walls(&ordered);
+    for opening in openings {
+        // Walking the opening clockwise makes its walls face into the hole, away from the slab.
+        let mut corners = opening.corners();
+        corners.reverse();
+        side_walls(&corners);
     }
 }
 
@@ -273,49 +354,5 @@ fn with_overhang(slab: &FloorSlab) -> Vec<Point2> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn document(json: &str) -> Document {
-        serde_json::from_str(json).expect("valid document")
-    }
-
-    const LEVEL: &str = "11111111-1111-1111-1111-111111111111";
-
-    #[test]
-    fn an_empty_project_gives_only_the_ground() {
-        let (mesh, coverage) = build_mesh(&document(r#"{"SchemaVersion":15}"#), true);
-        assert_eq!(mesh.triangle_count(), 2);
-        assert!(coverage.is_complete() && mesh.element_ranges.is_empty());
-        assert!(mesh.kinds.iter().all(|&kind| kind == SurfaceKind::Ground));
-    }
-
-    #[test]
-    fn what_is_not_meshed_is_counted() {
-        let json = format!(
-            r#"{{"SchemaVersion":15,"Levels":[{{"Id":"{LEVEL}","Elevation":0}}],
-                "Floors":[{{"Id":"22222222-2222-2222-2222-222222222222","LevelId":"{LEVEL}","Kind":4,"Thickness":1,
-                            "Boundary":[{{"X":0,"Y":0}},{{"X":9,"Y":0}},{{"X":9,"Y":9}}]}}],
-                "StructuralElements":[{{"Kind":12}},{{"Kind":7}},{{"Kind":8}}],
-                "ElectricalDevices":[{{}},{{}}]}}"#
-        );
-        let (mesh, coverage) = build_mesh(&document(&json), false);
-        assert_eq!(mesh.triangle_count(), 0);
-        // The stair (12) and the slab opening (8) count; the model line (7) is drafting only.
-        assert_eq!(coverage, Coverage { toposolids: 1, structural_elements: 2, electrical_devices: 2, ..Default::default() });
-        assert_eq!(coverage.missing(), 5);
-    }
-
-    #[test]
-    fn a_roof_overhang_grows_the_slab_evenly() {
-        let json = format!(
-            r#"{{"SchemaVersion":15,"Levels":[{{"Id":"{LEVEL}","Elevation":3}}],
-                "Floors":[{{"Id":"22222222-2222-2222-2222-222222222222","LevelId":"{LEVEL}","Kind":2,"Thickness":0.2,
-                            "Overhang":0.5,"Boundary":[{{"X":0,"Y":0}},{{"X":4,"Y":0}},{{"X":4,"Y":6}},{{"X":0,"Y":6}}]}}]}}"#
-        );
-        let (mesh, coverage) = build_mesh(&document(&json), false);
-        assert!(coverage.is_complete());
-        let (min, max) = mesh.bounds();
-        assert!((min - Vec3::new(-0.5, -0.5, 2.8)).length() < 1e-5 && (max - Vec3::new(4.5, 6.5, 3.0)).length() < 1e-5);
-    }
-}
+#[path = "builder-tests.rs"]
+mod tests;

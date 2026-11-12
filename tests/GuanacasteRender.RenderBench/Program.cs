@@ -28,6 +28,36 @@ if (args.Contains("--mesh-reference"))
     return;
 }
 
+if (args.Contains("--residential-reference"))
+{
+    ResidentialCatalogReference.Run(outputFolder ?? Path.Combine("artifacts", "residential-reference"));
+    return;
+}
+
+if (args.Contains("--roof-reference"))
+{
+    RoofReference.Run(outputFolder ?? Path.Combine("artifacts", "roof-reference"));
+    return;
+}
+
+if (args.Contains("--terrain-reference"))
+{
+    TerrainReference.Run(outputFolder ?? Path.Combine("artifacts", "terrain-reference"));
+    return;
+}
+
+if (args.Contains("--plumbing-point-reference"))
+{
+    PlumbingPointReference.Run(outputFolder ?? Path.Combine("artifacts", "plumbing-point-reference"));
+    return;
+}
+
+if (args.Contains("--plumbing-system-reference"))
+{
+    PlumbingSystemReference.Run(outputFolder ?? Path.Combine("artifacts", "plumbing-system-reference"));
+    return;
+}
+
 if (args.Contains("--baseline"))
 {
     EngineBaseline.Run(outputFolder ?? Path.Combine("artifacts", "engine-bench"));
@@ -133,8 +163,10 @@ foreach (var scene in new[] { BenchmarkScenes.HouseExterior(), BenchmarkScenes.D
     if (outputFolder is not null) Save(Path.Combine(outputFolder, scene.Name + "-denoised-128.png"), tracer, true);
 }
 
+/// <summary>Converts the tracer output to display colors for image-quality comparisons.</summary>
 static System.Numerics.Vector3[] Display(PathTracer tracer, bool denoise) =>
     RasterImage.FromBgra32(tracer.Width, tracer.Height, tracer.ToBgra32(denoise)).ToDisplay();
 
+/// <summary>Writes the selected raw or denoised benchmark result to a PNG file.</summary>
 static void Save(string path, PathTracer tracer, bool denoise) =>
     PngCodec.Save(path, RasterImage.FromBgra32(tracer.Width, tracer.Height, tracer.ToBgra32(denoise)));
