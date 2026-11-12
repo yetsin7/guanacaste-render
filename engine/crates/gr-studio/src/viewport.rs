@@ -1,12 +1,13 @@
 //! The 3D view: owns the GPU path tracer, turns pointer and keyboard input into camera moves, paces the sampling
 //! and shows the picture without it ever leaving the graphics card.
 
+use crate::localization::text;
 use crate::orbit_camera::OrbitCamera;
 use eframe::egui::{self, PointerButton, Sense};
 use eframe::egui_wgpu::RenderState;
 use glam::Vec3;
 use gr_core::hardware::TierBudget;
-use gr_core::scene_file::Scene;
+use gr_core::scene_file::{Material, Scene};
 use gr_gpu::{CameraFrame, GpuOptions, GpuTracer, Mode, wgpu};
 use std::path::Path;
 use std::time::Instant;
@@ -39,16 +40,25 @@ pub struct Viewport {
     texture: Option<egui::TextureId>,
     camera: OrbitCamera,
     home: OrbitCamera,
+    camera_dirty: bool,
     pub settings: ViewSettings,
     applied: ViewSettings,
     pub facts: SceneFacts,
+    materials: Vec<Material>,
     samples_per_second: f32,
     rate_mark: (Instant, u32),
 }
 
 impl Viewport {
+    /// Creates an empty viewport with the renderer's default environment.
     pub fn new() -> Viewport {
-        let camera = OrbitCamera { pivot: Vec3::ZERO, yaw: 0.8, pitch: -0.4, distance: 20.0, vertical_fov_degrees: 50.0 };
+        let camera = OrbitCamera {
+            pivot: Vec3::ZERO,
+            yaw: 0.8,
+            pitch: -0.4,
+            distance: 20.0,
+            vertical_fov_degrees: 50.0,
+        };
         let settings = ViewSettings {
             exposure: 0.4,
             sun_azimuth_degrees: 230.0,
@@ -63,41 +73,62 @@ impl Viewport {
             texture: None,
             camera,
             home: camera,
+            camera_dirty: true,
             settings,
             applied: settings,
             facts: SceneFacts::default(),
+            materials: Vec::new(),
             samples_per_second: 0.0,
             rate_mark: (Instant::now(), 0),
         }
     }
 
+    /// Indicates whether a scene has been uploaded to the graphics device.
     pub fn has_scene(&self) -> bool {
         self.tracer.is_some()
     }
 
+    /// Returns the accumulated samples per pixel for the current view.
     pub fn samples(&self) -> u32 {
         self.tracer.as_ref().map_or(0, GpuTracer::samples)
     }
 
+    /// Returns the current render dimensions, or zero before a scene is open.
     pub fn resolution(&self) -> (u32, u32) {
         self.tracer.as_ref().map_or((0, 0), |tracer| (tracer.width(), tracer.height()))
     }
 
+    /// Returns the most recently measured sampling rate.
     pub fn samples_per_second(&self) -> f32 {
         self.samples_per_second
     }
 
+    /// Exposes the loaded material properties for read-only inspection.
+    pub fn materials(&self) -> &[Material] {
+        &self.materials
+    }
+
+    #[allow(dead_code)]
+    /// Estimates the image buffers' device memory consumption in mebibytes.
     pub fn image_megabytes(&self) -> f64 {
         self.tracer.as_ref().map_or(0.0, |tracer| tracer.image_bytes() as f64 / 1048576.0)
     }
 
-    pub fn field_of_view(&mut self) -> &mut f32 {
-        &mut self.camera.vertical_fov_degrees
+    /// Returns the camera's vertical field of view in degrees.
+    pub fn field_of_view(&self) -> f32 {
+        self.camera.vertical_fov_degrees
+    }
+
+    /// Applies a field of view on the next viewport frame.
+    pub fn set_field_of_view(&mut self, degrees: f32) {
+        self.camera.vertical_fov_degrees = degrees;
+        self.camera_dirty = true;
     }
 
     /// Returns to the camera the scene was saved with.
     pub fn go_home(&mut self) {
         self.camera = self.home;
+        self.camera_dirty = true;
     }
 
     /// Uploads a scene to the graphics card and starts rendering it. On failure the previous scene stays.
@@ -107,23 +138,26 @@ impl Viewport {
             size => size,
         };
         let adapter = state.adapter.get_info();
-        let options = GpuOptions { max_bounces, ..Default::default() };
-        let tracer = GpuTracer::with_device(state.device.clone(), state.queue.clone(), &adapter, scene, width, height, &options)
-            .map_err(|error| match error {
-                gr_gpu::GpuError::TooLarge { needed, limit } => format!(
-                    "La escena no cabe en esta tarjeta gráfica: necesita un bloque de {} MB y el máximo es {} MB.",
-                    needed >> 20,
-                    limit >> 20
-                ),
-                other => format!("La tarjeta gráfica no pudo cargar la escena: {other}"),
-            })?;
+        let options = GpuOptions {
+            max_bounces,
+            ..Default::default()
+        };
+        let tracer = GpuTracer::with_device(state.device.clone(), state.queue.clone(), &adapter, scene, width, height, &options).map_err(
+            |error| match error {
+                gr_gpu::GpuError::TooLarge { needed, limit } => text("scene_too_large")
+                    .replace("{needed}", &(needed >> 20).to_string())
+                    .replace("{limit}", &(limit >> 20).to_string()),
+                other => text("scene_gpu_error").replace("{reason}", &other.to_string()),
+            },
+        )?;
 
         let focus = bounds_centre(scene).unwrap_or(scene.camera.target);
         self.camera = OrbitCamera::from_scene(&scene.camera, focus);
         self.home = self.camera;
+        self.camera_dirty = true;
         let sun = scene.environment.sun_direction.normalize_or(Vec3::Z);
         self.settings.sun_azimuth_degrees = sun.y.atan2(sun.x).to_degrees().rem_euclid(360.0);
-        self.settings.sun_elevation_degrees = sun.z.clamp(-1.0, 1.0).asin().to_degrees().clamp(1.0, 90.0);
+        self.settings.sun_elevation_degrees = sun.z.clamp(-1.0, 1.0).asin().to_degrees();
         self.settings.sun_intensity = scene.environment.sun_intensity;
         self.settings.sky_intensity = scene.environment.sky_intensity;
         self.settings.exposure = scene.environment.exposure;
@@ -135,6 +169,7 @@ impl Viewport {
             scene_megabytes: tracer.scene_bytes() as f64 / 1048576.0,
             adapter: format!("{} · {}", tracer.adapter_name(), tracer.backend()),
         };
+        self.materials = scene.materials.clone();
         self.release_texture(state);
         self.tracer = Some(tracer);
         self.rate_mark = (Instant::now(), 0);
@@ -157,11 +192,13 @@ impl Viewport {
         if response.hovered() {
             let (scroll, step, keys) = ui.input(|input| {
                 let step = self.camera.distance.max(1.0) * 0.6 * input.stable_dt.min(0.1);
-                let axis = |positive, negative| {
-                    (input.key_down(positive) as i32 - input.key_down(negative) as i32) as f32
-                };
+                let axis = |positive, negative| (input.key_down(positive) as i32 - input.key_down(negative) as i32) as f32;
                 use egui::Key;
-                (input.smooth_scroll_delta.y, step, [axis(Key::W, Key::S), axis(Key::D, Key::A), axis(Key::E, Key::Q)])
+                (
+                    input.smooth_scroll_delta.y,
+                    step,
+                    [axis(Key::W, Key::S), axis(Key::D, Key::A), axis(Key::E, Key::Q)],
+                )
             });
             self.camera.zoom(scroll);
             self.camera.fly(keys[0] * step, keys[1] * step, keys[2] * step);
@@ -177,15 +214,18 @@ impl Viewport {
                 state.renderer.write().free_texture(&texture);
             }
         }
-        if resized || self.camera != before {
+        if resized || self.camera_dirty || self.camera != before {
             tracer.set_camera(&CameraFrame::new(&self.camera.to_scene(), width, height));
+            self.camera_dirty = false;
         }
         if self.settings.max_bounces != self.applied.max_bounces {
             tracer.set_max_bounces(self.settings.max_bounces);
         }
         if daylight_changed(&self.settings, &self.applied) {
-            let (azimuth, elevation) =
-                (self.settings.sun_azimuth_degrees.to_radians(), self.settings.sun_elevation_degrees.to_radians());
+            let (azimuth, elevation) = (
+                self.settings.sun_azimuth_degrees.to_radians(),
+                self.settings.sun_elevation_degrees.to_radians(),
+            );
             let sun = Vec3::new(elevation.cos() * azimuth.cos(), elevation.cos() * azimuth.sin(), elevation.sin());
             tracer.set_daylight(sun, self.settings.sun_intensity, self.settings.sky_intensity);
         }
@@ -201,7 +241,10 @@ impl Viewport {
         tracer.resolve(self.settings.exposure);
 
         let texture = *self.texture.get_or_insert_with(|| {
-            state.renderer.write().register_native_texture(&state.device, tracer.display_view(), wgpu::FilterMode::Linear)
+            state
+                .renderer
+                .write()
+                .register_native_texture(&state.device, tracer.display_view(), wgpu::FilterMode::Linear)
         });
         let whole = egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0));
         ui.painter().image(texture, rect, whole, egui::Color32::WHITE);
@@ -223,9 +266,11 @@ impl Viewport {
 
     /// Saves the picture as shown, as an 8-bit sRGB PNG.
     pub fn save_picture(&self, path: &Path) -> Result<(), String> {
-        let tracer = self.tracer.as_ref().ok_or("No hay ninguna escena abierta.")?;
-        let pixels = tracer.read_display().map_err(|error| format!("No se pudo leer la imagen: {error}"))?;
-        let file = std::fs::File::create(path).map_err(|error| format!("No se pudo crear el archivo: {error}"))?;
+        let tracer = self.tracer.as_ref().ok_or(text("no_scene"))?;
+        let pixels = tracer
+            .read_display()
+            .map_err(|error| text("image_read_error").replace("{reason}", &error.to_string()))?;
+        let file = std::fs::File::create(path).map_err(|error| text("file_create_error").replace("{reason}", &error.to_string()))?;
         let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), tracer.width(), tracer.height());
         encoder.set_color(png::ColorType::Rgba);
         encoder.set_depth(png::BitDepth::Eight);
@@ -233,7 +278,7 @@ impl Viewport {
         encoder
             .write_header()
             .and_then(|mut writer| writer.write_image_data(&pixels))
-            .map_err(|error| format!("No se pudo escribir la imagen: {error}"))
+            .map_err(|error| text("image_write_error").replace("{reason}", &error.to_string()))
     }
 
     /// Restarts the image, for example after the quality tier changed the number of bounces.
@@ -243,6 +288,7 @@ impl Viewport {
         }
     }
 
+    /// Releases the previous display texture before replacing its renderer.
     fn release_texture(&mut self, state: &RenderState) {
         if let Some(texture) = self.texture.take() {
             state.renderer.write().free_texture(&texture);
@@ -250,6 +296,7 @@ impl Viewport {
     }
 }
 
+/// Distinguishes lighting edits that require a new path-tracing accumulation.
 fn daylight_changed(now: &ViewSettings, before: &ViewSettings) -> bool {
     now.sun_azimuth_degrees != before.sun_azimuth_degrees
         || now.sun_elevation_degrees != before.sun_elevation_degrees

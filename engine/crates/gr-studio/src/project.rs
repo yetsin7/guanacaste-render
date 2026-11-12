@@ -142,11 +142,7 @@ impl Drop for BridgeWorkspace {
 
 /// Retrieves a user-visible message from the studio's Spanish localization resources.
 fn localized(key: &str) -> &'static str {
-    include_str!("../locales/spanish.properties")
-        .lines()
-        .filter_map(|line| line.split_once('='))
-        .find_map(|(name, message)| (name == key).then_some(message))
-        .expect("A project loading localization key is missing")
+    crate::localization::text(key)
 }
 
 /// The newest installed Guanacaste Render, or the one named by `GUANACASTE_RENDER_BRIDGE`.

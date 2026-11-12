@@ -2,9 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app;
+mod localization;
 mod orbit_camera;
 mod project;
 mod theme;
+mod ui;
 mod viewport;
 
 use eframe::egui;
@@ -12,6 +14,7 @@ use eframe::egui_wgpu::WgpuSetup;
 use gr_gpu::wgpu;
 use std::sync::Arc;
 
+/// Starts the native workstation with the most capable available graphics adapter.
 fn main() -> eframe::Result {
     let open = std::env::args_os().nth(1).map(std::path::PathBuf::from);
     let mut options = eframe::NativeOptions {

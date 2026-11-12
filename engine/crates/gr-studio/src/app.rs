@@ -1,7 +1,18 @@
-//! The studio window: top bar, side panel, status bar and the 3D view, and the flow of opening a project.
+//! Application orchestrator for Guanacaste Render Studio.
+//! Manages the viewport, mode transitions, asynchronous loading, and docked decks.
 
+use crate::localization::text;
 use crate::project::{self, Loaded};
 use crate::theme;
+use crate::ui::environment_panel;
+use crate::ui::hud::{self, HudState};
+use crate::ui::material_panel;
+use crate::ui::mode_rail::{self, ModeRailAction, ModeRailState};
+use crate::ui::render_panel;
+use crate::ui::scene_panel;
+use crate::ui::settings_page;
+use crate::ui::start_screen::{self, ProjectPreview, RecentProject, StartScreenAction, StartScreenState};
+use crate::ui::top_bar::{self, StudioMode, TopBarAction, TopBarState};
 use crate::viewport::Viewport;
 use eframe::egui::{self, RichText};
 use gr_core::hardware::{AdapterKind, Capabilities, QualityTier, suggest_tier};
@@ -9,257 +20,341 @@ use gr_gpu::wgpu;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 
-const TIERS: [(QualityTier, &str, &str); 4] = [
-    (QualityTier::Economico, "Económico", "Gráfica integrada o equipo modesto: media resolución, 2 rebotes."),
-    (QualityTier::Equilibrado, "Equilibrado", "Gráfica dedicada de gama media: 75 % de resolución, 3 rebotes."),
-    (QualityTier::Alto, "Alto", "Gráfica potente: resolución completa, 4 rebotes."),
-    (QualityTier::Ultra, "Ultra", "Equipo de alto rendimiento: resolución completa, 6 rebotes."),
-];
-
+/// Root application struct owning workstation state and viewports.
 pub struct StudioApp {
     viewport: Viewport,
     tier: QualityTier,
     suggested: QualityTier,
+    mode: StudioMode,
     loading: Option<(Receiver<Loaded>, String)>,
     project: Option<PathBuf>,
-    /// Last thing worth telling the user: an error, or a confirmation.
+    recent: Vec<RecentProject>,
+    selected_material: usize,
     message: Option<(String, bool)>,
 }
 
 impl StudioApp {
+    /// Initializes workstation state, detects graphics capabilities, and sets themes.
     pub fn new(creation: &eframe::CreationContext<'_>, open: Option<PathBuf>) -> StudioApp {
         theme::apply(&creation.egui_ctx);
-        let adapter = creation.wgpu_render_state.as_ref().map(|state| state.adapter.get_info().device_type);
+
+        let adapter = creation
+            .wgpu_render_state
+            .as_ref()
+            .map(|state| state.adapter.get_info().device_type);
+
         let suggested = suggest_tier(&Capabilities {
             adapter: match adapter {
                 Some(wgpu::DeviceType::DiscreteGpu) => AdapterKind::Discrete,
                 Some(wgpu::DeviceType::IntegratedGpu) => AdapterKind::Integrated,
                 _ => AdapterKind::Cpu,
             },
-            // Not reported by the graphics API; the tier stays a cautious suggestion until calibration exists.
             video_memory_bytes: None,
             system_memory_bytes: None,
             measured_mega_rays: None,
             on_battery: false,
         });
+
         let mut app = StudioApp {
             viewport: Viewport::new(),
             tier: suggested,
             suggested,
+            mode: StudioMode::Projects,
             loading: None,
             project: None,
+            recent: Vec::new(),
+            selected_material: 0,
             message: None,
         };
+
         if let Some(path) = open {
             app.open(path, &creation.egui_ctx);
         }
         app
     }
 
+    /// Loads a project asynchronously and wakes the interface when the result is ready.
     fn open(&mut self, path: PathBuf, context: &egui::Context) {
-        let name = path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
+        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
         let wake = context.clone();
         self.loading = Some((project::load_in_background(path, move || wake.request_repaint()), name));
         self.message = None;
     }
 
+    /// Opens the platform file picker for supported project and scene formats.
+    fn open_dialog(&mut self, context: &egui::Context) {
+        if let Some(path) = rfd::FileDialog::new()
+            .add_filter(text("project_filter"), &project::PROJECT_EXTENSIONS)
+            .pick_file()
+        {
+            self.open(path, context);
+        }
+    }
+
+    /// Installs a completed scene without discarding the previous view on failure.
     fn receive_loaded(&mut self, frame: &eframe::Frame) {
-        let Some((receiver, _)) = &self.loading else { return };
-        let Ok(result) = receiver.try_recv() else { return };
+        let Some((receiver, _)) = &self.loading else {
+            return;
+        };
+        let Ok(result) = receiver.try_recv() else {
+            return;
+        };
         self.loading = None;
         let Some(state) = frame.wgpu_render_state() else {
-            self.message = Some(("Esta ventana no tiene acceso a la tarjeta gráfica.".into(), true));
+            self.message = Some((text("gpu_unavailable").into(), true));
             return;
         };
         match result.and_then(|opened| {
-            self.viewport.set_scene(state, &opened.scene, self.tier.budget().max_bounces).map(|()| (opened.path, opened.notice))
+            self.viewport
+                .set_scene(state, &opened.scene, self.tier.budget().max_bounces)
+                .map(|()| (opened.path, opened.notice))
         }) {
             Ok((path, notice)) => {
+                let name = path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
+                self.recent.retain(|entry| entry.path != path);
+                self.recent.insert(
+                    0,
+                    RecentProject {
+                        name,
+                        file_size_mb: std::fs::metadata(&path).ok().map(|metadata| metadata.len() as f64 / 1_048_576.0),
+                        path: path.clone(),
+                    },
+                );
                 self.project = Some(path);
+                self.selected_material = 0;
                 self.message = notice.map(|text| (text, true));
+                self.mode = StudioMode::Render;
             }
             Err(reason) => self.message = Some((reason, true)),
         }
     }
 
-    fn top_bar(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label(RichText::new("Guanacaste Render").strong().size(15.0));
-            ui.label(RichText::new("Studio").color(theme::ACCENT).size(15.0));
-            ui.separator();
-            if ui.button("Abrir…").on_hover_text("Proyecto .gr / .g3d o escena .grscene").clicked()
-                && let Some(path) = rfd::FileDialog::new()
-                    .add_filter("Proyectos y escenas de Guanacaste", &project::PROJECT_EXTENSIONS)
-                    .pick_file()
-            {
-                self.open(path, ui.ctx());
-            }
-            if ui.add_enabled(self.viewport.has_scene(), egui::Button::new("Guardar imagen…")).clicked()
-                && let Some(path) =
-                    rfd::FileDialog::new().add_filter("Imagen PNG", &["png"]).set_file_name("render.png").save_file()
-            {
-                self.message = Some(match self.viewport.save_picture(&path) {
-                    Ok(()) => (format!("Imagen guardada en {}", path.display()), false),
-                    Err(reason) => (reason, true),
-                });
-            }
-            if let Some(path) = &self.project {
-                ui.separator();
-                let name = path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
-                ui.label(RichText::new(name).color(theme::MUTED)).on_hover_text(path.display().to_string());
-            }
-        });
+    /// Collects current loading, scene, and renderer state for navigation.
+    fn top_bar_state(&self) -> TopBarState {
+        let (samples, target_samples, width, height, sps) = if self.viewport.has_scene() {
+            let (w, h) = self.viewport.resolution();
+            (
+                self.viewport.samples(),
+                self.viewport.settings.target_samples,
+                w,
+                h,
+                self.viewport.samples_per_second(),
+            )
+        } else {
+            (0, 0, 0, 0, 0.0)
+        };
+        TopBarState {
+            project_name: self
+                .project
+                .as_ref()
+                .and_then(|p| p.file_name())
+                .map(|n| n.to_string_lossy().into_owned()),
+            is_loading: self.loading.is_some(),
+            has_scene: self.viewport.has_scene(),
+            loading_name: self.loading.as_ref().map(|(_, name)| name.clone()),
+            samples,
+            target_samples,
+            width,
+            height,
+            samples_per_second: sps,
+            active_mode: self.mode,
+        }
     }
 
+    /// Routes the selected workspace to its supported inspector controls.
     fn side_panel(&mut self, ui: &mut egui::Ui) {
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            section(ui, "Cámara");
-            ui.add(egui::Slider::new(self.viewport.field_of_view(), 15.0..=110.0).fixed_decimals(0).suffix("°").text("Campo de visión"));
-            if ui.button("Volver a la vista inicial").clicked() {
-                self.viewport.go_home();
-            }
-            ui.label(
-                RichText::new("Arrastrar: orbitar · Botón derecho: desplazar\nRueda: acercar · W A S D Q E: caminar")
-                    .color(theme::MUTED)
-                    .small(),
-            );
-
-            section(ui, "Luz del día");
-            let settings = &mut self.viewport.settings;
-            ui.add(egui::Slider::new(&mut settings.sun_azimuth_degrees, 0.0..=360.0).fixed_decimals(0).suffix("°").text("Orientación del sol"));
-            ui.add(egui::Slider::new(&mut settings.sun_elevation_degrees, 1.0..=90.0).fixed_decimals(0).suffix("°").text("Altura del sol"));
-            ui.add(egui::Slider::new(&mut settings.sun_intensity, 0.0..=6.0).fixed_decimals(1).text("Intensidad del sol"));
-            ui.add(egui::Slider::new(&mut settings.sky_intensity, 0.0..=4.0).fixed_decimals(1).text("Intensidad del cielo"));
-
-            section(ui, "Imagen");
-            ui.add(egui::Slider::new(&mut settings.exposure, 0.05..=4.0).logarithmic(true).fixed_decimals(2).text("Exposición"));
-            ui.add(egui::Slider::new(&mut settings.max_bounces, 0..=8).text("Rebotes de luz"));
-            ui.add(egui::Slider::new(&mut settings.target_samples, 16..=4096).logarithmic(true).text("Muestras"));
-
-            section(ui, "Calidad");
-            for (tier, name, hint) in TIERS {
-                let label = if tier == self.suggested { format!("{name}  (sugerido)") } else { name.to_string() };
-                if ui.radio(self.tier == tier, label).on_hover_text(hint).clicked() && self.tier != tier {
-                    self.tier = tier;
-                    self.viewport.settings.max_bounces = tier.budget().max_bounces;
+        match self.mode {
+            StudioMode::Projects => {}
+            StudioMode::Weather => {
+                if environment_panel::show(ui, &mut self.viewport.settings) {
                     self.viewport.restart();
                 }
             }
-
-            section(ui, "Escena");
-            let facts = &self.viewport.facts;
-            fact(ui, "Triángulos", &group_thousands(facts.triangles));
-            fact(ui, "Materiales", &facts.materials.to_string());
-            fact(ui, "Memoria de vídeo", &format!("{:.0} MB", facts.scene_megabytes + self.viewport.image_megabytes()));
-            ui.label(RichText::new(&facts.adapter).color(theme::MUTED).small());
-            ui.add_space(6.0);
-            ui.label(
-                RichText::new("Versión preliminar: aún sin texturas, vegetación recortada ni luces artificiales.")
-                    .color(theme::WARNING)
-                    .small(),
-            );
-        });
+            StudioMode::Render => {
+                render_panel::show(ui, &mut self.tier, self.suggested, &mut self.viewport);
+            }
+            StudioMode::Material => material_panel::show(ui, self.viewport.materials(), &mut self.selected_material),
+            StudioMode::Build | StudioMode::Movie | StudioMode::Settings => {
+                ui.centered_and_justified(|ui| {
+                    ui.label(RichText::new(text("coming_soon")).color(theme::MUTED).size(11.0));
+                });
+            }
+        }
     }
 
-    fn status_bar(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            if let Some((_, name)) = &self.loading {
-                ui.spinner();
-                ui.label(format!("Abriendo {name}…"));
-                return;
-            }
-            if self.viewport.has_scene() {
-                let (width, height) = self.viewport.resolution();
-                let (samples, target) = (self.viewport.samples(), self.viewport.settings.target_samples);
-                ui.label(format!("{} / {target} muestras", samples.min(target)));
-                ui.separator();
-                ui.label(format!("{width} × {height}"));
-                ui.separator();
-                let rate = self.viewport.samples_per_second();
-                ui.label(if rate > 0.0 { format!("{rate:.0} muestras/s") } else { "Imagen terminada".to_string() });
-            }
-            if let Some((text, is_error)) = &self.message {
-                ui.separator();
-                ui.label(RichText::new(text).color(if *is_error { theme::WARNING } else { theme::MUTED }));
-            }
-        });
-    }
-
-    fn empty_state(&mut self, ui: &mut egui::Ui) {
-        ui.vertical_centered(|ui| {
-            ui.add_space(ui.available_height() * 0.36);
-            ui.label(RichText::new("Abre un proyecto para verlo con luz real").size(20.0));
-            ui.add_space(4.0);
-            ui.label(
-                RichText::new("Proyectos de Guanacaste Render (.gr), de Guanacaste 3D (.g3d) o escenas (.grscene)")
-                    .color(theme::MUTED),
-            );
-            ui.add_space(14.0);
-            if ui.button(RichText::new("Abrir proyecto…").size(15.0)).clicked()
-                && let Some(path) = rfd::FileDialog::new()
-                    .add_filter("Proyectos y escenas de Guanacaste", &project::PROJECT_EXTENSIONS)
-                    .pick_file()
-            {
-                self.open(path, ui.ctx());
-            }
-        });
+    /// Keeps loading and export feedback visible above the active workspace.
+    fn show_toast(&self, ctx: &egui::Context) {
+        let Some((text, is_error)) = &self.message else {
+            return;
+        };
+        egui::Area::new(egui::Id::new("studio-toast"))
+            .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 36.0))
+            .order(egui::Order::Foreground)
+            .show(ctx, |ui| {
+                egui::Frame::new()
+                    .fill(theme::PANEL)
+                    .stroke(theme::hairline())
+                    .corner_radius(egui::CornerRadius::same(4))
+                    .inner_margin(egui::Margin::symmetric(12, 6))
+                    .show(ui, |ui| {
+                        let color = if *is_error { theme::ERROR } else { theme::TEAL };
+                        ui.label(RichText::new(text).color(color));
+                    });
+            });
     }
 }
 
 impl eframe::App for StudioApp {
+    /// Coordinates navigation, loading, rendering, and floating scene information.
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.receive_loaded(frame);
-        let bar = egui::Frame::NONE.fill(theme::PANEL).inner_margin(egui::Margin::symmetric(12, 7));
-        egui::Panel::top("top-bar").frame(bar).show(ui, |ui| self.top_bar(ui));
-        egui::Panel::bottom("status-bar").frame(bar).show(ui, |ui| self.status_bar(ui));
-        if self.viewport.has_scene() {
-            egui::Panel::right("side-panel")
-                .frame(egui::Frame::NONE.fill(theme::PANEL).inner_margin(egui::Margin::same(12)))
-                .default_size(300.0)
-                .resizable(false)
-                .show(ui, |ui| self.side_panel(ui));
-        }
-        egui::CentralPanel::default().frame(egui::Frame::NONE.fill(theme::BACKGROUND)).show(ui, |ui| {
-            match (self.viewport.has_scene(), frame.wgpu_render_state()) {
-                (true, Some(state)) => self.viewport.show(ui, state, &self.tier.budget()),
-                _ if self.loading.is_none() => self.empty_state(ui),
-                _ => {}
+
+        // 1. Fixed Top Menu Bar (28px)
+        let top_frame = egui::Frame::NONE
+            .fill(theme::PANEL)
+            .stroke(theme::hairline())
+            .inner_margin(egui::Margin::symmetric(10, 0));
+
+        egui::Panel::top("top-bar").frame(top_frame).exact_size(28.0).show(ui, |ui| {
+            let mut state = self.top_bar_state();
+            match top_bar::show(ui, &mut state) {
+                TopBarAction::OpenFile => self.open_dialog(ui.ctx()),
+                TopBarAction::SavePng => {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .add_filter(text("png_filter"), &["png"])
+                        .set_file_name("render.png")
+                        .save_file()
+                    {
+                        self.message = Some(match self.viewport.save_picture(&path) {
+                            Ok(()) => (text("image_saved").replace("{path}", &path.display().to_string()), false),
+                            Err(reason) => (reason, true),
+                        });
+                    }
+                }
+                TopBarAction::SwitchMode(m) => self.mode = m,
+                TopBarAction::None => {}
             }
         });
-    }
-}
 
-fn section(ui: &mut egui::Ui, title: &str) {
-    ui.add_space(10.0);
-    ui.label(RichText::new(title.to_uppercase()).color(theme::MUTED).small().strong());
-    ui.separator();
-}
+        // 2. Left Tool Rail (48px)
+        let rail_frame = egui::Frame::NONE
+            .fill(theme::DEEPEST)
+            .stroke(theme::hairline())
+            .inner_margin(egui::Margin::symmetric(3, 5));
 
-fn fact(ui: &mut egui::Ui, name: &str, value: &str) {
-    ui.horizontal(|ui| {
-        ui.label(RichText::new(name).color(theme::MUTED));
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| ui.label(value));
-    });
-}
+        egui::Panel::left("mode-rail")
+            .frame(rail_frame)
+            .exact_size(48.0)
+            .resizable(false)
+            .show(ui, |ui| {
+                let mut state = ModeRailState {
+                    active: self.mode,
+                    project_loaded: self.viewport.has_scene(),
+                };
+                match mode_rail::show(ui, &mut state) {
+                    ModeRailAction::SwitchMode(m) => self.mode = m,
+                    ModeRailAction::None => {}
+                }
+            });
 
-fn group_thousands(value: usize) -> String {
-    let digits = value.to_string();
-    let mut grouped = String::with_capacity(digits.len() + digits.len() / 3);
-    for (index, digit) in digits.chars().enumerate() {
-        if index > 0 && (digits.len() - index).is_multiple_of(3) {
-            grouped.push(' ');
+        // 3. Right Property & Tool Inspector
+        let side_frame = egui::Frame::NONE
+            .fill(theme::PANEL)
+            .stroke(theme::hairline())
+            .inner_margin(egui::Margin::same(8));
+
+        if !matches!(self.mode, StudioMode::Projects | StudioMode::Settings) && self.viewport.has_scene() {
+            egui::Panel::right("side-panel")
+                .frame(side_frame)
+                .default_size(320.0)
+                .size_range(240.0..=420.0)
+                .show(ui, |ui| self.side_panel(ui));
         }
-        grouped.push(digit);
-    }
-    grouped
-}
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn thousands_are_grouped_with_spaces() {
-        assert_eq!(super::group_thousands(0), "0");
-        assert_eq!(super::group_thousands(999), "999");
-        assert_eq!(super::group_thousands(2_617_926), "2 617 926");
+        // 4. Central 3D Canvas / Start Screen
+        egui::CentralPanel::default()
+            .frame(egui::Frame::NONE.fill(theme::BACKGROUND))
+            .show(ui, |ui| {
+                match (
+                    self.viewport.has_scene() && self.mode != StudioMode::Projects,
+                    frame.wgpu_render_state(),
+                ) {
+                    (true, Some(state)) if self.mode == StudioMode::Settings => {
+                        let name = self
+                            .project
+                            .as_ref()
+                            .and_then(|path| path.file_name())
+                            .map(|name| name.to_string_lossy().into_owned());
+                        settings_page::show(ui, &mut self.viewport, state, &mut self.tier, self.suggested, name.as_deref());
+                    }
+                    (true, Some(state)) => {
+                        self.viewport.show(ui, state, &self.tier.budget());
+                    }
+                    _ if self.loading.is_some() => {
+                        ui.centered_and_justified(|ui| {
+                            let name = self.loading.as_ref().map(|(_, n)| n.as_str()).unwrap_or("…");
+                            ui.label(
+                                RichText::new(text("loading").replace("{name}", name))
+                                    .color(theme::MUTED)
+                                    .size(14.0),
+                            );
+                        });
+                    }
+                    _ => {
+                        let ss_state = StartScreenState {
+                            recent: self.recent.clone(),
+                            active_name: self
+                                .project
+                                .as_ref()
+                                .and_then(|path| path.file_name())
+                                .map(|name| name.to_string_lossy().into_owned()),
+                        };
+                        let budget = self.tier.budget();
+                        let preview = frame
+                            .wgpu_render_state()
+                            .filter(|_| self.viewport.has_scene())
+                            .map(|render_state| ProjectPreview {
+                                viewport: &mut self.viewport,
+                                render_state,
+                                budget: &budget,
+                            });
+                        match start_screen::show(ui, &ss_state, preview) {
+                            StartScreenAction::Open(path) => self.open(path, ui.ctx()),
+                            StartScreenAction::OpenDialog => self.open_dialog(ui.ctx()),
+                            StartScreenAction::OpenViewport => self.mode = StudioMode::Render,
+                            StartScreenAction::None => {}
+                        }
+                    }
+                }
+            });
+
+        // 5. HUD & Overlays
+        if self.viewport.has_scene() && !matches!(self.mode, StudioMode::Projects | StudioMode::Settings) {
+            let project_name = self
+                .project
+                .as_ref()
+                .and_then(|p| p.file_name())
+                .map(|n| n.to_string_lossy().into_owned());
+
+            egui::Area::new(egui::Id::new("scene-info-card"))
+                .order(egui::Order::Foreground)
+                .fixed_pos(egui::pos2(58.0, 36.0))
+                .show(ui.ctx(), |ui| {
+                    scene_panel::show_scene_card(ui, &self.viewport.facts, project_name.as_deref());
+                });
+
+            let (w, h) = self.viewport.resolution();
+            let hud = HudState {
+                samples: self.viewport.samples(),
+                target_samples: self.viewport.settings.target_samples,
+                width: w,
+                height: h,
+                samples_per_second: self.viewport.samples_per_second(),
+                is_rendering: self.viewport.samples_per_second() > 0.0,
+            };
+            hud::show(ui.ctx(), &hud);
+        }
+
+        self.show_toast(ui.ctx());
     }
 }
