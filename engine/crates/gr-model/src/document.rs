@@ -11,11 +11,14 @@ pub mod component_shape;
 mod floor_slab;
 #[path = "plumbing-point.rs"]
 mod plumbing_point;
+#[path = "room.rs"]
+mod room;
 #[path = "structural-element.rs"]
 mod structural_element;
 
 pub use floor_slab::{FloorSlab, TopographyPoint, floor};
 pub use plumbing_point::{PlumbingPoint, PlumbingSystem, plumbing_point_kind, plumbing_system_kind};
+pub use room::Room;
 pub use structural_element::{StructuralElement, element_kind, element_style};
 
 use crate::container::{Container, ContainerError, DocumentKind};
@@ -291,6 +294,8 @@ pub struct Document {
     pub wall_types: Vec<WallType>,
     #[serde(default)]
     pub opening_types: Vec<OpeningType>,
+    #[serde(default)]
+    pub rooms: Vec<Room>,
     #[serde(default)]
     pub floors: Vec<FloorSlab>,
     #[serde(default)]

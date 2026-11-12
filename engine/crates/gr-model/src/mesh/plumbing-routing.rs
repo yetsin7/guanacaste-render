@@ -1,6 +1,7 @@
-//! Routes supported cold-water, hot-water, and sanitary systems through their connected fixtures.
+//! Routes supported supply, sanitary, and storm systems through their connected fixtures.
 
-use super::plumbing_paths::{drain, supply};
+use super::plumbing_paths::{drain, storm, supply};
+use super::storm_runoff::downspout_flows;
 use super::plumbing_specifications::{FixtureSpec, fixture_spec};
 use crate::document::component_shape as catalog;
 use crate::document::{Document, Id, PlumbingSystem, StructuralElement, element_kind, plumbing_point_kind, plumbing_system_kind as kind};
@@ -52,12 +53,12 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
         .map(|element| (element.id, element))
         .collect();
     let root = match system.kind {
-        kind::COLD_WATER | kind::SANITARY => {
+        kind::COLD_WATER | kind::SANITARY | kind::STORM_WATER => {
             let point = document.plumbing_points.iter().find(|point| point.id == system.source_id)?;
-            let supported = if system.kind == kind::COLD_WATER {
-                point.kind == plumbing_point_kind::WATER_METER
-            } else {
-                point.kind == plumbing_point_kind::SEWER_OUTLET
+            let supported = match system.kind {
+                kind::COLD_WATER => matches!(point.kind, plumbing_point_kind::WATER_METER | plumbing_point_kind::CISTERN | plumbing_point_kind::ELEVATED_TANK),
+                kind::SANITARY => matches!(point.kind, plumbing_point_kind::SEWER_OUTLET | plumbing_point_kind::SEPTIC_TANK),
+                _ => point.kind == plumbing_point_kind::STORM_OUTLET,
             };
             if !supported {
                 return None;
@@ -69,7 +70,7 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
                 level,
                 units: 0.0,
                 spec: None,
-                inlet_z: level,
+                inlet_z: if point.kind == plumbing_point_kind::ELEVATED_TANK { level + point.tank_height } else { level },
                 outlet_z: level - point.invert_depth,
             }
         }
@@ -91,6 +92,21 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
         }
         _ => return None,
     };
+    if system.kind == kind::STORM_WATER {
+        let flows = downspout_flows(document);
+        let spouts: HashMap<Id, &StructuralElement> = document.structural_elements.iter()
+            .filter(|element| element.kind == element_kind::DOWNSPOUT).map(|element| (element.id, element)).collect();
+        let mut nodes = vec![root];
+        let mut seen = HashSet::new();
+        for id in &system.fixtures {
+            if !seen.insert(*id) { continue; }
+            let Some(spout) = spouts.get(id) else { continue };
+            let Some(&level) = elevations.get(&spout.level_id) else { continue };
+            nodes.push(PlumbingNode { point: spout.start, center: spout.start, level, units: flows.get(id).copied().unwrap_or(0.0),
+                spec: None, inlet_z: level, outlet_z: level + spout.offset });
+        }
+        return Some(storm(&nodes));
+    }
     let heater_units: HashMap<Id, f64> = document
         .plumbing_systems
         .iter()

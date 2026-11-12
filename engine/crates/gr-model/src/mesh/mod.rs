@@ -5,6 +5,8 @@ mod dotnet;
 #[path = "element-part.rs"]
 mod element_part;
 mod elements;
+#[path = "household-size.rs"]
+mod household_size;
 #[path = "interior-test.rs"]
 mod interior_test;
 mod openings;
@@ -15,8 +17,14 @@ mod plumbing_geometry;
 mod plumbing_paths;
 #[path = "plumbing-routing.rs"]
 mod plumbing_routing;
+#[path = "plumbing-septic.rs"]
+mod plumbing_septic;
+#[path = "plumbing-solids.rs"]
+mod plumbing_solids;
 #[path = "plumbing-specifications.rs"]
 mod plumbing_specifications;
+#[path = "plumbing-tank.rs"]
+mod plumbing_tank;
 #[path = "pitched-roof.rs"]
 mod pitched_roof;
 mod prism;
@@ -36,6 +44,8 @@ mod residential_furniture;
 mod residential_seating;
 #[path = "residential-vehicles.rs"]
 mod residential_vehicles;
+#[path = "storm-runoff.rs"]
+mod storm_runoff;
 mod scene_mesh;
 mod stairs;
 #[path = "terrain-surface.rs"]

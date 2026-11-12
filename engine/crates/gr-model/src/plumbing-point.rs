@@ -15,11 +15,41 @@ pub struct PlumbingPoint {
     /// Sewer connection depth below its level in metres.
     #[serde(default = "default_invert_depth")]
     pub invert_depth: f64,
+    /// Design rainfall intensity in millimetres per hour for storm-water sizing.
+    #[serde(default = "default_rainfall")]
+    pub rainfall_mm_per_hour: f64,
+    /// Explicit tank capacity in litres; zero requests the application-defined household default.
+    #[serde(default)]
+    pub capacity_liters: f64,
+    /// Elevation of an elevated tank above its level.
+    #[serde(default = "default_tank_height")]
+    pub tank_height: f64,
+    /// Explicit occupants served by the point; zero uses the project's bedroom count.
+    #[serde(default)]
+    pub occupants: i32,
+    /// Soil absorption in litres per square metre per day for septic design.
+    #[serde(default = "default_percolation")]
+    pub percolation: f64,
 }
 
 /// Matches the original model's default sewer invert depth.
 fn default_invert_depth() -> f64 {
     0.6
+}
+
+/// Matches the original model's default storm rainfall intensity.
+fn default_rainfall() -> f64 {
+    150.0
+}
+
+/// Matches the original model's default elevated-tank support height.
+fn default_tank_height() -> f64 {
+    6.0
+}
+
+/// Matches the original model's default soil absorption rate.
+fn default_percolation() -> f64 {
+    40.0
 }
 
 /// A routed system connects a source to the identifiers of its served fixtures.
@@ -44,5 +74,8 @@ pub mod plumbing_point_kind {
     pub const WATER_METER: i32 = 0;
     pub const SEWER_OUTLET: i32 = 1;
     pub const VENT_STACK: i32 = 2;
+    pub const SEPTIC_TANK: i32 = 3;
     pub const STORM_OUTLET: i32 = 4;
+    pub const CISTERN: i32 = 5;
+    pub const ELEVATED_TANK: i32 = 6;
 }

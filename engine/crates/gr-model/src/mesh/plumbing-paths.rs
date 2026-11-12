@@ -2,6 +2,7 @@
 
 use super::plumbing_routing::{PipeRun, PlumbingNode, SystemLayout, VentRun};
 use super::plumbing_specifications::{DRAIN_SIZES, SUPPLY_SIZES, drain_size, peak_flow, supply_size, vent_size};
+use super::storm_runoff::{STORM_SIZES, storm_size};
 use crate::document::{PlumbingPoint, plumbing_point_kind, plumbing_system_kind as kind};
 use crate::plan::Point2;
 
@@ -57,6 +58,27 @@ pub(super) fn supply(nodes: &[PlumbingNode], system_kind: i32) -> SystemLayout {
         runs,
         vents: Vec::new(),
     }
+}
+
+/// Builds one-percent-fall storm branches and the boots connecting each downspout to the buried pipe.
+pub(super) fn storm(nodes: &[PlumbingNode]) -> SystemLayout {
+    let (parents, order) = tree(nodes);
+    let flows = subtree(nodes, &parents, &order);
+    let mut runs = Vec::new();
+    let mut invert = vec![0.0; nodes.len()];
+    invert[0] = nodes[0].outlet_z;
+    for &index in order.iter().skip(1) {
+        let parent = parents[index];
+        invert[index] = invert[parent] + 0.01 * manhattan(nodes[parent].point, nodes[index].point);
+        let size = storm_size(flows[index]);
+        add_square_run(&mut runs, nodes[parent].point, invert[parent], nodes[index].point, invert[index], STORM_SIZES[size].1);
+    }
+    for index in 1..nodes.len() {
+        let node = nodes[index];
+        let size = storm_size(node.units);
+        runs.push(PipeRun { from: node.point, from_z: node.outlet_z, to: node.point, to_z: invert[index], outside: STORM_SIZES[size].1 });
+    }
+    SystemLayout { kind: kind::STORM_WATER, runs, vents: Vec::new() }
 }
 
 /// Builds sloped sanitary branches, fixture traps, a cleanout, and the stacks serving those fixtures.

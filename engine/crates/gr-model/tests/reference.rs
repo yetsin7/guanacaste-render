@@ -216,6 +216,39 @@ fn connected_plumbing_systems_match_the_application() {
     assert_same_triangles(&mesh, 0, &reference, 0, mesh.triangle_count(), "connected plumbing systems");
 }
 
+/// Compares roof runoff, storm branch sizing, and downspout connections with the original application.
+#[test]
+fn storm_drainage_matches_the_application() {
+    let document = Document::parse(include_bytes!("fixtures/storm.gr")).expect("valid storm fixture");
+    let reference = Reference::parse(include_bytes!("fixtures/storm.refmesh"));
+    let (mesh, coverage) = build_mesh(&document, true);
+    assert!(coverage.is_complete(), "{coverage:?}");
+    assert_eq!(mesh.triangle_count(), reference.kinds.len());
+    assert_same_triangles(&mesh, 0, &reference, 0, mesh.triangle_count(), "storm drainage");
+}
+
+/// Compares explicit and household-sized tanks, including their connected supply systems.
+#[test]
+fn water_storage_matches_the_application() {
+    let document = Document::parse(include_bytes!("fixtures/water-storage.gr")).expect("valid water-storage fixture");
+    let reference = Reference::parse(include_bytes!("fixtures/water-storage.refmesh"));
+    let (mesh, coverage) = build_mesh(&document, true);
+    assert!(coverage.is_complete(), "{coverage:?}");
+    assert_eq!(mesh.triangle_count(), reference.kinds.len());
+    assert_same_triangles(&mesh, 0, &reference, 0, mesh.triangle_count(), "water storage");
+}
+
+/// Compares a sanitary connection, septic tank, and multi-trench drain field with C#.
+#[test]
+fn septic_system_matches_the_application() {
+    let document = Document::parse(include_bytes!("fixtures/septic.gr")).expect("valid septic fixture");
+    let reference = Reference::parse(include_bytes!("fixtures/septic.refmesh"));
+    let (mesh, coverage) = build_mesh(&document, true);
+    assert!(coverage.is_complete(), "{coverage:?}");
+    assert_eq!(mesh.triangle_count(), reference.kinds.len());
+    assert_same_triangles(&mesh, 0, &reference, 0, mesh.triangle_count(), "septic system");
+}
+
 #[test]
 /// Verifies that procedural plants preserve both geometry and seeded branching.
 fn plants_grow_as_they_do_in_the_application() {

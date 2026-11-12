@@ -12,6 +12,7 @@ use super::plants::add_plant;
 use super::pitched_roof::add_pitched_roof;
 use super::plumbing_geometry::{add_service_point, add_system};
 use super::plumbing_routing::route_system;
+use super::plumbing_septic::add_septic;
 use super::prism::{PrismShape, WallFrame, add_prism, to_f32};
 use super::scene_mesh::{SceneMesh, SurfaceKind};
 use super::terrain_mesh::{add_terrain, contains as terrain_contains};
@@ -183,8 +184,13 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         }
     }
     coverage.plumbing_systems += document.plumbing_systems.iter().filter(|system| !(0..=3).contains(&system.kind)).count();
+    for point in document.plumbing_points.iter().filter(|point| point.kind == crate::document::plumbing_point_kind::SEPTIC_TANK) {
+        if let Some(&level) = elevations.get(&point.level_id) {
+            add_septic(&mut mesh, document, point, level);
+        }
+    }
     for point in &document.plumbing_points {
-        if !elevations.get(&point.level_id).is_some_and(|&level| add_service_point(&mut mesh, point, level)) {
+        if !elevations.get(&point.level_id).is_some_and(|&level| add_service_point(&mut mesh, document, point, level)) {
             coverage.plumbing_points += 1;
         }
     }
@@ -324,7 +330,7 @@ fn slab_surface(slab: &FloorSlab) -> SurfaceKind {
 }
 
 /// The boundary of a slab; for a roof with an overhang, grown outwards by it with mitred corners.
-fn with_overhang(slab: &FloorSlab) -> Vec<Point2> {
+pub(super) fn with_overhang(slab: &FloorSlab) -> Vec<Point2> {
     if slab.kind != floor::KIND_ROOF || slab.overhang <= 0.0 {
         return slab.boundary.clone();
     }

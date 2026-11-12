@@ -58,6 +58,24 @@ if (args.Contains("--plumbing-system-reference"))
     return;
 }
 
+if (args.Contains("--storm-reference"))
+{
+    StormReference.Run(outputFolder ?? Path.Combine("artifacts", "storm-reference"));
+    return;
+}
+
+if (args.Contains("--water-storage-reference"))
+{
+    WaterStorageReference.Run(outputFolder ?? Path.Combine("artifacts", "water-storage-reference"));
+    return;
+}
+
+if (args.Contains("--septic-reference"))
+{
+    SepticReference.Run(outputFolder ?? Path.Combine("artifacts", "septic-reference"));
+    return;
+}
+
 if (args.Contains("--baseline"))
 {
     EngineBaseline.Run(outputFolder ?? Path.Combine("artifacts", "engine-bench"));
