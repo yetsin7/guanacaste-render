@@ -111,7 +111,10 @@ pub fn suggest_tier(capabilities: &Capabilities) -> QualityTier {
             None => QualityTier::Equilibrado,
         },
     };
-    if capabilities.system_memory_bytes.is_some_and(|bytes| bytes < 8 * GIGABYTE) {
+    if capabilities
+        .system_memory_bytes
+        .is_some_and(|bytes| bytes < 8 * GIGABYTE)
+    {
         return QualityTier::Economico;
     }
     let tier = by_speed.min(by_memory);
@@ -129,7 +132,12 @@ mod tests {
 
     #[test]
     fn budgets_never_shrink_as_the_tier_rises() {
-        let tiers = [QualityTier::Economico, QualityTier::Equilibrado, QualityTier::Alto, QualityTier::Ultra];
+        let tiers = [
+            QualityTier::Economico,
+            QualityTier::Equilibrado,
+            QualityTier::Alto,
+            QualityTier::Ultra,
+        ];
         for pair in tiers.windows(2) {
             let (lower, higher) = (pair[0].budget(), pair[1].budget());
             assert!(higher.viewport_scale >= lower.viewport_scale);
@@ -163,11 +171,29 @@ mod tests {
             on_battery: false,
         };
         assert_eq!(suggest_tier(&laptop_rtx), QualityTier::Alto);
-        assert_eq!(suggest_tier(&Capabilities { on_battery: true, ..laptop_rtx }), QualityTier::Equilibrado);
+        assert_eq!(
+            suggest_tier(&Capabilities {
+                on_battery: true,
+                ..laptop_rtx
+            }),
+            QualityTier::Equilibrado
+        );
         // Fast but short of video memory: memory wins.
-        assert_eq!(suggest_tier(&Capabilities { video_memory_bytes: Some(2 * GIGABYTE), ..laptop_rtx }), QualityTier::Economico);
+        assert_eq!(
+            suggest_tier(&Capabilities {
+                video_memory_bytes: Some(2 * GIGABYTE),
+                ..laptop_rtx
+            }),
+            QualityTier::Economico
+        );
         // Not calibrated yet: a discrete card starts in the middle, never at the top.
-        assert_eq!(suggest_tier(&Capabilities { measured_mega_rays: None, ..laptop_rtx }), QualityTier::Equilibrado);
+        assert_eq!(
+            suggest_tier(&Capabilities {
+                measured_mega_rays: None,
+                ..laptop_rtx
+            }),
+            QualityTier::Equilibrado
+        );
         let integrated = Capabilities {
             adapter: AdapterKind::Integrated,
             video_memory_bytes: None,
@@ -176,6 +202,12 @@ mod tests {
             on_battery: false,
         };
         assert_eq!(suggest_tier(&integrated), QualityTier::Equilibrado);
-        assert_eq!(suggest_tier(&Capabilities { system_memory_bytes: Some(4 * GIGABYTE), ..integrated }), QualityTier::Economico);
+        assert_eq!(
+            suggest_tier(&Capabilities {
+                system_memory_bytes: Some(4 * GIGABYTE),
+                ..integrated
+            }),
+            QualityTier::Economico
+        );
     }
 }

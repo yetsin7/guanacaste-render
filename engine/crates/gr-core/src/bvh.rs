@@ -71,10 +71,24 @@ struct Ray4 {
 impl Ray4 {
     fn new(origin: Vec3, direction: Vec3) -> Self {
         // A zero component would give 0 x infinity = NaN on a slab plane; a huge finite reciprocal avoids it.
-        let reciprocal = |d: f32| if d.abs() < 1e-20 { 1e20f32.copysign(d) } else { 1.0 / d };
+        let reciprocal = |d: f32| {
+            if d.abs() < 1e-20 {
+                1e20f32.copysign(d)
+            } else {
+                1.0 / d
+            }
+        };
         Ray4 {
-            origin: [f32x4::splat(origin.x), f32x4::splat(origin.y), f32x4::splat(origin.z)],
-            direction: [f32x4::splat(direction.x), f32x4::splat(direction.y), f32x4::splat(direction.z)],
+            origin: [
+                f32x4::splat(origin.x),
+                f32x4::splat(origin.y),
+                f32x4::splat(origin.z),
+            ],
+            direction: [
+                f32x4::splat(direction.x),
+                f32x4::splat(direction.y),
+                f32x4::splat(direction.z),
+            ],
             inverse: [
                 f32x4::splat(reciprocal(direction.x)),
                 f32x4::splat(reciprocal(direction.y)),
@@ -94,15 +108,27 @@ impl Node4 {
         let t2y = (self.max_y - ray.origin[1]) * ray.inverse[1];
         let t1z = (self.min_z - ray.origin[2]) * ray.inverse[2];
         let t2z = (self.max_z - ray.origin[2]) * ray.inverse[2];
-        let entry = t1x.fast_min(t2x).fast_max(t1y.fast_min(t2y)).fast_max(t1z.fast_min(t2z)).fast_max(f32x4::ZERO);
-        let exit = t1x.fast_max(t2x).fast_min(t1y.fast_max(t2y)).fast_min(t1z.fast_max(t2z)).fast_min(f32x4::splat(limit));
+        let entry = t1x
+            .fast_min(t2x)
+            .fast_max(t1y.fast_min(t2y))
+            .fast_max(t1z.fast_min(t2z))
+            .fast_max(f32x4::ZERO);
+        let exit = t1x
+            .fast_max(t2x)
+            .fast_min(t1y.fast_max(t2y))
+            .fast_min(t1z.fast_max(t2z))
+            .fast_min(f32x4::splat(limit));
         (entry.cmp_le(exit).move_mask() & self.lanes, entry)
     }
 }
 
 #[inline(always)]
 fn cross(a: &[f32x4; 3], b: &[f32x4; 3]) -> [f32x4; 3] {
-    [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
 }
 
 #[inline(always)]
@@ -118,7 +144,11 @@ impl Tri4 {
         let p = cross(&ray.direction, &self.e2);
         let determinant = dot(&self.e1, &p);
         let inverse = f32x4::ONE / determinant;
-        let t = [ray.origin[0] - self.v0[0], ray.origin[1] - self.v0[1], ray.origin[2] - self.v0[2]];
+        let t = [
+            ray.origin[0] - self.v0[0],
+            ray.origin[1] - self.v0[1],
+            ray.origin[2] - self.v0[2],
+        ];
         let u = dot(&t, &p) * inverse;
         let q = cross(&t, &self.e1);
         let v = dot(&ray.direction, &q) * inverse;
@@ -137,7 +167,10 @@ impl Bvh {
     /// Builds the hierarchy over indexed triangles. Hits report the position of the triangle in `indices`.
     pub fn build(positions: &[Vec3], indices: &[[u32; 3]]) -> Bvh {
         let count = indices.len();
-        assert!(count < LEAF_FLAG as usize, "too many triangles for 31-bit references");
+        assert!(
+            count < LEAF_FLAG as usize,
+            "too many triangles for 31-bit references"
+        );
         if count == 0 {
             return Bvh {
                 nodes: Vec::new(),
@@ -150,7 +183,11 @@ impl Bvh {
         }
         let corners = |triangle: usize| {
             let [a, b, c] = indices[triangle];
-            (positions[a as usize], positions[b as usize], positions[c as usize])
+            (
+                positions[a as usize],
+                positions[b as usize],
+                positions[c as usize],
+            )
         };
         let (binary, order) = build_binary(positions, indices);
 
@@ -270,7 +307,11 @@ impl Bvh {
         let mut current = self.root;
         loop {
             if current & LEAF_FLAG != 0 {
-                if self.blocks[(current & !LEAF_FLAG) as usize].test(&ray, t_min, t_max).0 != 0 {
+                if self.blocks[(current & !LEAF_FLAG) as usize]
+                    .test(&ray, t_min, t_max)
+                    .0
+                    != 0
+                {
                     return true;
                 }
             } else {
@@ -314,19 +355,29 @@ pub struct FlatBvh {
 impl FlatBvh {
     pub fn build(positions: &[Vec3], indices: &[[u32; 3]]) -> FlatBvh {
         if indices.is_empty() {
-            return FlatBvh { nodes: Vec::new(), triangle_order: Vec::new() };
+            return FlatBvh {
+                nodes: Vec::new(),
+                triangle_order: Vec::new(),
+            };
         }
         let (binary, triangle_order) = build_binary(positions, indices);
         let nodes = binary
             .par_iter()
             .map(|node| FlatNode {
                 min: node.min.to_array(),
-                right_or_first: if node.count > 0 { node.first } else { node.right },
+                right_or_first: if node.count > 0 {
+                    node.first
+                } else {
+                    node.right
+                },
                 max: node.max.to_array(),
                 count: node.count,
             })
             .collect();
-        FlatBvh { nodes, triangle_order }
+        FlatBvh {
+            nodes,
+            triangle_order,
+        }
     }
 }
 
@@ -335,8 +386,15 @@ fn build_binary(positions: &[Vec3], indices: &[[u32; 3]]) -> (Vec<BinaryNode>, V
     let boxes: Vec<PrimBox> = indices
         .par_iter()
         .map(|&[a, b, c]| {
-            let (a, b, c) = (positions[a as usize], positions[b as usize], positions[c as usize]);
-            PrimBox { min: a.min(b).min(c), max: a.max(b).max(c) }
+            let (a, b, c) = (
+                positions[a as usize],
+                positions[b as usize],
+                positions[c as usize],
+            );
+            PrimBox {
+                min: a.min(b).min(c),
+                max: a.max(b).max(c),
+            }
         })
         .collect();
     let mut order: Vec<u32> = (0..indices.len() as u32).collect();
@@ -407,10 +465,16 @@ impl Extent {
         if order.len() >= PARALLEL_BINNING {
             order
                 .par_chunks(1 << 14)
-                .map(|chunk| chunk.iter().fold(Extent::EMPTY, |extent, &prim| extent.add(&boxes[prim as usize])))
+                .map(|chunk| {
+                    chunk.iter().fold(Extent::EMPTY, |extent, &prim| {
+                        extent.add(&boxes[prim as usize])
+                    })
+                })
                 .reduce(|| Extent::EMPTY, Extent::merge)
         } else {
-            order.iter().fold(Extent::EMPTY, |extent, &prim| extent.add(&boxes[prim as usize]))
+            order.iter().fold(Extent::EMPTY, |extent, &prim| {
+                extent.add(&boxes[prim as usize])
+            })
         }
     }
 }
@@ -423,7 +487,11 @@ struct Bin {
 }
 
 type Bins = [[Bin; BINS]; 3];
-const EMPTY_BINS: Bins = [[Bin { min: Vec3::INFINITY, max: Vec3::NEG_INFINITY, count: 0 }; BINS]; 3];
+const EMPTY_BINS: Bins = [[Bin {
+    min: Vec3::INFINITY,
+    max: Vec3::NEG_INFINITY,
+    count: 0,
+}; BINS]; 3];
 
 fn half_area(min: Vec3, max: Vec3) -> f32 {
     let size = max - min;
@@ -455,26 +523,35 @@ fn fill_bins(boxes: &[PrimBox], order: &[u32], origin: Vec3, scale: Vec3) -> Bin
     if order.len() < PARALLEL_BINNING {
         return order.iter().fold(EMPTY_BINS, add);
     }
-    order.par_chunks(1 << 14).map(|chunk| chunk.iter().fold(EMPTY_BINS, add)).reduce(
-        || EMPTY_BINS,
-        |mut a, b| {
-            for axis in 0..3 {
-                for slot in 0..BINS {
-                    a[axis][slot].min = a[axis][slot].min.min(b[axis][slot].min);
-                    a[axis][slot].max = a[axis][slot].max.max(b[axis][slot].max);
-                    a[axis][slot].count += b[axis][slot].count;
+    order
+        .par_chunks(1 << 14)
+        .map(|chunk| chunk.iter().fold(EMPTY_BINS, add))
+        .reduce(
+            || EMPTY_BINS,
+            |mut a, b| {
+                for axis in 0..3 {
+                    for slot in 0..BINS {
+                        a[axis][slot].min = a[axis][slot].min.min(b[axis][slot].min);
+                        a[axis][slot].max = a[axis][slot].max.max(b[axis][slot].max);
+                        a[axis][slot].count += b[axis][slot].count;
+                    }
                 }
-            }
-            a
-        },
-    )
+                a
+            },
+        )
 }
 
 /// Reorders `order` around the cheapest binned SAH plane and returns the size of the left part, always strictly
 /// inside the range. Falls back to the median of the widest axis when no plane separates the triangles.
 fn split(boxes: &[PrimBox], order: &mut [u32], extent: &Extent, depth: u32) -> usize {
     let size = extent.centroid_max - extent.centroid_min;
-    let widest = if size.x >= size.y && size.x >= size.z { 0 } else if size.y >= size.z { 1 } else { 2 };
+    let widest = if size.x >= size.y && size.x >= size.z {
+        0
+    } else if size.y >= size.z {
+        1
+    } else {
+        2
+    };
     let median = |order: &mut [u32]| {
         let middle = order.len() / 2;
         order.select_nth_unstable_by(middle, |&a, &b| {
@@ -486,16 +563,20 @@ fn split(boxes: &[PrimBox], order: &mut [u32], extent: &Extent, depth: u32) -> u
         return median(order);
     }
 
-    let scale = Vec3::select(size.cmpgt(Vec3::splat(1e-12)), Vec3::splat(BINS as f32) / size, Vec3::ZERO);
+    let scale = Vec3::select(
+        size.cmpgt(Vec3::splat(1e-12)),
+        Vec3::splat(BINS as f32) / size,
+        Vec3::ZERO,
+    );
     let bins = fill_bins(boxes, order, extent.centroid_min, scale);
     let mut best: Option<(f32, usize, usize)> = None;
-    for axis in 0..3 {
+    for (axis, axis_bins) in bins.iter().enumerate() {
         // Sweep from the right once, then from the left while evaluating each of the BINS - 1 planes.
         let mut right_area = [0f32; BINS];
         let mut right_count = [0u32; BINS];
         let (mut min, mut max, mut count) = (Vec3::INFINITY, Vec3::NEG_INFINITY, 0u32);
         for slot in (1..BINS).rev() {
-            let bin = &bins[axis][slot];
+            let bin = &axis_bins[slot];
             min = min.min(bin.min);
             max = max.max(bin.max);
             count += bin.count;
@@ -504,14 +585,15 @@ fn split(boxes: &[PrimBox], order: &mut [u32], extent: &Extent, depth: u32) -> u
         }
         let (mut min, mut max, mut count) = (Vec3::INFINITY, Vec3::NEG_INFINITY, 0u32);
         for slot in 0..BINS - 1 {
-            let bin = &bins[axis][slot];
+            let bin = &axis_bins[slot];
             min = min.min(bin.min);
             max = max.max(bin.max);
             count += bin.count;
             if count == 0 || right_count[slot + 1] == 0 {
                 continue;
             }
-            let cost = count as f32 * half_area(min, max) + right_count[slot + 1] as f32 * right_area[slot + 1];
+            let cost = count as f32 * half_area(min, max)
+                + right_count[slot + 1] as f32 * right_area[slot + 1];
             if best.is_none_or(|(best_cost, _, _)| cost < best_cost) {
                 best = Some((cost, axis, slot));
             }
@@ -531,7 +613,11 @@ fn split(boxes: &[PrimBox], order: &mut [u32], extent: &Extent, depth: u32) -> u
             order.swap(left, right);
         }
     }
-    if left == 0 || left == order.len() { median(order) } else { left }
+    if left == 0 || left == order.len() {
+        median(order)
+    } else {
+        left
+    }
 }
 
 /// Builds the subtree over `order`, whose first element sits at absolute offset `first`. The root is node 0 and child
@@ -551,7 +637,14 @@ fn build_parallel(boxes: &[PrimBox], order: &mut [u32], first: u32, depth: u32) 
     );
     let mut nodes = Vec::with_capacity(1 + left.len() + right.len());
     let right_root = 1 + left.len() as u32;
-    nodes.push(BinaryNode { min: extent.min, max: extent.max, left: 1, right: right_root, first: 0, count: 0 });
+    nodes.push(BinaryNode {
+        min: extent.min,
+        max: extent.max,
+        left: 1,
+        right: right_root,
+        first: 0,
+        count: 0,
+    });
     for (subtree, offset) in [(left, 1), (right, right_root)] {
         nodes.extend(subtree.into_iter().map(|mut node| {
             if node.count == 0 {
@@ -564,10 +657,23 @@ fn build_parallel(boxes: &[PrimBox], order: &mut [u32], first: u32, depth: u32) 
     nodes
 }
 
-fn build_sequential(boxes: &[PrimBox], order: &mut [u32], first: u32, depth: u32, nodes: &mut Vec<BinaryNode>) -> u32 {
+fn build_sequential(
+    boxes: &[PrimBox],
+    order: &mut [u32],
+    first: u32,
+    depth: u32,
+    nodes: &mut Vec<BinaryNode>,
+) -> u32 {
     let extent = Extent::of(boxes, order);
     let index = nodes.len();
-    nodes.push(BinaryNode { min: extent.min, max: extent.max, left: 0, right: 0, first, count: order.len() as u32 });
+    nodes.push(BinaryNode {
+        min: extent.min,
+        max: extent.max,
+        left: 0,
+        right: 0,
+        first,
+        count: order.len() as u32,
+    });
     if order.len() <= LEAF_SIZE {
         return index as u32;
     }
@@ -633,8 +739,8 @@ impl<F: Fn(usize) -> (Vec3, Vec3, Vec3)> Collapse<'_, F> {
             child: [0; 4],
             lanes: (1 << used) - 1,
         });
-        for lane in 0..used {
-            let reference = self.emit(children[lane]);
+        for (lane, &child) in children.iter().enumerate().take(used) {
+            let reference = self.emit(child);
             self.nodes[slot].child[lane] = reference;
         }
         slot as u32
@@ -691,7 +797,13 @@ mod tests {
         }
     }
 
-    fn brute_force(positions: &[Vec3], indices: &[[u32; 3]], origin: Vec3, direction: Vec3, t_max: f32) -> Option<Hit> {
+    fn brute_force(
+        positions: &[Vec3],
+        indices: &[[u32; 3]],
+        origin: Vec3,
+        direction: Vec3,
+        t_max: f32,
+    ) -> Option<Hit> {
         let mut best: Option<Hit> = None;
         for (triangle, [a, b, c]) in indices.iter().enumerate() {
             let v0 = positions[*a as usize];
@@ -706,10 +818,20 @@ mod tests {
             let q = t.cross(e1);
             let v = direction.dot(q) / determinant;
             let distance = e2.dot(q) / determinant;
-            if u < 0.0 || v < 0.0 || u + v > 1.0 || distance <= 1e-4 || distance >= best.map_or(t_max, |h| h.distance) {
+            if u < 0.0
+                || v < 0.0
+                || u + v > 1.0
+                || distance <= 1e-4
+                || distance >= best.map_or(t_max, |h| h.distance)
+            {
                 continue;
             }
-            best = Some(Hit { distance, triangle: triangle as u32, u, v });
+            best = Some(Hit {
+                distance,
+                triangle: triangle as u32,
+                u,
+                v,
+            });
         }
         best
     }
@@ -737,12 +859,28 @@ mod tests {
 
     #[test]
     fn single_triangle_reports_barycentrics() {
-        let positions = [Vec3::new(0.0, 0.0, 5.0), Vec3::new(4.0, 0.0, 5.0), Vec3::new(0.0, 4.0, 5.0)];
+        let positions = [
+            Vec3::new(0.0, 0.0, 5.0),
+            Vec3::new(4.0, 0.0, 5.0),
+            Vec3::new(0.0, 4.0, 5.0),
+        ];
         let bvh = Bvh::build(&positions, &[[0, 1, 2]]);
-        let hit = bvh.intersect(Vec3::new(1.0, 2.0, 0.0), Vec3::Z, 1e-4, f32::MAX).expect("the ray faces the triangle");
-        assert!((hit.distance - 5.0).abs() < 1e-5 && (hit.u - 0.25).abs() < 1e-5 && (hit.v - 0.5).abs() < 1e-5);
-        assert!(bvh.intersect(Vec3::new(3.0, 3.0, 0.0), Vec3::Z, 1e-4, f32::MAX).is_none());
-        assert!(bvh.intersect(Vec3::new(1.0, 2.0, 0.0), Vec3::Z, 1e-4, 4.0).is_none());
+        let hit = bvh
+            .intersect(Vec3::new(1.0, 2.0, 0.0), Vec3::Z, 1e-4, f32::MAX)
+            .expect("the ray faces the triangle");
+        assert!(
+            (hit.distance - 5.0).abs() < 1e-5
+                && (hit.u - 0.25).abs() < 1e-5
+                && (hit.v - 0.5).abs() < 1e-5
+        );
+        assert!(
+            bvh.intersect(Vec3::new(3.0, 3.0, 0.0), Vec3::Z, 1e-4, f32::MAX)
+                .is_none()
+        );
+        assert!(
+            bvh.intersect(Vec3::new(1.0, 2.0, 0.0), Vec3::Z, 1e-4, 4.0)
+                .is_none()
+        );
     }
 
     #[test]
@@ -766,7 +904,10 @@ mod tests {
                     ),
                     other => panic!("hit disagreement with {count} triangles: {other:?}"),
                 }
-                assert_eq!(expected.is_some(), bvh.occluded(origin, direction, 1e-4, f32::MAX));
+                assert_eq!(
+                    expected.is_some(),
+                    bvh.occluded(origin, direction, 1e-4, f32::MAX)
+                );
             }
         }
     }
@@ -780,7 +921,10 @@ mod tests {
         while let Some(index) = stack.pop() {
             let node = flat.nodes[index];
             if node.count == 0 {
-                assert!(node.right_or_first as usize > index + 1 && (node.right_or_first as usize) < flat.nodes.len());
+                assert!(
+                    node.right_or_first as usize > index + 1
+                        && (node.right_or_first as usize) < flat.nodes.len()
+                );
                 stack.extend([index + 1, node.right_or_first as usize]);
                 continue;
             }
@@ -791,7 +935,9 @@ mod tests {
                 seen[triangle] = true;
                 for corner in indices[triangle] {
                     let p = positions[corner as usize];
-                    assert!(p.cmpge(Vec3::from(node.min)).all() && p.cmple(Vec3::from(node.max)).all());
+                    assert!(
+                        p.cmpge(Vec3::from(node.min)).all() && p.cmple(Vec3::from(node.max)).all()
+                    );
                 }
             }
         }
@@ -810,9 +956,17 @@ mod tests {
     #[test]
     fn axis_aligned_rays_cross_flat_boxes() {
         // A ground quad in the plane z = 0: its box has no thickness and the ray has two zero components.
-        let positions = [Vec3::new(-1., -1., 0.), Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.), Vec3::new(-1., 1., 0.)];
+        let positions = [
+            Vec3::new(-1., -1., 0.),
+            Vec3::new(1., -1., 0.),
+            Vec3::new(1., 1., 0.),
+            Vec3::new(-1., 1., 0.),
+        ];
         let bvh = Bvh::build(&positions, &[[0, 1, 2], [0, 2, 3]]);
-        assert!(bvh.intersect(Vec3::new(0.3, -0.2, 3.0), Vec3::NEG_Z, 1e-4, f32::MAX).is_some());
+        assert!(
+            bvh.intersect(Vec3::new(0.3, -0.2, 3.0), Vec3::NEG_Z, 1e-4, f32::MAX)
+                .is_some()
+        );
         assert!(bvh.occluded(Vec3::new(0.3, -0.2, 3.0), Vec3::NEG_Z, 1e-4, 10.0));
     }
 }

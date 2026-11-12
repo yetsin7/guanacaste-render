@@ -128,7 +128,11 @@ impl Scene {
         let material_count = reader.count()?;
         let light_count = reader.count()?;
 
-        let camera = Camera { position: reader.vec3()?, target: reader.vec3()?, vertical_fov_degrees: reader.f32()? };
+        let camera = Camera {
+            position: reader.vec3()?,
+            target: reader.vec3()?,
+            vertical_fov_degrees: reader.f32()?,
+        };
         let environment = Environment {
             sun_direction: reader.vec3()?,
             sun_intensity: reader.f32()?,
@@ -139,12 +143,24 @@ impl Scene {
         let positions = reader.vec3s(vertices)?;
         let raw_indices = reader.u32s(triangles * 3)?;
         let triangle_material = reader.u32s(triangles)?;
-        let normals = if flags & HAS_NORMALS != 0 { Some(reader.vec3s(vertices)?) } else { None };
+        let normals = if flags & HAS_NORMALS != 0 {
+            Some(reader.vec3s(vertices)?)
+        } else {
+            None
+        };
         let corner_uvs = if flags & HAS_UVS != 0 {
             let flat = reader.f32s(triangles * 6)?;
             Some(
-                flat.chunks_exact(6)
-                    .map(|c| [Vec2::new(c[0], c[1]), Vec2::new(c[2], c[3]), Vec2::new(c[4], c[5])])
+                flat.as_chunks::<6>()
+                    .0
+                    .iter()
+                    .map(|c| {
+                        [
+                            Vec2::new(c[0], c[1]),
+                            Vec2::new(c[2], c[3]),
+                            Vec2::new(c[4], c[5]),
+                        ]
+                    })
                     .collect(),
             )
         } else {
@@ -168,7 +184,11 @@ impl Scene {
         }
         let mut lights = Vec::with_capacity(light_count);
         for _ in 0..light_count {
-            lights.push(Light { position: reader.vec3()?, intensity: reader.vec3()?, radius: reader.f32()? });
+            lights.push(Light {
+                position: reader.vec3()?,
+                intensity: reader.vec3()?,
+                radius: reader.f32()?,
+            });
         }
         if reader.at != bytes.len() {
             return Err(SceneError::Invalid("unexpected trailing bytes"));
@@ -180,24 +200,50 @@ impl Scene {
         if raw_indices.iter().any(|&index| index as usize >= vertices) {
             return Err(SceneError::Invalid("vertex index out of range"));
         }
-        if triangle_material.iter().any(|&material| material as usize >= material_count) {
+        if triangle_material
+            .iter()
+            .any(|&material| material as usize >= material_count)
+        {
             return Err(SceneError::Invalid("material index out of range"));
         }
-        let indices = raw_indices.chunks_exact(3).map(|c| [c[0], c[1], c[2]]).collect();
-        Ok(Scene { positions, indices, triangle_material, normals, corner_uvs, materials, lights, camera, environment })
+        let indices = raw_indices
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .map(|c| [c[0], c[1], c[2]])
+            .collect();
+        Ok(Scene {
+            positions,
+            indices,
+            triangle_material,
+            normals,
+            corner_uvs,
+            materials,
+            lights,
+            camera,
+            environment,
+        })
     }
 }
 
 /// Rays written by `SceneExchange.WriteRays`: `"GRRAYS01"`, a `u32` count, then origin and direction per ray.
 pub fn load_rays(path: impl AsRef<std::path::Path>) -> Result<Vec<(Vec3, Vec3)>, SceneError> {
     let bytes = std::fs::read(path)?;
-    let mut reader = Reader { bytes: &bytes, at: 0 };
+    let mut reader = Reader {
+        bytes: &bytes,
+        at: 0,
+    };
     if reader.take(8)? != b"GRRAYS01" {
         return Err(SceneError::Invalid("missing GRRAYS01 signature"));
     }
     let count = reader.count()?;
     let flat = reader.f32s(count * 6)?;
-    Ok(flat.chunks_exact(6).map(|c| (Vec3::new(c[0], c[1], c[2]), Vec3::new(c[3], c[4], c[5]))).collect())
+    Ok(flat
+        .as_chunks::<6>()
+        .0
+        .iter()
+        .map(|c| (Vec3::new(c[0], c[1], c[2]), Vec3::new(c[3], c[4], c[5])))
+        .collect())
 }
 
 struct Reader<'a> {
@@ -207,8 +253,14 @@ struct Reader<'a> {
 
 impl<'a> Reader<'a> {
     fn take(&mut self, length: usize) -> Result<&'a [u8], SceneError> {
-        let end = self.at.checked_add(length).ok_or(SceneError::Invalid("size overflow"))?;
-        let slice = self.bytes.get(self.at..end).ok_or(SceneError::Invalid("file is truncated"))?;
+        let end = self
+            .at
+            .checked_add(length)
+            .ok_or(SceneError::Invalid("size overflow"))?;
+        let slice = self
+            .bytes
+            .get(self.at..end)
+            .ok_or(SceneError::Invalid("file is truncated"))?;
         self.at = end;
         Ok(slice)
     }
@@ -235,19 +287,43 @@ impl<'a> Reader<'a> {
     }
 
     fn u32s(&mut self, count: usize) -> Result<Vec<u32>, SceneError> {
-        let bytes = self.take(count.checked_mul(4).ok_or(SceneError::Invalid("size overflow"))?)?;
-        Ok(bytes.chunks_exact(4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect())
+        let bytes = self.take(
+            count
+                .checked_mul(4)
+                .ok_or(SceneError::Invalid("size overflow"))?,
+        )?;
+        Ok(bytes
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+            .collect())
     }
 
     fn f32s(&mut self, count: usize) -> Result<Vec<f32>, SceneError> {
-        let bytes = self.take(count.checked_mul(4).ok_or(SceneError::Invalid("size overflow"))?)?;
-        Ok(bytes.chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect())
+        let bytes = self.take(
+            count
+                .checked_mul(4)
+                .ok_or(SceneError::Invalid("size overflow"))?,
+        )?;
+        Ok(bytes
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+            .collect())
     }
 
     fn vec3s(&mut self, count: usize) -> Result<Vec<Vec3>, SceneError> {
-        let bytes = self.take(count.checked_mul(12).ok_or(SceneError::Invalid("size overflow"))?)?;
+        let bytes = self.take(
+            count
+                .checked_mul(12)
+                .ok_or(SceneError::Invalid("size overflow"))?,
+        )?;
         Ok(bytes
-            .chunks_exact(12)
+            .as_chunks::<12>()
+            .0
+            .iter()
             .map(|b| {
                 Vec3::new(
                     f32::from_le_bytes([b[0], b[1], b[2], b[3]]),
@@ -266,7 +342,10 @@ mod tests {
     #[test]
     fn rejects_truncated_and_foreign_files() {
         assert!(matches!(Scene::parse(b"nope"), Err(SceneError::Invalid(_))));
-        assert!(matches!(Scene::parse(b"GRSCENE1\x01\x00\x00\x00"), Err(SceneError::Invalid(_))));
+        assert!(matches!(
+            Scene::parse(b"GRSCENE1\x01\x00\x00\x00"),
+            Err(SceneError::Invalid(_))
+        ));
     }
 
     #[test]
@@ -285,6 +364,9 @@ mod tests {
         }
         file.extend_from_slice(&0u32.to_le_bytes()); // triangle material
         file.extend_from_slice(&[0u8; 64]); // one material
-        assert!(matches!(Scene::parse(&file), Err(SceneError::Invalid("vertex index out of range"))));
+        assert!(matches!(
+            Scene::parse(&file),
+            Err(SceneError::Invalid("vertex index out of range"))
+        ));
     }
 }

@@ -19,16 +19,23 @@ use std::time::Instant;
 const T_MIN: f32 = 1e-4;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let folder = std::env::args().nth(1).unwrap_or_else(|| "artifacts/engine-bench".into());
+    let folder = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "artifacts/engine-bench".into());
     let folder = Path::new(&folder);
-    let baseline: Value = serde_json::from_str(&std::fs::read_to_string(folder.join("baseline-csharp.json"))?)?;
+    let baseline: Value = serde_json::from_str(&std::fs::read_to_string(
+        folder.join("baseline-csharp.json"),
+    )?)?;
     let threads = rayon::current_num_threads();
     let mut rows = Vec::new();
     let mut table = String::from(
         "| Escena | Triángulos | BVH C# ms | BVH Rust ms | Closest C# | Closest Rust | × | 1 hilo C# | 1 hilo Rust | × | Any-hit C# | Any-hit Rust | × | Coincidencia |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|\n",
     );
 
-    for reference in baseline["scenes"].as_array().ok_or("baseline has no scenes")? {
+    for reference in baseline["scenes"]
+        .as_array()
+        .ok_or("baseline has no scenes")?
+    {
         let name = reference["scene"].as_str().ok_or("scene without a name")?;
         let scene = Scene::load(folder.join(format!("{name}.grscene")))?;
         let rays = load_rays(folder.join(format!("{name}.grrays")))?;
@@ -57,8 +64,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Rays grazing an edge shared by two triangles may land on either side of a rounding difference.
         let agrees = hit_difference as f64 <= rays.len() as f64 * 2e-4 && sum_error <= 2e-4;
 
-        let closest = best(|| rate(&rays, |o, d| bvh.intersect(o, d, T_MIN, f32::MAX).is_some(), true));
-        let single = best(|| rate(&rays, |o, d| bvh.intersect(o, d, T_MIN, f32::MAX).is_some(), false));
+        let closest = best(|| {
+            rate(
+                &rays,
+                |o, d| bvh.intersect(o, d, T_MIN, f32::MAX).is_some(),
+                true,
+            )
+        });
+        let single = best(|| {
+            rate(
+                &rays,
+                |o, d| bvh.intersect(o, d, T_MIN, f32::MAX).is_some(),
+                false,
+            )
+        });
         let any_hit = best(|| rate(&rays, |o, d| bvh.occluded(o, d, T_MIN, 50.0), true));
 
         let number = |key: &str| reference[key].as_f64().unwrap_or(0.0);
@@ -88,12 +107,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "hits": hits, "distanceSum": distance_sum, "agreesWithReference": agrees,
         }));
         if !agrees {
-            eprintln!("warning: {name} disagrees with the C# reference; its timings are not comparable");
+            eprintln!(
+                "warning: {name} disagrees with the C# reference; its timings are not comparable"
+            );
         }
     }
 
-    let report = json!({ "engine": "rust", "threads": threads, "cpu": baseline["cpu"], "scenes": rows });
-    std::fs::write(folder.join("baseline-rust.json"), serde_json::to_string_pretty(&report)?)?;
+    let report =
+        json!({ "engine": "rust", "threads": threads, "cpu": baseline["cpu"], "scenes": rows });
+    std::fs::write(
+        folder.join("baseline-rust.json"),
+        serde_json::to_string_pretty(&report)?,
+    )?;
     std::fs::write(
         folder.join("comparison.md"),
         format!(
@@ -112,7 +137,9 @@ fn best(measure: impl Fn() -> f64) -> f64 {
 fn rate(rays: &[(Vec3, Vec3)], query: impl Fn(Vec3, Vec3) -> bool + Sync, parallel: bool) -> f64 {
     let start = Instant::now();
     let hits: usize = if parallel {
-        rays.par_chunks(4096).map(|chunk| chunk.iter().filter(|&&(o, d)| query(o, d)).count()).sum()
+        rays.par_chunks(4096)
+            .map(|chunk| chunk.iter().filter(|&&(o, d)| query(o, d)).count())
+            .sum()
     } else {
         rays.iter().filter(|&&(o, d)| query(o, d)).count()
     };

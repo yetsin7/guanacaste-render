@@ -14,7 +14,10 @@ pub enum GpuError {
     NoAdapter(String),
     Device(String),
     /// The scene needs a buffer larger than the adapter allows.
-    TooLarge { needed: u64, limit: u64 },
+    TooLarge {
+        needed: u64,
+        limit: u64,
+    },
     Readback(String),
 }
 
@@ -22,9 +25,14 @@ impl fmt::Display for GpuError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             GpuError::NoAdapter(reason) => write!(f, "no usable graphics adapter: {reason}"),
-            GpuError::Device(reason) => write!(f, "the graphics device could not be created: {reason}"),
+            GpuError::Device(reason) => {
+                write!(f, "the graphics device could not be created: {reason}")
+            }
             GpuError::TooLarge { needed, limit } => {
-                write!(f, "the scene needs a {needed}-byte buffer and the adapter allows {limit}")
+                write!(
+                    f,
+                    "the scene needs a {needed}-byte buffer and the adapter allows {limit}"
+                )
             }
             GpuError::Readback(reason) => write!(f, "reading the image back failed: {reason}"),
         }
@@ -131,7 +139,11 @@ pub struct GpuOptions<'a> {
 
 impl Default for GpuOptions<'_> {
     fn default() -> Self {
-        GpuOptions { adapter: None, max_bounces: 3, seed: 0 }
+        GpuOptions {
+            adapter: None,
+            max_bounces: 3,
+            seed: 0,
+        }
     }
 }
 
@@ -192,8 +204,14 @@ pub struct GpuTracer {
 
 impl GpuTracer {
     /// Creates its own device, for rendering without a window.
-    pub fn new(scene: &Scene, width: u32, height: u32, options: &GpuOptions<'_>) -> Result<GpuTracer, GpuError> {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle_from_env());
+    pub fn new(
+        scene: &Scene,
+        width: u32,
+        height: u32,
+        options: &GpuOptions<'_>,
+    ) -> Result<GpuTracer, GpuError> {
+        let instance =
+            wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle_from_env());
         let adapter = match options.adapter {
             Some(wanted) => {
                 let wanted = wanted.to_lowercase();
@@ -214,7 +232,15 @@ impl GpuTracer {
             ..Default::default()
         }))
         .map_err(|error| GpuError::Device(error.to_string()))?;
-        GpuTracer::with_device(device, queue, &adapter.get_info(), scene, width, height, options)
+        GpuTracer::with_device(
+            device,
+            queue,
+            &adapter.get_info(),
+            scene,
+            width,
+            height,
+            options,
+        )
     }
 
     /// Uses a device that already exists, such as the one a window draws with, so the picture can be shown without
@@ -262,29 +288,46 @@ impl GpuTracer {
             .collect();
 
         // Storage buffers cannot be empty; an empty scene still gets one inert element of each kind.
-        let storage = |label: &str, bytes: &[u8], minimum: usize| -> Result<wgpu::Buffer, GpuError> {
-            let needed = bytes.len().max(minimum) as u64;
-            let limit = limits.max_storage_buffer_binding_size.min(limits.max_buffer_size);
-            if needed > limit {
-                return Err(GpuError::TooLarge { needed, limit });
-            }
-            let mut padded;
-            let contents = if bytes.len() < minimum {
-                padded = vec![0u8; minimum];
-                padded[..bytes.len()].copy_from_slice(bytes);
-                &padded[..]
-            } else {
-                bytes
+        let storage =
+            |label: &str, bytes: &[u8], minimum: usize| -> Result<wgpu::Buffer, GpuError> {
+                let needed = bytes.len().max(minimum) as u64;
+                let limit = limits
+                    .max_storage_buffer_binding_size
+                    .min(limits.max_buffer_size);
+                if needed > limit {
+                    return Err(GpuError::TooLarge { needed, limit });
+                }
+                let mut padded;
+                let contents = if bytes.len() < minimum {
+                    padded = vec![0u8; minimum];
+                    padded[..bytes.len()].copy_from_slice(bytes);
+                    &padded[..]
+                } else {
+                    bytes
+                };
+                Ok(
+                    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some(label),
+                        contents,
+                        usage: wgpu::BufferUsages::STORAGE,
+                    }),
+                )
             };
-            Ok(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(label),
-                contents,
-                usage: wgpu::BufferUsages::STORAGE,
-            }))
-        };
-        let nodes = storage("nodes", bytemuck::cast_slice(&flat.nodes), size_of::<FlatNode>())?;
-        let triangle_buffer = storage("triangles", bytemuck::cast_slice(&triangles), size_of::<GpuTriangle>())?;
-        let material_buffer = storage("materials", bytemuck::cast_slice(&materials), size_of::<GpuMaterial>())?;
+        let nodes = storage(
+            "nodes",
+            bytemuck::cast_slice(&flat.nodes),
+            size_of::<FlatNode>(),
+        )?;
+        let triangle_buffer = storage(
+            "triangles",
+            bytemuck::cast_slice(&triangles),
+            size_of::<GpuTriangle>(),
+        )?;
+        let material_buffer = storage(
+            "materials",
+            bytemuck::cast_slice(&materials),
+            size_of::<GpuMaterial>(),
+        )?;
         // Smooth triangles (trunks, branches, terrain) carry a normal per corner; a scene without any costs one entry.
         let corner_normals: Vec<GpuCornerNormals> = match &scene.normals {
             Some(normals) if normals.len() == scene.positions.len() => flat
@@ -302,14 +345,19 @@ impl GpuTracer {
                 .collect(),
             _ => Vec::new(),
         };
-        let corner_normal_buffer =
-            storage("corner normals", bytemuck::cast_slice(&corner_normals), size_of::<GpuCornerNormals>())?;
+        let corner_normal_buffer = storage(
+            "corner normals",
+            bytemuck::cast_slice(&corner_normals),
+            size_of::<GpuCornerNormals>(),
+        )?;
         drop((flat, triangles, materials, corner_normals));
 
         let counter = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("ray counter"),
             size: 4,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
@@ -425,12 +473,17 @@ impl GpuTracer {
 
     /// Bytes of video memory holding the hierarchy, triangles, shading normals and materials.
     pub fn scene_bytes(&self) -> u64 {
-        self.nodes.size() + self.triangles.size() + self.materials.size() + self.corner_normals.size()
+        self.nodes.size()
+            + self.triangles.size()
+            + self.materials.size()
+            + self.corner_normals.size()
     }
 
     /// Bytes of video memory holding the image being accumulated, the picture shown and the denoiser's buffers.
     pub fn image_bytes(&self) -> u64 {
-        self.target.accumulation.size() + self.target.working_bytes + self.uniforms.width as u64 * self.uniforms.height as u64 * 4
+        self.target.accumulation.size()
+            + self.target.working_bytes
+            + self.uniforms.width as u64 * self.uniforms.height as u64 * 4
     }
 
     /// Turns the denoiser on or off for the pictures [`GpuTracer::resolve`] writes from now on. The accumulated
@@ -533,13 +586,18 @@ impl GpuTracer {
     pub fn render(&mut self, passes: u32) {
         for _ in 0..passes {
             self.uniforms.frame = self.frames;
-            self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&self.uniforms));
+            self.queue
+                .write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&self.uniforms));
             let mut encoder = self.device.create_command_encoder(&Default::default());
             {
                 let mut pass = encoder.begin_compute_pass(&Default::default());
                 pass.set_pipeline(&self.trace_pipeline);
                 pass.set_bind_group(0, &self.target.trace_bind_group, &[]);
-                pass.dispatch_workgroups(self.uniforms.width.div_ceil(8), self.uniforms.height.div_ceil(8), 1);
+                pass.dispatch_workgroups(
+                    self.uniforms.width.div_ceil(8),
+                    self.uniforms.height.div_ceil(8),
+                    1,
+                );
             }
             self.queue.submit([encoder.finish()]);
             self.in_flight.fetch_add(1, Ordering::Relaxed);
@@ -559,8 +617,14 @@ impl GpuTracer {
     /// is on.
     pub fn resolve(&self, exposure: f32) {
         let (width, height) = (self.uniforms.width, self.uniforms.height);
-        let params = ResolveParams { width, height, exposure, pad: 0.0 };
-        self.queue.write_buffer(&self.resolve_buffer, 0, bytemuck::bytes_of(&params));
+        let params = ResolveParams {
+            width,
+            height,
+            exposure,
+            pad: 0.0,
+        };
+        self.queue
+            .write_buffer(&self.resolve_buffer, 0, bytemuck::bytes_of(&params));
         // Noise falls with the square root of the sample count, and so does how different two neighbours may be
         // and still be averaged: the filter fades out by itself as the image converges.
         let denoise = self.denoise && self.frames > 0;
@@ -578,7 +642,8 @@ impl GpuTracer {
                     // Each pass halves the tolerance, so the wide passes cannot undo the edges the narrow ones kept.
                     color_sigma: tolerance / (1 << pass) as f32,
                 };
-                self.queue.write_buffer(buffer, 0, bytemuck::bytes_of(&params));
+                self.queue
+                    .write_buffer(buffer, 0, bytemuck::bytes_of(&params));
             }
         }
         let mut encoder = self.device.create_command_encoder(&Default::default());
@@ -592,7 +657,11 @@ impl GpuTracer {
                 }
             }
             pass.set_pipeline(&self.resolve_pipeline);
-            let source = if denoise { &self.target.resolve_denoised_bind_group } else { &self.target.resolve_bind_group };
+            let source = if denoise {
+                &self.target.resolve_denoised_bind_group
+            } else {
+                &self.target.resolve_bind_group
+            };
             pass.set_bind_group(0, source, &[]);
             pass.dispatch_workgroups(width.div_ceil(8), height.div_ceil(8), 1);
         }
@@ -609,7 +678,8 @@ impl GpuTracer {
     pub fn read_display(&self) -> Result<Vec<u8>, GpuError> {
         let (width, height) = (self.uniforms.width, self.uniforms.height);
         // Rows of a texture copy are padded to a multiple of 256 bytes.
-        let stride = (width * 4).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT) * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+        let stride = (width * 4).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
+            * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
         let staging = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("picture readback"),
             size: stride as u64 * height as u64,
@@ -621,9 +691,17 @@ impl GpuTracer {
             self.target.display.as_image_copy(),
             wgpu::TexelCopyBufferInfo {
                 buffer: &staging,
-                layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(stride), rows_per_image: Some(height) },
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(stride),
+                    rows_per_image: Some(height),
+                },
             },
-            wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
         );
         self.queue.submit([encoder.finish()]);
         let padded = self.map(&staging)?;
@@ -636,7 +714,10 @@ impl GpuTracer {
 
     /// Blocks until every queued pass has finished on the GPU.
     pub fn wait(&self) -> Result<(), GpuError> {
-        self.device.poll(wgpu::PollType::wait_indefinitely()).map(|_| ()).map_err(|error| GpuError::Device(error.to_string()))
+        self.device
+            .poll(wgpu::PollType::wait_indefinitely())
+            .map(|_| ())
+            .map_err(|error| GpuError::Device(error.to_string()))
     }
 
     /// Rays traced since the image was last cleared. The counter is 32 bits wide; clear before it can wrap.
@@ -647,7 +728,9 @@ impl GpuTracer {
 
     /// The accumulated image, one `[r, g, b, samples]` per pixel in row order. Divide the colour by `samples`.
     pub fn read_accumulation(&self) -> Result<Vec<[f32; 4]>, GpuError> {
-        Ok(bytemuck::pod_collect_to_vec(&self.read(&self.target.accumulation)?))
+        Ok(bytemuck::pod_collect_to_vec(
+            &self.read(&self.target.accumulation)?,
+        ))
     }
 
     fn read(&self, source: &wgpu::Buffer) -> Result<Vec<u8>, GpuError> {
@@ -665,15 +748,21 @@ impl GpuTracer {
 
     fn map(&self, staging: &wgpu::Buffer) -> Result<Vec<u8>, GpuError> {
         let (sender, receiver) = std::sync::mpsc::channel();
-        staging.slice(..).map_async(wgpu::MapMode::Read, move |result| {
-            let _ = sender.send(result);
-        });
+        staging
+            .slice(..)
+            .map_async(wgpu::MapMode::Read, move |result| {
+                let _ = sender.send(result);
+            });
         self.wait()?;
         receiver
             .recv()
             .map_err(|error| GpuError::Readback(error.to_string()))?
             .map_err(|error| GpuError::Readback(error.to_string()))?;
-        let bytes = staging.slice(..).get_mapped_range().map_err(|error| GpuError::Readback(error.to_string()))?.to_vec();
+        let bytes = staging
+            .slice(..)
+            .get_mapped_range()
+            .map_err(|error| GpuError::Readback(error.to_string()))?
+            .to_vec();
         staging.unmap();
         Ok(bytes)
     }
@@ -683,7 +772,11 @@ impl Target {
     fn new(device: &wgpu::Device, fixed: &Fixed<'_>, width: u32, height: u32) -> Target {
         let pixel_bytes = width as u64 * height as u64 * 16;
         let per_pixel = |label: &str, readable: bool| {
-            let copies = if readable { wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST } else { wgpu::BufferUsages::empty() };
+            let copies = if readable {
+                wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST
+            } else {
+                wgpu::BufferUsages::empty()
+            };
             device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some(label),
                 size: pixel_bytes,
@@ -693,17 +786,26 @@ impl Target {
         };
         let accumulation = per_pixel("accumulation", true);
         let features = per_pixel("denoiser guides", false);
-        let scratch = [per_pixel("denoiser scratch", false), per_pixel("denoiser scratch", false)];
+        let scratch = [
+            per_pixel("denoiser scratch", false),
+            per_pixel("denoiser scratch", false),
+        ];
         // The shader stores sRGB-encoded bytes and the window samples them as they are (egui composes in gamma
         // space), so both views keep the plain format. Each view declares the one use it has.
         let display = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("picture"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::STORAGE_BINDING | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC,
+            usage: wgpu::TextureUsages::STORAGE_BINDING
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[],
         });
         let storage_view = display.create_view(&wgpu::TextureViewDescriptor {
@@ -716,7 +818,10 @@ impl Target {
         });
 
         fn entry(binding: u32, buffer: &wgpu::Buffer) -> wgpu::BindGroupEntry<'_> {
-            wgpu::BindGroupEntry { binding, resource: buffer.as_entire_binding() }
+            wgpu::BindGroupEntry {
+                binding,
+                resource: buffer.as_entire_binding(),
+            }
         }
         let trace_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("path tracer"),
@@ -739,7 +844,10 @@ impl Target {
                 entries: &[
                     entry(0, fixed.resolve_params),
                     entry(1, source),
-                    wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&storage_view) },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::TextureView(&storage_view),
+                    },
                 ],
             })
         };
@@ -749,11 +857,20 @@ impl Target {
         let denoise_layout = fixed.denoise.get_bind_group_layout(0);
         let denoise_bind_groups: Vec<wgpu::BindGroup> = (0..fixed.denoise_params.len())
             .map(|pass| {
-                let source = if pass == 0 { &accumulation } else { &scratch[(pass + 1) % 2] };
+                let source = if pass == 0 {
+                    &accumulation
+                } else {
+                    &scratch[(pass + 1) % 2]
+                };
                 device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: Some("denoise"),
                     layout: &denoise_layout,
-                    entries: &[entry(0, &fixed.denoise_params[pass]), entry(1, source), entry(2, &features), entry(3, &scratch[pass % 2])],
+                    entries: &[
+                        entry(0, &fixed.denoise_params[pass]),
+                        entry(1, source),
+                        entry(2, &features),
+                        entry(3, &scratch[pass % 2]),
+                    ],
                 })
             })
             .collect();

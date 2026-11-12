@@ -14,7 +14,9 @@ use std::time::Instant;
 
 /// Compares every supported element and, for complete projects, every non-ground triangle with the reference.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let folder = std::env::args().nth(1).unwrap_or_else(|| "artifacts/mesh-reference".into());
+    let folder = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "artifacts/mesh-reference".into());
     let mut projects: Vec<_> = std::fs::read_dir(&folder)?
         .flatten()
         .map(|entry| entry.path())
@@ -35,12 +37,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let milliseconds = start.elapsed().as_secs_f64() * 1e3;
 
         let reference = Reference::read(&project.with_extension("refmesh"))?;
-        let theirs: HashMap<Id, (usize, usize)> = reference.ranges.iter().map(|&(id, first, end)| (id, (first, end))).collect();
+        let theirs: HashMap<Id, (usize, usize)> = reference
+            .ranges
+            .iter()
+            .map(|&(id, first, end)| (id, (first, end)))
+            .collect();
         let (mut matched, mut worst) = (0usize, 0f32);
         let mut problems = Vec::new();
         for range in &mesh.element_ranges {
             let Some(&(first, end)) = theirs.get(&range.element) else {
-                problems.push(format!("{} is absent from the application mesh", range.element));
+                problems.push(format!(
+                    "{} is absent from the application mesh",
+                    range.element
+                ));
                 continue;
             };
             if end - first != range.end - range.first {
@@ -65,7 +74,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .max((ours[2] - other[2]).abs()),
                     );
                 }
-                same_kinds &= mesh.kinds[range.first + offset] as u8 == reference.kinds[first + offset];
+                same_kinds &=
+                    mesh.kinds[range.first + offset] as u8 == reference.kinds[first + offset];
             }
             worst = worst.max(element_worst);
             // Walls and joinery match exactly; plants within rounding of the sine and cosine of the two runtimes.
@@ -103,9 +113,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .max((ours[2] - theirs[2]).abs()),
                     );
                 }
-                surface_mismatches += usize::from(mesh.kinds[triangle] as u8 != reference.kinds[triangle]);
+                surface_mismatches +=
+                    usize::from(mesh.kinds[triangle] as u8 != reference.kinds[triangle]);
             }
-            println!("    Complete non-ground mesh: maximum difference {whole_worst:.1e} m, {surface_mismatches} surface mismatches");
+            println!(
+                "    Complete non-ground mesh: maximum difference {whole_worst:.1e} m, {surface_mismatches} surface mismatches"
+            );
         }
     }
     Ok(())
@@ -124,18 +137,29 @@ impl Reference {
         if bytes.len() < 16 || &bytes[..8] != b"GRMESH01" {
             return Err("not a reference mesh".into());
         }
-        let i32_at = |at: usize| i32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize;
-        let f32_at = |at: usize| f32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]);
+        let i32_at = |at: usize| {
+            i32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]) as usize
+        };
+        let f32_at = |at: usize| {
+            f32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]])
+        };
         let (triangles, range_count) = (i32_at(8), i32_at(12));
         let mut at = 16;
         let mut ranges = Vec::with_capacity(range_count);
         for _ in 0..range_count {
-            let id = Id::parse(std::str::from_utf8(&bytes[at..at + 36])?).ok_or("an element id is not a GUID")?;
+            let id = Id::parse(std::str::from_utf8(&bytes[at..at + 36])?)
+                .ok_or("an element id is not a GUID")?;
             ranges.push((id, i32_at(at + 36), i32_at(at + 40)));
             at += 44;
         }
         let positions = (0..triangles * 3)
-            .map(|c| [f32_at(at + c * 12), f32_at(at + c * 12 + 4), f32_at(at + c * 12 + 8)])
+            .map(|c| {
+                [
+                    f32_at(at + c * 12),
+                    f32_at(at + c * 12 + 4),
+                    f32_at(at + c * 12 + 8),
+                ]
+            })
             .collect();
         Ok(Reference {
             ranges,
