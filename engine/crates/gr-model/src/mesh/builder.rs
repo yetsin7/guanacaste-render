@@ -1,10 +1,11 @@
 //! Turns a project into triangles: walls split around their openings, the openings themselves, flat slabs,
-//! columns and the ground.
+//! columns, procedural vegetation and the ground.
 //!
 //! Ported from `BuildingMesher.Build` in `geometry/building-mesher.cs`, element kind by element kind and in the
 //! same order. What is not ported yet is counted in [`Coverage`], never silently left out.
 
 use super::openings::{add_opening_assembly, add_security_bars};
+use super::plants::add_plant;
 use super::prism::{PrismShape, WallFrame, add_prism, to_f32};
 use super::scene_mesh::{SceneMesh, SurfaceKind};
 use crate::document::{Document, FloorSlab, Id, Wall, WallOpening, floor, wall};
@@ -18,7 +19,8 @@ use std::collections::HashMap;
 pub struct Coverage {
     pub toposolids: usize,
     pub pitched_roofs: usize,
-    /// Structural elements with a solid (beams, stairs, furniture, plants…) or that cut a slab (openings, shafts).
+    /// Structural elements with a solid (beams, stairs, furniture, family meshes…) or that cut a slab (openings,
+    /// shafts). Procedural plants on flat ground are meshed and not counted.
     pub structural_elements: usize,
     pub electrical_devices: usize,
     pub plumbing_points: usize,
@@ -139,7 +141,17 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         mesh.mark_element(column.id, first);
     }
 
-    coverage.structural_elements = document.structural_elements.iter().filter(|element| element.affects_geometry()).count();
+    for element in &document.structural_elements {
+        // A plant stands on the terrain under it; until toposolids are meshed, only plants on flat ground are grown.
+        if element.is_procedural_plant() && coverage.toposolids == 0 {
+            let first = mesh.triangle_count();
+            // A small embed hides the gap between a trunk and uneven ground.
+            add_plant(&mut mesh, element, elevation_of(element.level_id) - 0.08);
+            mesh.mark_element(element.id, first);
+        } else if element.affects_geometry() {
+            coverage.structural_elements += 1;
+        }
+    }
     coverage.electrical_devices = document.electrical_devices.len();
     coverage.plumbing_points = document.plumbing_points.len();
     coverage.in_place_families = document.in_place_families.len();

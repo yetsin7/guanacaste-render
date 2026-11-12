@@ -32,7 +32,8 @@ existe en `wgpu` como característica experimental y queda como aceleración opc
 | Estudio Rust (`GuanacasteStudio.exe`) | Hecho, versión preliminar | Ventana con visor GPU progresivo, órbita, desplazamiento, zoom y caminar, sol, exposición, rebotes, perfiles y guardar PNG. Capturas inspeccionadas con Cobogó y con un proyecto `.gr` real |
 | Abrir proyectos `.gr`/`.g3d` en el estudio | Hecho: con Rust si está cubierto, si no con el puente C# | `casa-render.gr` (2.6 M de triángulos) se convierte en 7.1 s y se traza a 144 muestras/s |
 | Lector de `.gr`/`.g3d` en Rust | Hecho (esquema 15) | Contenedor con suma verificada; pruebas con archivos escritos por la aplicación. Esquemas anteriores necesitan las migraciones de C# |
-| Mallado en Rust: muros, vanos, losas planas, columnas, suelo | Hecho, idéntico a la aplicación | `tests/reference.rs` y `gr-bench --bin mesh`: diferencia 0 en los elementos cubiertos de 4 proyectos |
+| Mallado en Rust: muros, vanos, losas planas, columnas, suelo | Hecho, idéntico a la aplicación | `tests/reference.rs` y `gr-bench --bin mesh`: diferencia 0 en los elementos cubiertos de 5 proyectos |
+| Mallado en Rust: vegetación procedural | Hecho, mismo árbol que la aplicación | Mismo número de triángulos y menos de 0.05 mm de diferencia en 50 plantas; prueba permanente con arbusto, palma y conífera |
 | Mallado en Rust: resto de elementos | **No hecho** | Ver "Cobertura del mallado" |
 | Perfiles de hardware | Hecho (sugerencia y presupuestos) | Pruebas en `hardware.rs`; falta calibración medida y lectura de VRAM |
 | Estudio WPF | Sigue instalado y sin cambios | Renderiza con el motor C# en CPU; convive con el estudio Rust |
@@ -45,10 +46,10 @@ El código C# suma 127 499 líneas en 819 archivos (2026-11-11). No se migra de 
 |---|---:|---|---|
 | Motor de render (`Core/rendering`) | 13 280 | `gr-core`, `gr-gpu` | BVH y trazador GPU básico hechos; faltan texturas, cielo físico, luces, denoiser, efectos, película |
 | Interfaz WPF (`Desktop`) | ~50 000 | `gr-studio` (rediseño, no port línea a línea) | Visor y controles básicos hechos; faltan materiales, objetos, cámaras guardadas, salidas |
-| Geometría y mallado (`Core/geometry`) | 3 120 | `gr-model` | Empezado: muros, uniones, vanos, losas planas, columnas y suelo, verificados. Faltan cubiertas inclinadas, terreno, vegetación y elementos estructurales |
+| Geometría y mallado (`Core/geometry`) | 3 120 | `gr-model` | Empezado: muros, uniones, vanos, losas planas, columnas, suelo y vegetación procedural, verificados. Faltan componentes paramétricos, escaleras, cubiertas inclinadas y terreno |
 | Modelo BIM y sesión (`Core` raíz, `architecture`, `families`, …) | ~25 000 | `gr-model` | Solo lectura de lo que usa el mallador. Sin edición, validación ni migraciones de esquema |
 | Importadores (IFC, glTF, OBJ, Revit) | 6 803 | crate nuevo `gr-import` | No empezado |
-| Pruebas | ~24 000 | Pruebas junto a cada crate | 42 pruebas Rust hoy |
+| Pruebas | ~24 000 | Pruebas junto a cada crate | 48 pruebas Rust hoy |
 
 Regla de trabajo: cada módulo portado se verifica contra el C# con los mismos datos antes de sustituirlo, como se
 hizo con el BVH (impactos idénticos) y el trazador (primer impacto idéntico).
@@ -58,35 +59,45 @@ hizo con el BVH (impactos idénticos) y el trazador (primer impacto idéntico).
 Medido con `gr-bench --bin mesh` el 2026-11-11. "Elementos" son los rangos de la malla de la aplicación (un muro,
 una puerta, una losa, un árbol…).
 
-| Proyecto | Elementos idénticos | Triángulos Rust / aplicación | Elementos sin cubrir | Leer y mallar |
-|---|---:|---:|---:|---:|
-| demo-house | 18 de 18 | 2 696 / 2 698 (el resto es el suelo, que el estudio sí añade) | 0 | 0.7 ms |
-| showcase | 20 de 34 | 2 276 / 3 998 | 14 | 0.9 ms |
-| modern-house | 19 de 36 | 492 / 2 243 986 | 17 | 0.8 ms |
-| cobogo | 122 de 184 | 5 148 / 1 504 820 | 70 | 2.5 ms |
+| Proyecto | Elementos coincidentes | Triángulos Rust / aplicación | Elementos sin cubrir | Leer y mallar en Rust | Diferencia máxima |
+|---|---:|---:|---:|---:|---:|
+| demo-house | 18 de 18 | 2 696 / 2 698 (el resto es el suelo, que el estudio sí añade) | 0 | 0.6 ms | 0 |
+| garden | 3 de 3 | 43 794 / 43 796 | 0 | 5.0 ms | 0.0006 mm |
+| showcase | 20 de 34 | 2 276 / 3 998 | 14 | 0.8 ms | 0 |
+| modern-house | 30 de 36 | 2 200 430 / 2 201 200 (99.97 %) | 6 | 239 ms | 0.05 mm |
+| cobogo | 136 de 184 | 1 489 362 / 1 502 688 (99.1 %) | 56 | 176 ms | 0.04 mm |
 
-Lectura honesta: por número de elementos la cobertura es de dos tercios, pero por triángulos es mínima en los
-proyectos con vegetación y mobiliario, porque un solo árbol de biblioteca son cientos de miles de triángulos. Un
-proyecto real casi siempre tiene algún elemento sin cubrir, así que hoy casi todos siguen pasando por el puente.
+Cómo leerlo:
+
+- **Muros, vanos, losas y columnas coinciden exactamente** (diferencia 0): solo usan aritmética de planta.
+- **La vegetación coincide en número de triángulos y dentro de 0.05 mm.** Se genera con el mismo generador aleatorio
+  con semilla que .NET, así que crece el mismo árbol; la diferencia residual es el último bit del seno y el coseno de
+  cada entorno, acumulado a lo largo de las ramas. Se comprobó con dos conjuntos independientes de 25 árboles, porque
+  los proyectos de muestra generan identificadores nuevos (y por tanto árboles nuevos) en cada ejecución.
+- Por triángulos la cobertura ya supera el 99 % en los proyectos con vegetación, pero **un proyecto solo se abre sin
+  C# si está cubierto del todo**, y a Cobogó le faltan 56 elementos pequeños.
+- Tiempo de la aplicación C# sobre los mismos archivos, primera construcción (incluye compilación JIT, por lo que no
+  es una comparación limpia): 353 ms en cobogo y 801 ms en modern-house.
 
 Lo que falta, en el orden que más proyectos desbloquea:
 
-1. **Familias de componentes con malla** (`ComponentFamilyRules.MeshOf`, `families/`): vegetación, mobiliario,
-   vehículos. Es la mayor parte de los triángulos.
-2. **Elementos estructurales paramétricos** (`ElementGeometry.Parts`): vigas, escaleras, barandas, cimientos,
-   muros cortina. Incluye los huecos de losa (aberturas, ductos, ascensores), que hoy no se cortan.
-3. **Cubiertas inclinadas y hastiales** (`RoofGeometry`, 438 líneas).
-4. **Terreno** (`TopographyGeometry`, 351 líneas) y con él la cota real del suelo.
-5. **Instalaciones**: dispositivos eléctricos y fontanería, que dependen de sus análisis.
-6. **Familias en sitio** (`FamilyGeometry`).
-7. **Materiales asignados en el proyecto** y texturas: hoy el camino Rust usa el material de serie de cada tipo de
+1. **Componentes paramétricos** (`ElementGeometry.Parts`, `ResidentialComponentGeometry`): vehículos, mobiliario,
+   aparatos. Son 41 de los 56 elementos que le faltan a Cobogó.
+2. **Escaleras, barandas y muros cortina** (`StairGeometry` y afines): lo único que le falta a modern-house.
+3. **Huecos de losa** (aberturas, ductos, ascensores), que hoy no se cortan.
+4. **Instalaciones**: fontanería y dispositivos eléctricos, que dependen de sus análisis.
+5. **Cubiertas inclinadas y hastiales** (`RoofGeometry`, 438 líneas).
+6. **Terreno** (`TopographyGeometry`, 351 líneas); mientras falte, las plantas sobre terreno tampoco se generan.
+7. **Familias de componentes con malla** (`FamilyMesh`) y **familias en sitio** (`FamilyGeometry`): ninguno de los
+   proyectos de referencia las usa, así que no hay con qué verificarlas todavía.
+8. **Materiales asignados en el proyecto** y texturas: el camino Rust usa el material de serie de cada tipo de
    superficie; el puente sí aplica los asignados.
 
 ## Siguientes pasos, en orden
 
-1. **Familias de componentes con malla** en `gr-model`: es lo que más acerca a abrir proyectos reales sin el puente.
+1. **Componentes paramétricos, escaleras, barandas y muros cortina** en `gr-model`: con eso modern-house y casi todo Cobogó se abren sin el puente.
 2. **Texturas y recorte alfa en `.grscene` y en el shader.** Sin esto la vegetación sale blanca.
-3. **Elementos estructurales, cubiertas inclinadas y terreno** en `gr-model` (ver la lista de cobertura).
+3. **Huecos de losa, instalaciones, cubiertas inclinadas y terreno** en `gr-model` (ver la lista de cobertura).
 4. **Denoiser en GPU** (À-trous guiado por normal y profundidad) para que 8–16 muestras ya sean presentables.
 5. **Cielo físico y luces artificiales** portados del motor C# para poder comparar imágenes píxel a píxel.
 6. **Estudio: materiales y selección** (picar una superficie y cambiar su material) y cámaras guardadas.

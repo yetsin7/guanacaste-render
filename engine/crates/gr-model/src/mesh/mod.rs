@@ -1,7 +1,9 @@
 //! From a project to triangles.
 
 mod builder;
+mod dotnet;
 mod openings;
+mod plants;
 mod prism;
 mod scene_mesh;
 

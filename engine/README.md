@@ -28,6 +28,8 @@ engine/
 │   │   │       ├── scene_mesh.rs       La malla y los tipos de superficie
 │   │   │       ├── prism.rs            Prisma vertical y caja en coordenadas de muro
 │   │   │       ├── openings.rs         Puertas, ventanas, herrajes y rejas
+│   │   │       ├── plants.rs           Vegetación procedural: árboles, palmas, coníferas y arbustos
+│   │   │       ├── dotnet.rs           Generador aleatorio y redondeos de .NET que la vegetación necesita
 │   │   │       └── builder.rs          Recorre el proyecto y cuenta lo que aún no cubre
 │   │   └── tests/
 │   │       ├── reference.rs        Comparación triángulo a triángulo con la aplicación

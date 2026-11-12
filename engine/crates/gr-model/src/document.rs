@@ -299,11 +299,35 @@ pub struct Column {
     pub shape: i32,
 }
 
-/// Only what is needed to know whether a structural element would add or cut geometry.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+/// `StructuralElementKind` numbers the mesher handles itself.
+pub mod element_kind {
+    pub const PLANTING: i32 = 28;
+}
+
+/// `ElementStyle`: for a planting, its growth form.
+pub mod element_style {
+    pub const DEFAULT: i32 = 0;
+    pub const GUANACASTE: i32 = 9;
+    pub const PALM: i32 = 10;
+    pub const CONIFER: i32 = 11;
+    pub const SHRUB: i32 = 12;
+}
+
+/// A structural element: beams, stairs, furniture, plantings and the like. Only the fields the mesher reads.
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "PascalCase", default)]
 pub struct StructuralElement {
+    pub id: Id,
+    pub level_id: Id,
     pub kind: i32,
+    pub start: Point2,
+    pub width: f64,
+    pub height: f64,
+    /// Metres above the ground the element stands on.
+    pub offset: f64,
+    pub style: i32,
+    /// The component family whose mesh the element draws instead of its procedural geometry.
+    pub family_id: Option<Id>,
 }
 
 impl StructuralElement {
@@ -313,6 +337,11 @@ impl StructuralElement {
     /// Whether the mesher of the application would do anything with this element.
     pub fn affects_geometry(&self) -> bool {
         !Self::DRAFTING_ONLY.contains(&self.kind)
+    }
+
+    /// A planting grown procedurally, rather than drawn from the mesh of a component family.
+    pub fn is_procedural_plant(&self) -> bool {
+        self.kind == element_kind::PLANTING && self.family_id.is_none()
     }
 }
 

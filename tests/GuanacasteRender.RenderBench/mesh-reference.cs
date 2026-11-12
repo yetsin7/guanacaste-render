@@ -20,7 +20,8 @@ static class MeshReference
             ("demo-house", SampleProjects.CreateDemonstrationHouse),
             ("modern-house", ModernHouseShowcase.Create),
             ("showcase", ArchitecturalShowcase.Create),
-            ("cobogo", () => BreezeBlockHouseShowcase.Create())
+            ("cobogo", () => BreezeBlockHouseShowcase.Create()),
+            ("garden", Garden)
         };
         foreach (var (name, create) in projects)
         {
@@ -28,11 +29,33 @@ static class MeshReference
             var path = Path.Combine(folder, name + NativeDocumentStore.RenderProjectExtension);
             NativeDocumentStore.SaveProject(path, document);
             // Mesh what a reader gets back from the file, so the reference includes the storage round trip.
-            var mesh = BuildingMesher.Build(ProjectFile.Load(path), includeGround: true, plants: PlantDetail.Render);
+            var loaded = ProjectFile.Load(path);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            var mesh = BuildingMesher.Build(loaded, includeGround: true, plants: PlantDetail.Render);
+            var milliseconds = clock.Elapsed.TotalMilliseconds;
             WriteMesh(Path.Combine(folder, name + ".refmesh"), mesh);
-            Console.WriteLine($"{name,-14} {mesh.TriangleCount,9} triangles, {mesh.ElementRanges.Count,6} element ranges");
+            // Plants are cached after the first build, so only the first is a fair time; it includes JIT compilation.
+            Console.WriteLine($"{name,-14} {mesh.TriangleCount,9} triangles, {mesh.ElementRanges.Count,6} element ranges, first build {milliseconds:0.0} ms");
         }
         WriteMaterials(Path.Combine(folder, "stock-materials.tsv"));
+    }
+
+    /// <summary>
+    /// A small plant of every growth form on an empty level: little enough geometry to keep as a test fixture, and
+    /// every part of the plant generator (random sequence, trunks, branching, leaves, fronds, needles, coconuts).
+    /// Identifiers are fixed, because a plant grows from its identifier.
+    /// </summary>
+    private static BuildingDocument Garden()
+    {
+        var document = BuildingDocument.Create("Jardín de referencia");
+        var level = document.Levels[0].Id;
+        void Plant(string id, string name, double x, double height, double spread, ElementStyle style) =>
+            document.StructuralElements.Add(new StructuralElement(Guid.Parse(id), level, StructuralElementKind.Planting, name,
+                new Point2(x, 1.5), new Point2(x, 1.5), spread, height, 0) { Style = style });
+        Plant("0a6f3c52-7b1e-4d0a-9c35-51e7f2a4b801", "Arbusto", 0, 0.5, 0.5, ElementStyle.Shrub);
+        Plant("1b7a4d63-8c2f-4e1b-ad46-62f803b5c912", "Palma", 3, 2.2, 1.6, ElementStyle.Palm);
+        Plant("2c8b5e74-9d30-4f2c-be57-730914c6da23", "Conífera", 6, 1.3, 0.8, ElementStyle.Conifer);
+        return document;
     }
 
     /// <summary>

@@ -55,8 +55,8 @@ pub fn to_scene(mesh: SceneMesh, building_bounds: (Vec3, Vec3)) -> Scene {
     Scene {
         indices: (0..triangles as u32).map(|triangle| [triangle * 3, triangle * 3 + 1, triangle * 3 + 2]).collect(),
         triangle_material: mesh.kinds.iter().map(|&kind| kind as u32).collect(),
+        normals: mesh.normals,
         positions: mesh.positions,
-        normals: None,
         corner_uvs: None,
         materials: stock_materials(),
         lights: Vec::new(),

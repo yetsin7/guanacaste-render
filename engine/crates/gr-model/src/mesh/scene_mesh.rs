@@ -68,6 +68,9 @@ pub struct ElementRange {
 #[derive(Debug, Default)]
 pub struct SceneMesh {
     pub positions: Vec<Vec3>,
+    /// Shading normals, one per position, or `None` while every triangle is flat. A zero normal marks a flat
+    /// corner. Created by the first smooth triangle.
+    pub normals: Option<Vec<Vec3>>,
     pub kinds: Vec<SurfaceKind>,
     /// Sorted, non-overlapping; triangles outside every range belong to no element (the ground).
     pub element_ranges: Vec<ElementRange>,
@@ -84,8 +87,36 @@ impl SceneMesh {
     }
 
     pub fn add_triangle(&mut self, a: Vec3, b: Vec3, c: Vec3, kind: SurfaceKind) {
+        if let Some(normals) = &mut self.normals {
+            normals.extend([Vec3::ZERO; 3]);
+        }
         self.positions.extend([a, b, c]);
         self.kinds.push(kind);
+    }
+
+    /// A triangle shaded with interpolated normals, for curved surfaces such as trunks.
+    pub fn add_smooth_triangle(&mut self, corners: [Vec3; 3], normals: [Vec3; 3], kind: SurfaceKind) {
+        let count = self.positions.len();
+        self.normals.get_or_insert_with(|| vec![Vec3::ZERO; count]).extend(normals);
+        self.positions.extend(corners);
+        self.kinds.push(kind);
+    }
+
+    /// Adds every triangle of another mesh after this one's. Element ranges of `other` are not carried over.
+    pub fn append(&mut self, other: SceneMesh) {
+        let count = self.positions.len();
+        match (&mut self.normals, other.normals) {
+            (Some(normals), Some(theirs)) => normals.extend(theirs),
+            (Some(normals), None) => normals.resize(count + other.positions.len(), Vec3::ZERO),
+            (None, Some(theirs)) => {
+                let mut normals = vec![Vec3::ZERO; count];
+                normals.extend(theirs);
+                self.normals = Some(normals);
+            }
+            (None, None) => {}
+        }
+        self.positions.extend(other.positions);
+        self.kinds.extend(other.kinds);
     }
 
     /// A planar quad given counter-clockwise as seen from its front.
