@@ -37,25 +37,63 @@ engine/
 │   ├── gr-gpu/           Trazador de rayos en la tarjeta gráfica (wgpu: DirectX 12 y Vulkan)
 │   │   ├── shaders/
 │   │   │   ├── path_tracer.wgsl    El trazador: recorrido del BVH, materiales, sol y cielo
+│   │   │   ├── denoise.wgsl        Filtro À-trous guiado por normal y distancia
+│   │   │   ├── raster.wgsl         Navegación sin trazado: rasterizado con el mismo sol, cielo y tono
 │   │   │   └── resolve.wgsl        De radiancia acumulada a imagen en pantalla (exposición y tono)
 │   │   └── src/
 │   │       ├── tracer.rs           Sube la escena, lanza pasadas, redimensiona y lee la imagen
+│   │       ├── raster.rs           Pipelines del rasterizado (MSAA ×4, Z invertida, vidrio con mezcla)
 │   │       └── camera.rs           Marco de cámara compartido entre shader y CPU
 │   ├── gr-studio/        La aplicación de escritorio: GuanacasteStudio.exe
+│   │   ├── assets/fonts/           Inter, JetBrains Mono y Material Icons (licencias en NOTICE.md)
 │   │   └── src/
-│   │       ├── main.rs             Arranque de la ventana y del dispositivo gráfico
-│   │       ├── app.rs              Barra superior, panel lateral, barra de estado, abrir y guardar
-│   │       ├── viewport.rs         Visor 3D: entrada, ritmo de muestreo y presentación
+│   │       ├── main.rs             Ventana sin marco del sistema y dispositivo gráfico
+│   │       ├── app.rs              Estado del estudio y trabajo entre pantallas (abrir, plantar, perfiles)
+│   │       ├── viewport.rs         Visor 3D: navegación rasterizada, vista previa y render trazados
 │   │       ├── orbit_camera.rs     Órbita, desplazamiento, zoom y caminar
 │   │       ├── project.rs          Abrir `.grscene` y proyectos `.gr`/`.g3d` (con `gr-model` o el puente)
-│   │       └── theme.rs            Colores y espaciado de la interfaz
+│   │       ├── theme.rs            Sistema de diseño «Obsidian Precision CAD»: colores, fuentes y marcos
+│   │       ├── studio/             Funciones del estudio que no son interfaz
+│   │       │   ├── vegetation.rs       Biblioteca de especies y sus ejemplares trazados en GPU
+│   │       │   ├── timeline.rs         Fotogramas clave, curva Catmull-Rom y exportación de película
+│   │       │   ├── telemetry.rs        Tiempos de fotograma y datos del equipo (registro de Windows)
+│   │       │   ├── preferences.rs      Ajustes guardados entre sesiones
+│   │       │   └── thumbnails.rs       Vistas de los proyectos recientes
+│   │       └── ui/                 La interfaz
+│   │           ├── shell.rs            Barra de título propia y barra de herramientas lateral
+│   │           ├── widgets.rs          Controles del sistema de diseño
+│   │           ├── icons.rs            Símbolos de Material Icons
+│   │           └── pages/              Una pantalla por archivo
+│   │               ├── projects.rs         Proyectos
+│   │               ├── build.rs            Construcción (colocar vegetación)
+│   │               ├── library.rs          Biblioteca de naturaleza
+│   │               ├── inspector.rs        Inspector de recursos
+│   │               ├── materials.rs        Editor de materiales
+│   │               ├── movie.rs            Estudio de película
+│   │               ├── render.rs           Estudio de render
+│   │               ├── settings.rs         Ajustes y telemetría
+│   │               ├── help.rs             Ayuda y diagnóstico
+│   │               └── common.rs           Piezas compartidas por las pantallas
 │   └── gr-bench/         Mediciones reproducibles contra el motor C#
 │       └── src/
 │           ├── main.rs             CPU: construcción del BVH y rayos por segundo
 │           ├── gpu.rs              GPU: verificación del primer impacto, render y rayos por segundo
+│           ├── denoise.rs          PSNR del filtro de ruido frente a una referencia
+│           ├── raster.rs           Navegación rasterizada frente a una muestra trazada
 │           └── mesh.rs             Mallado: cobertura, tiempos y diferencia con la aplicación
 └── target/               Salida de compilación (no se versiona)
 ```
+
+## Calidad de la vista
+
+El visor tiene tres modos, para no gastar la tarjeta gráfica en trazado mientras se navega:
+
+1. **Navegación** (por defecto): rasterizado con MSAA ×4, el mismo sol, cielo, exposición y tono que el trazador,
+   sin sombras ni luz indirecta. Solo redibuja cuando cambia la cámara, la luz o la escena; en reposo no consume GPU.
+2. **Vista previa** (botón «Vista previa» o tecla V): una pasada corta de trazado de rayos a resolución reducida
+   (64 muestras y 60 % por defecto) con eliminación de ruido, para ver cómo quedará la luz. Se detiene al llegar.
+3. **Render** (botón «Render» o tecla R): el trazado final a la resolución de salida elegida (512 muestras por
+   defecto). Mover la cámara vuelve a la navegación.
 
 ## Cómo abre proyectos el estudio
 

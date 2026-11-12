@@ -61,8 +61,8 @@ Cómo leerlo:
 
 ## 3. Estado de integración
 
-El motor Rust se ejecuta hoy desde la línea de comandos sobre escenas exportadas. **La aplicación instalada sigue
-renderizando con el motor C# en CPU**; nada de lo anterior es visible aún desde la interfaz.
+El estudio Rust (`GuanacasteStudio.exe`) usa el trazador en GPU, el filtro de ruido y la navegación rasterizada.
+La aplicación C# sigue siendo la referencia para lo que aún no está portado (ver `rust-migration-status.md`).
 
 ## 4. Normales suaves y eliminación de ruido en GPU (2026-11-12)
 
@@ -98,4 +98,24 @@ Cómo leerlo:
   pierde algo de definición a 4 muestras. No hay halos ni manchas de color.
 - Coste fijo de unos 2 ms por imagen mostrada, independiente del número de triángulos. Memoria de vídeo: tres
   búferes más del tamaño de la imagen (42 MB a 1280 × 720).
-- **Aún no está conectado al estudio**: `gr-studio` lo lleva Codex; la llamada es una línea en `viewport.rs`.
+- Conectado al estudio: la vista previa lo usa siempre y el render solo por debajo de 48 muestras.
+
+## 5. Navegación rasterizada (2026-11-12)
+
+La navegación ya no traza rayos. `shaders/raster.wgsl` dibuja la escena leyendo directamente los búferes del
+trazador (sin copiar la geometría): Z invertida con proyección infinita, MSAA ×4, cielo, opacos y vidrio con mezcla,
+y el mismo sol, cielo, exposición y curva de tono, para que el paso a la vista previa no cambie los colores.
+
+Medido con `gr-bench --bin raster`, 1600 × 900, mediana de 20 imágenes, frente a una muestra del trazador:
+
+| Escena | Adaptador | Rasterizado | Una muestra trazada |
+|---|---|---:|---:|
+| house-exterior | RTX 4050 | 0.40 ms | 4.30 ms |
+| modern-house | RTX 4050 | 3.82 ms | 8.73 ms |
+| cobogo | RTX 4050 | 2.88 ms | 8.71 ms |
+| modern-house | Intel UHD | 25.95 ms | 44.28 ms |
+
+Además del coste por imagen, el rasterizado solo se repite cuando algo cambia, mientras que la vista trazada antes
+acumulaba muestras sin parar. En el estudio, con la escena `villa` abierta y sin tocar nada, el proceso usó 125 ms de
+CPU en 5 s y la barra de título marca «EN REPOSO». Lo que la navegación no muestra: sombras, luz indirecta,
+refracción y translucidez de hojas; para eso están la vista previa y el render.

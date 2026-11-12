@@ -30,7 +30,11 @@ pub const PROJECT_EXTENSIONS: [&str; 3] = ["gr", "g3d", "grscene"];
 pub fn load_in_background(path: PathBuf, wake: impl Fn() + Send + 'static) -> Receiver<Loaded> {
     let (sender, receiver) = channel();
     std::thread::spawn(move || {
-        let result = load(&path).map(|(scene, notice)| Opened { scene, path, notice });
+        let result = load(&path).map(|(scene, notice)| Opened {
+            scene,
+            path,
+            notice,
+        });
         let _ = sender.send(result);
         wake();
     });
@@ -39,11 +43,17 @@ pub fn load_in_background(path: PathBuf, wake: impl Fn() + Send + 'static) -> Re
 
 /// Opens a native scene only when its geometry and saved appearance are both supported.
 fn load(path: &Path) -> Result<(Scene, Option<String>), String> {
-    let extension = path.extension().and_then(|e| e.to_str()).unwrap_or_default().to_lowercase();
+    let extension = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or_default()
+        .to_lowercase();
     if extension == "grscene" {
         return Scene::load(path)
             .map(|scene| (scene, None))
-            .map_err(|error| localized("scene_read_error").replace("{reason}", &error.to_string()));
+            .map_err(|error| {
+                localized("scene_read_error").replace("{reason}", &error.to_string())
+            });
     }
 
     // First choice: read and mesh the project here. Only a mesh that covers the whole project is shown as it is.
@@ -52,7 +62,11 @@ fn load(path: &Path) -> Result<(Scene, Option<String>), String> {
         let (building, coverage) = build_mesh(&document, false);
         let bounds = building.bounds();
         let (mesh, _) = build_mesh(&document, true);
-        (gr_model::scene::to_scene(mesh, bounds), coverage, custom_scene)
+        (
+            gr_model::scene::to_scene(mesh, bounds),
+            coverage,
+            custom_scene,
+        )
     });
     let native = match native {
         Ok((scene, coverage, false)) if coverage.is_complete() => return Ok((scene, None)),
@@ -65,15 +79,20 @@ fn load(path: &Path) -> Result<(Scene, Option<String>), String> {
             Ok((scene, coverage, custom_scene)) => {
                 let message = match (coverage.is_complete(), custom_scene) {
                     (true, true) => localized("partial_appearance").to_owned(),
-                    (false, true) => localized("partial_both").replace("{count}", &coverage.missing().to_string()),
-                    _ => localized("partial_geometry").replace("{count}", &coverage.missing().to_string()),
+                    (false, true) => localized("partial_both")
+                        .replace("{count}", &coverage.missing().to_string()),
+                    _ => localized("partial_geometry")
+                        .replace("{count}", &coverage.missing().to_string()),
                 };
                 Ok((scene, Some(message)))
             }
-            Err(error) => Err(localized("project_open_error").replace("{reason}", &error.to_string())),
+            Err(error) => {
+                Err(localized("project_open_error").replace("{reason}", &error.to_string()))
+            }
         };
     };
-    convert_with_bridge(&bridge, path).map(|scene| (scene, Some(localized("bridge_preview").to_owned())))
+    convert_with_bridge(&bridge, path)
+        .map(|scene| (scene, Some(localized("bridge_preview").to_owned())))
 }
 
 /// Detects the original application's sidecar for linked external models without modifying it.
@@ -85,8 +104,9 @@ fn has_model_links(path: &Path) -> bool {
 
 /// Converts a project with the installed application and loads the scene it writes.
 fn convert_with_bridge(bridge: &Path, path: &Path) -> Result<Scene, String> {
-    let workspace =
-        BridgeWorkspace::create().map_err(|error| localized("temporary_folder_error").replace("{reason}", &error.to_string()))?;
+    let workspace = BridgeWorkspace::create().map_err(|error| {
+        localized("temporary_folder_error").replace("{reason}", &error.to_string())
+    })?;
     let exported = workspace.folder.join("scene.grscene");
     let error_file = workspace.folder.join("scene.grscene.error.txt");
 
@@ -104,7 +124,8 @@ fn convert_with_bridge(bridge: &Path, path: &Path) -> Result<Scene, String> {
             localized("conversion_error_reason").replace("{reason}", reason.trim())
         });
     }
-    Scene::load(&exported).map_err(|error| localized("exported_scene_error").replace("{reason}", &error.to_string()))
+    Scene::load(&exported)
+        .map_err(|error| localized("exported_scene_error").replace("{reason}", &error.to_string()))
 }
 
 /// A private directory prevents overlapping project loads from overwriting each other's bridge output.
@@ -133,7 +154,11 @@ impl BridgeWorkspace {
 impl Drop for BridgeWorkspace {
     /// Removes only files that the bridge itself may have written to this reserved directory.
     fn drop(&mut self) {
-        for name in ["scene.grscene", "scene.grscene.error.txt", "scene.grscene.tmp"] {
+        for name in [
+            "scene.grscene",
+            "scene.grscene.error.txt",
+            "scene.grscene.tmp",
+        ] {
             let _ = std::fs::remove_file(self.folder.join(name));
         }
         let _ = std::fs::remove_dir(&self.folder);
@@ -157,7 +182,12 @@ fn find_bridge() -> Option<PathBuf> {
         .ok()?
         .flatten()
         .filter_map(|entry| {
-            let version: Option<Vec<u32>> = entry.file_name().to_str()?.split('.').map(|part| part.parse().ok()).collect();
+            let version: Option<Vec<u32>> = entry
+                .file_name()
+                .to_str()?
+                .split('.')
+                .map(|part| part.parse().ok())
+                .collect();
             let executable = entry.path().join("GuanacasteRender.exe");
             executable.is_file().then_some((version?, executable))
         })

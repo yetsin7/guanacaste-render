@@ -9,6 +9,7 @@ mod orbit_camera;
 mod project;
 #[path = "recent-projects.rs"]
 mod recent_projects;
+mod studio;
 mod theme;
 mod ui;
 mod viewport;
@@ -26,11 +27,16 @@ fn main() -> eframe::Result {
             .with_title("Guanacaste Render Studio")
             .with_inner_size([1280.0, 720.0])
             .with_min_inner_size([900.0, 560.0])
-            .with_maximized(true),
+            .with_maximized(true)
+            // The studio draws its own title bar, as the design does.
+            .with_decorations(false),
         ..Default::default()
     };
     if let Some(icon) = app_icon::load() {
         options.viewport = options.viewport.with_icon(icon);
+    }
+    if !studio::preferences::Preferences::load().vsync {
+        options.wgpu_options.surface.present_mode = wgpu::PresentMode::AutoNoVsync;
     }
     if let WgpuSetup::CreateNew(setup) = &mut options.wgpu_options.wgpu_setup {
         // The dedicated card when there is one, and every limit it offers: large scenes need large buffers.
@@ -44,6 +50,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Guanacaste Render Studio",
         options,
-        Box::new(move |creation| Ok(Box::new(app::StudioApp::new(creation, open)))),
+        Box::new(move |creation| Ok(Box::new(app::Studio::new(creation, open)))),
     )
 }

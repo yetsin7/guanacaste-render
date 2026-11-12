@@ -28,15 +28,22 @@ fn read_paths(path: &Path) -> Option<Vec<PathBuf>> {
 /// Builds display metadata without discarding projects on temporarily unavailable drives.
 fn describe(path: PathBuf) -> RecentProject {
     RecentProject {
-        name: path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default(),
-        file_size_mb: std::fs::metadata(&path).ok().map(|metadata| metadata.len() as f64 / 1_048_576.0),
+        name: path
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_default(),
+        file_size_mb: std::fs::metadata(&path)
+            .ok()
+            .map(|metadata| metadata.len() as f64 / 1_048_576.0),
         path,
     }
 }
 
 /// Loads the last valid history, recovering its backup if an interrupted write damaged the main file.
 pub fn load() -> Vec<RecentProject> {
-    let Some(folder) = storage_folder() else { return Vec::new() };
+    let Some(folder) = storage_folder() else {
+        return Vec::new();
+    };
     load_from(&folder)
 }
 
@@ -63,15 +70,20 @@ pub fn remember(projects: &mut Vec<RecentProject>, path: &Path) {
 
 /// Preserves the previous valid list before writing, so an interrupted update is recoverable.
 fn persist(projects: &[RecentProject]) -> Result<(), Box<dyn std::error::Error>> {
-    let Some(folder) = storage_folder() else { return Ok(()) };
+    let Some(folder) = storage_folder() else {
+        return Ok(());
+    };
     persist_to(&folder, projects)
 }
 
 /// Writes history to a known folder while preserving its last valid version.
 fn persist_to(folder: &Path, projects: &[RecentProject]) -> Result<(), Box<dyn std::error::Error>> {
-    let paths: Vec<&Path> = projects.iter().map(|project| project.path.as_path()).collect();
+    let paths: Vec<&Path> = projects
+        .iter()
+        .map(|project| project.path.as_path())
+        .collect();
     let bytes = serde_json::to_vec(&paths)?;
-    std::fs::create_dir_all(&folder)?;
+    std::fs::create_dir_all(folder)?;
     let current = folder.join("recent-projects.json");
     if read_paths(&current).is_some() {
         std::fs::copy(&current, folder.join("recent-projects.backup.json"))?;
