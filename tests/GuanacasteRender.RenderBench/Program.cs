@@ -76,6 +76,12 @@ if (args.Contains("--septic-reference"))
     return;
 }
 
+if (args.Contains("--electrical-reference"))
+{
+    ElectricalReference.Run(outputFolder ?? Path.Combine("artifacts", "electrical-reference"));
+    return;
+}
+
 if (args.Contains("--baseline"))
 {
     EngineBaseline.Run(outputFolder ?? Path.Combine("artifacts", "engine-bench"));

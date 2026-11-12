@@ -5,7 +5,7 @@
 //! the application's mesher changes.
 
 use glam::Vec3;
-use gr_model::document::{Document, Id};
+use gr_model::document::{Document, Id, electrical_device_kind};
 use gr_model::mesh::{SceneMesh, SurfaceKind, build_mesh};
 use std::collections::HashMap;
 
@@ -247,6 +247,45 @@ fn septic_system_matches_the_application() {
     assert!(coverage.is_complete(), "{coverage:?}");
     assert_eq!(mesh.triangle_count(), reference.kinds.len());
     assert_same_triangles(&mesh, 0, &reference, 0, mesh.triangle_count(), "septic system");
+}
+
+/// Compares the migrated electrical catalog in two orientations, with unconnected lights switched off by a panel.
+#[test]
+fn electrical_devices_match_the_application() {
+    let document = Document::parse(include_bytes!("fixtures/electrical.gr")).expect("valid electrical fixture");
+    let reference = Reference::parse(include_bytes!("fixtures/electrical.refmesh"));
+    let (mesh, coverage) = build_mesh(&document, false);
+    assert!(coverage.is_complete(), "{coverage:?}");
+    assert_eq!(mesh.triangle_count(), reference.kinds.len());
+    assert_same_triangles(&mesh, 0, &reference, 0, mesh.triangle_count(), "electrical devices");
+}
+
+/// Compares standalone luminaires that the source application energizes before a panel is added.
+#[test]
+fn standalone_lights_match_the_application() {
+    let document = Document::parse(include_bytes!("fixtures/electrical-lights.gr")).expect("valid light fixture");
+    let reference = Reference::parse(include_bytes!("fixtures/electrical-lights.refmesh"));
+    let (mesh, coverage) = build_mesh(&document, false);
+    assert!(coverage.is_complete(), "{coverage:?}");
+    assert_eq!(mesh.triangle_count(), reference.kinds.len());
+    assert_same_triangles(&mesh, 0, &reference, 0, mesh.triangle_count(), "standalone lights");
+}
+
+/// Keeps circuit-connected or switched lighting on the source-application fallback until simulation is ported.
+#[test]
+fn controlled_lights_remain_incomplete() {
+    let mut document = Document::parse(include_bytes!("fixtures/electrical.gr")).expect("valid electrical fixture");
+    let light = document.electrical_devices.iter().find(|device| device.is_luminaire()).expect("fixture contains a light").id;
+    let switch = document.electrical_devices.iter_mut().find(|device| device.kind == electrical_device_kind::SWITCH).expect("fixture contains a switch");
+    switch.controls.push(light);
+    let (_, coverage) = build_mesh(&document, false);
+    assert_eq!(coverage.electrical_devices, 2);
+    assert!(!coverage.is_complete());
+
+    document.electrical_devices.iter_mut().find(|device| device.kind == electrical_device_kind::SWITCH).unwrap().controls.clear();
+    document.electrical_devices.iter_mut().find(|device| device.id == light).unwrap().circuit_id = Some(Id(42));
+    let (_, coverage) = build_mesh(&document, false);
+    assert_eq!(coverage.electrical_devices, 1);
 }
 
 #[test]

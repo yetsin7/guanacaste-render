@@ -7,6 +7,8 @@
 
 #[path = "component-shapes.rs"]
 pub mod component_shape;
+#[path = "electrical-device.rs"]
+mod electrical_device;
 #[path = "floor-slab.rs"]
 mod floor_slab;
 #[path = "plumbing-point.rs"]
@@ -17,6 +19,7 @@ mod room;
 mod structural_element;
 
 pub use floor_slab::{FloorSlab, TopographyPoint, floor};
+pub use electrical_device::{ElectricalDevice, electrical_device_kind};
 pub use plumbing_point::{PlumbingPoint, PlumbingSystem, plumbing_point_kind, plumbing_system_kind};
 pub use room::Room;
 pub use structural_element::{StructuralElement, element_kind, element_style};
@@ -303,7 +306,7 @@ pub struct Document {
     #[serde(default)]
     pub structural_elements: Vec<StructuralElement>,
     #[serde(default)]
-    pub electrical_devices: Vec<serde::de::IgnoredAny>,
+    pub electrical_devices: Vec<ElectricalDevice>,
     #[serde(default)]
     pub plumbing_points: Vec<PlumbingPoint>,
     #[serde(default)]

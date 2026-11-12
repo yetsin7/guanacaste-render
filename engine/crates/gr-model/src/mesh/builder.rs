@@ -5,6 +5,7 @@
 //! same order. What is not ported yet is counted in [`Coverage`], never silently left out.
 
 use super::element_part::add_part;
+use super::electrical_geometry::add_electrical_device;
 use super::interior_test::InteriorTest;
 use super::elements::element_parts;
 use super::openings::{add_opening_assembly, add_security_bars};
@@ -20,7 +21,7 @@ use super::terrain_surface::TerrainSurface;
 use crate::document::{Document, FloorSlab, Id, Wall, WallOpening, element_kind, floor, wall};
 use crate::plan::{PlanRectangle, Point2, WallJoins, column_outline, contains_rectangle, counter_clockwise, slab_pieces, wall_solids};
 use glam::{Vec2, Vec3};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Elements of the project that the application meshes and this mesher does not yet. When any count is not zero
 /// the mesh is a partial building, and a complete one still needs the application.
@@ -172,6 +173,19 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         mesh.mark_element(column.id, first);
     }
 
+    let has_panel = document.electrical_devices.iter().any(|device| device.kind == crate::document::electrical_device_kind::PANEL);
+    let controlled: HashSet<Id> = document.electrical_devices.iter().flat_map(|device| device.controls.iter().copied()).collect();
+    for device in &document.electrical_devices {
+        let first = mesh.triangle_count();
+        let brightness = if device.is_luminaire() {
+            if device.circuit_id.is_some() || controlled.contains(&device.id) { None } else { Some(!has_panel) }
+        } else { Some(false) };
+        if !elevations.get(&device.level_id).zip(brightness).is_some_and(|(&level, lit)| add_electrical_device(&mut mesh, device, level, lit)) {
+            coverage.electrical_devices += 1;
+        }
+        mesh.mark_element(device.id, first);
+    }
+
     // Buried service geometry contributes to the framing bounds but must not lower the ground plane.
     let buried_from = mesh.positions.len();
     for kind in 0..=3 {
@@ -222,7 +236,6 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
             None => coverage.structural_elements += 1,
         }
     }
-    coverage.electrical_devices = document.electrical_devices.len();
     coverage.in_place_families = document.in_place_families.len();
 
     if include_ground {
