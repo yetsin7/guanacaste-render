@@ -2,6 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app;
+#[path = "app-icon.rs"]
+mod app_icon;
 mod localization;
 mod orbit_camera;
 mod project;
@@ -27,6 +29,9 @@ fn main() -> eframe::Result {
             .with_maximized(true),
         ..Default::default()
     };
+    if let Some(icon) = app_icon::load() {
+        options.viewport = options.viewport.with_icon(icon);
+    }
     if let WgpuSetup::CreateNew(setup) = &mut options.wgpu_options.wgpu_setup {
         // The dedicated card when there is one, and every limit it offers: large scenes need large buffers.
         setup.power_preference = wgpu::PowerPreference::HighPerformance;

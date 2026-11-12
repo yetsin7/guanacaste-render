@@ -43,6 +43,7 @@ pub struct TopBarState {
     pub height: u32,
     pub samples_per_second: f32,
     pub active_mode: StudioMode,
+    pub logo: Option<egui::TextureId>,
 }
 
 /// Interactive user actions dispatched from the top bar.
@@ -58,13 +59,9 @@ pub fn show(ui: &mut Ui, state: &mut TopBarState) -> TopBarAction {
     let mut action = TopBarAction::None;
 
     ui.horizontal(|ui| {
-        // Brand Symbol: G Badge
-        let brand_badge = RichText::new(" G ")
-            .strong()
-            .color(theme::DEEPEST)
-            .background_color(theme::ACCENT)
-            .font(theme::mono_font());
-        ui.label(brand_badge);
+        if let Some(logo) = state.logo {
+            ui.add(egui::Image::new((logo, egui::vec2(24.0, 24.0))));
+        }
 
         ui.label(
             RichText::new("GUANACASTE RENDER")

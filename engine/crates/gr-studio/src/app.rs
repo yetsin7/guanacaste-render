@@ -31,6 +31,7 @@ pub struct StudioApp {
     recent: Vec<RecentProject>,
     selected_material: usize,
     message: Option<(String, bool)>,
+    logo: Option<egui::TextureHandle>,
 }
 
 impl StudioApp {
@@ -65,6 +66,13 @@ impl StudioApp {
             recent: crate::recent_projects::load(),
             selected_material: 0,
             message: None,
+            logo: crate::app_icon::load().map(|icon| {
+                let image = egui::ColorImage::from_rgba_unmultiplied(
+                    [icon.width as usize, icon.height as usize],
+                    &icon.rgba,
+                );
+                creation.egui_ctx.load_texture("studio-logo", image, egui::TextureOptions::LINEAR)
+            }),
         };
 
         if let Some(path) = open {
@@ -149,6 +157,7 @@ impl StudioApp {
             height,
             samples_per_second: sps,
             active_mode: self.mode,
+            logo: self.logo.as_ref().map(egui::TextureHandle::id),
         }
     }
 
