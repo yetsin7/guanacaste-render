@@ -5,6 +5,8 @@ mod app;
 mod localization;
 mod orbit_camera;
 mod project;
+#[path = "recent-projects.rs"]
+mod recent_projects;
 mod theme;
 mod ui;
 mod viewport;

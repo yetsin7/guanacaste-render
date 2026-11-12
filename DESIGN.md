@@ -14,7 +14,7 @@ Stitch workstation: a dark canvas, narrow tool rail, compact inspectors, and a l
 
 ## Interaction boundaries
 
-The project dashboard opens supported files, lists projects opened in the current session, and previews the active
+The project dashboard opens supported files, remembers recently opened projects locally, and previews the active
 scene. Render and environment controls affect the actual renderer. A camera reset returns to the opening view.
 The material inspector exposes the loaded scene's actual properties in read-only form. Material editing, object
 placement, asset libraries, and movie timelines require their underlying engines before their reference controls can

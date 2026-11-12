@@ -62,7 +62,7 @@ impl StudioApp {
             mode: StudioMode::Projects,
             loading: None,
             project: None,
-            recent: Vec::new(),
+            recent: crate::recent_projects::load(),
             selected_material: 0,
             message: None,
         };
@@ -110,16 +110,7 @@ impl StudioApp {
                 .map(|()| (opened.path, opened.notice))
         }) {
             Ok((path, notice)) => {
-                let name = path.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
-                self.recent.retain(|entry| entry.path != path);
-                self.recent.insert(
-                    0,
-                    RecentProject {
-                        name,
-                        file_size_mb: std::fs::metadata(&path).ok().map(|metadata| metadata.len() as f64 / 1_048_576.0),
-                        path: path.clone(),
-                    },
-                );
+                crate::recent_projects::remember(&mut self.recent, &path);
                 self.project = Some(path);
                 self.selected_material = 0;
                 self.message = notice.map(|text| (text, true));

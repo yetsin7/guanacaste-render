@@ -923,6 +923,7 @@ dependencies = [
  "gr-model",
  "png",
  "rfd",
+ "serde_json",
 ]
 
 [[package]]

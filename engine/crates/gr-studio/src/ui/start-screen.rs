@@ -1,6 +1,7 @@
 //! Project workspace showing the current render and recently opened files.
 
 use crate::localization::text;
+pub use crate::recent_projects::RecentProject;
 use crate::theme;
 use crate::ui::scene_panel;
 use crate::ui::widgets::mode_badge::{BadgeVariant, mode_badge};
@@ -9,14 +10,6 @@ use eframe::egui::{self, RichText, Ui, Vec2};
 use eframe::egui_wgpu::RenderState;
 use gr_core::hardware::TierBudget;
 use std::path::PathBuf;
-
-/// Metadata for a project opened during the current application session.
-#[derive(Clone, Debug)]
-pub struct RecentProject {
-    pub name: String,
-    pub path: PathBuf,
-    pub file_size_mb: Option<f64>,
-}
 
 /// Projects and the active filename presented in the workspace.
 pub struct StartScreenState {
