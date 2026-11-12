@@ -35,6 +35,16 @@ struct Triangle {
     pad: u32,
 }
 
+// Shading normals of the three corners of a triangle; all zero for a flat one.
+struct CornerNormals {
+    n0: vec3f,
+    pad0: f32,
+    n1: vec3f,
+    pad1: f32,
+    n2: vec3f,
+    pad2: f32,
+}
+
 struct Material {
     base_color: vec3f,
     roughness: f32,
@@ -54,6 +64,10 @@ struct Material {
 @group(0) @binding(3) var<storage, read> materials: array<Material>;
 @group(0) @binding(4) var<storage, read_write> accumulation: array<vec4f>;
 @group(0) @binding(5) var<storage, read_write> ray_counter: array<atomic<u32>, 1>;
+// One entry per triangle, in the order of `triangles`, or a single inert entry when the scene is all flat.
+@group(0) @binding(6) var<storage, read> corner_normals: array<CornerNormals>;
+// What the denoiser steers by: the shading normal and the distance of the first hit of each pixel.
+@group(0) @binding(7) var<storage, read_write> features: array<vec4f>;
 
 const PI: f32 = 3.14159265;
 const NO_HIT: u32 = 0xffffffffu;
@@ -76,6 +90,8 @@ fn random() -> f32 {
 struct Hit {
     distance: f32,
     triangle: u32,
+    // Barycentric weights of the second and third corners at the hit.
+    weights: vec2f,
 }
 
 fn safe_inverse(direction: vec3f) -> vec3f {
@@ -95,24 +111,41 @@ fn slab(box_min: vec3f, box_max: vec3f, origin: vec3f, inverse: vec3f, limit: f3
 
 // Moller-Trumbore, two-sided. Returns the distance, or FAR when the triangle is missed.
 fn triangle_distance(slot: u32, origin: vec3f, direction: vec3f, t_min: f32, t_max: f32) -> f32 {
+    return triangle_hit(slot, origin, direction, t_min, t_max).x;
+}
+
+// As `triangle_distance`, with the barycentric weights of the hit in y and z.
+fn triangle_hit(slot: u32, origin: vec3f, direction: vec3f, t_min: f32, t_max: f32) -> vec3f {
     let e1 = triangles[slot].e1;
     let e2 = triangles[slot].e2;
     let p = cross(direction, e2);
     let determinant = dot(e1, p);
-    if abs(determinant) < 1e-12 { return FAR; }
+    if abs(determinant) < 1e-12 { return vec3f(FAR, 0.0, 0.0); }
     let inverse = 1.0 / determinant;
     let t = origin - triangles[slot].v0;
     let bu = dot(t, p) * inverse;
-    if bu < 0.0 || bu > 1.0 { return FAR; }
+    if bu < 0.0 || bu > 1.0 { return vec3f(FAR, 0.0, 0.0); }
     let q = cross(t, e1);
     let bv = dot(direction, q) * inverse;
-    if bv < 0.0 || bu + bv > 1.0 { return FAR; }
+    if bv < 0.0 || bu + bv > 1.0 { return vec3f(FAR, 0.0, 0.0); }
     let distance = dot(e2, q) * inverse;
-    return select(FAR, distance, distance > t_min && distance < t_max);
+    return vec3f(select(FAR, distance, distance > t_min && distance < t_max), bu, bv);
+}
+
+// The normal to shade a hit with: interpolated from the corners of a smooth triangle (a trunk, a branch), or
+// the face normal `face`, which already looks towards the ray.
+fn shading_normal(hit: Hit, face: vec3f) -> vec3f {
+    if hit.triangle >= arrayLength(&corner_normals) { return face; }
+    let corners = corner_normals[hit.triangle];
+    let smooth_normal = corners.n0 * (1.0 - hit.weights.x - hit.weights.y) + corners.n1 * hit.weights.x + corners.n2 * hit.weights.y;
+    // A flat triangle has zero normals at its corners.
+    if dot(smooth_normal, smooth_normal) < 1e-8 { return face; }
+    let unit = normalize(smooth_normal);
+    return select(-unit, unit, dot(unit, face) >= 0.0);
 }
 
 fn closest_hit(origin: vec3f, direction: vec3f, t_min: f32) -> Hit {
-    var hit = Hit(FAR, NO_HIT);
+    var hit = Hit(FAR, NO_HIT, vec2f(0.0));
     if arrayLength(&nodes) == 0u { return hit; }
     let inverse = safe_inverse(direction);
     var stack: array<u32, STACK_SIZE>;
@@ -123,9 +156,10 @@ fn closest_hit(origin: vec3f, direction: vec3f, t_min: f32) -> Hit {
         if count > 0u {
             let first = nodes[index].right_or_first;
             for (var slot = first; slot < first + count; slot++) {
-                let distance = triangle_distance(slot, origin, direction, t_min, hit.distance);
-                if distance < hit.distance {
-                    hit.distance = distance;
+                let candidate = triangle_hit(slot, origin, direction, t_min, hit.distance);
+                if candidate.x < hit.distance {
+                    hit.distance = candidate.x;
+                    hit.weights = candidate.yz;
                     hit.triangle = slot;
                 }
             }
@@ -289,13 +323,17 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
         let hit = closest_hit(origin, direction, 1e-4);
         rays++;
         if hit.triangle == NO_HIT {
+            if bounce == 0u && u.frame == 0u { features[pixel] = vec4f(0.0, 0.0, 0.0, -1.0); }
             radiance += throughput * sky(direction, sees_sun_disk);
             break;
         }
         let triangle = triangles[hit.triangle];
         let material = materials[triangle.material];
-        var normal = normalize(cross(triangle.e1, triangle.e2));
-        if dot(normal, direction) > 0.0 { normal = -normal; }
+        // `face` is the true surface, used to step off it; `normal` is what the light sees.
+        var face = normalize(cross(triangle.e1, triangle.e2));
+        if dot(face, direction) > 0.0 { face = -face; }
+        let normal = shading_normal(hit, face);
+        if bounce == 0u && u.frame == 0u { features[pixel] = vec4f(normal, hit.distance); }
         let position = origin + direction * hit.distance;
         let view = -direction;
         let n_dot_v = max(dot(normal, view), 1e-4);
@@ -306,11 +344,11 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
             let r0 = pow((material.ior - 1.0) / (material.ior + 1.0), 2.0);
             let reflectance = r0 + (1.0 - r0) * pow(1.0 - n_dot_v, 5.0);
             if random() < reflectance {
-                direction = reflect(direction, normal);
-                origin = position + normal * 1e-3;
+                direction = reflect(direction, face);
+                origin = position + face * 1e-3;
             } else {
                 throughput *= material.transmission_tint;
-                origin = position - normal * 1e-3;
+                origin = position - face * 1e-3;
             }
             continue;
         }
@@ -318,7 +356,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
         let alpha = max(material.roughness * material.roughness, 0.004);
         let f0 = mix(vec3f(0.04), material.base_color, material.metallic);
         let diffuse = material.base_color * (1.0 - material.metallic);
-        let surface = position + normal * 1e-3;
+        let surface = position + face * 1e-3;
 
         // Direct sunlight with the full surface response.
         if u.sun_intensity > 0.0 {
@@ -363,6 +401,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
             throughput *= diffuse * (vec3f(1.0) - fresnel_view) / (1.0 - specular_chance);
             direction = cosine_hemisphere(normal);
         }
+        // A shading normal can send the path under the real surface; such a path carries no light.
+        if dot(direction, face) <= 0.0 { break; }
         origin = surface;
         // The sun was already added through the direct-light sample.
         sees_sun_disk = false;

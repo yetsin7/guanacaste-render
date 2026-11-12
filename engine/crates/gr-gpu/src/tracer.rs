@@ -69,6 +69,35 @@ struct ResolveParams {
     pad: f32,
 }
 
+/// Parameters of one denoising pass; the layout of `Params` in `denoise.wgsl`.
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+#[repr(C)]
+struct DenoiseParams {
+    camera_position: [f32; 3],
+    width: u32,
+    camera_right: [f32; 3],
+    height: u32,
+    camera_up: [f32; 3],
+    step: i32,
+    camera_forward: [f32; 3],
+    color_sigma: f32,
+}
+
+/// Shading normals of the corners of one triangle, all zero when it is flat.
+#[derive(Clone, Copy, Default, bytemuck::Pod, bytemuck::Zeroable)]
+#[repr(C)]
+struct GpuCornerNormals {
+    n0: [f32; 3],
+    pad0: f32,
+    n1: [f32; 3],
+    pad1: f32,
+    n2: [f32; 3],
+    pad2: f32,
+}
+
+/// Passes of the denoiser; their taps are 1, 2, 4 and 8 pixels apart.
+const DENOISE_PASSES: usize = 4;
+
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 struct GpuTriangle {
@@ -113,6 +142,27 @@ struct Target {
     display_view: wgpu::TextureView,
     trace_bind_group: wgpu::BindGroup,
     resolve_bind_group: wgpu::BindGroup,
+    /// One per denoising pass: accumulation to scratch, then scratch to scratch.
+    denoise_bind_groups: Vec<wgpu::BindGroup>,
+    /// Resolves the output of the last denoising pass instead of the raw accumulation.
+    resolve_denoised_bind_group: wgpu::BindGroup,
+    /// Bytes of the per-pixel buffers besides the accumulation: the denoiser's guides and its two scratch images.
+    working_bytes: u64,
+}
+
+/// The buffers that do not depend on the image size, as [`Target::new`] binds them.
+struct Fixed<'a> {
+    uniforms: &'a wgpu::Buffer,
+    nodes: &'a wgpu::Buffer,
+    triangles: &'a wgpu::Buffer,
+    materials: &'a wgpu::Buffer,
+    counter: &'a wgpu::Buffer,
+    resolve_params: &'a wgpu::Buffer,
+    corner_normals: &'a wgpu::Buffer,
+    denoise_params: &'a [wgpu::Buffer],
+    trace: &'a wgpu::ComputePipeline,
+    resolve: &'a wgpu::ComputePipeline,
+    denoise: &'a wgpu::ComputePipeline,
 }
 
 pub struct GpuTracer {
@@ -120,6 +170,11 @@ pub struct GpuTracer {
     queue: wgpu::Queue,
     trace_pipeline: wgpu::ComputePipeline,
     resolve_pipeline: wgpu::ComputePipeline,
+    denoise_pipeline: wgpu::ComputePipeline,
+    denoise_params: Vec<wgpu::Buffer>,
+    corner_normals: wgpu::Buffer,
+    /// Whether [`GpuTracer::resolve`] filters the image first.
+    denoise: bool,
     uniform_buffer: wgpu::Buffer,
     resolve_buffer: wgpu::Buffer,
     nodes: wgpu::Buffer,
@@ -230,7 +285,26 @@ impl GpuTracer {
         let nodes = storage("nodes", bytemuck::cast_slice(&flat.nodes), size_of::<FlatNode>())?;
         let triangle_buffer = storage("triangles", bytemuck::cast_slice(&triangles), size_of::<GpuTriangle>())?;
         let material_buffer = storage("materials", bytemuck::cast_slice(&materials), size_of::<GpuMaterial>())?;
-        drop((flat, triangles, materials));
+        // Smooth triangles (trunks, branches, terrain) carry a normal per corner; a scene without any costs one entry.
+        let corner_normals: Vec<GpuCornerNormals> = match &scene.normals {
+            Some(normals) if normals.len() == scene.positions.len() => flat
+                .triangle_order
+                .iter()
+                .map(|&triangle| {
+                    let [a, b, c] = scene.indices[triangle as usize];
+                    GpuCornerNormals {
+                        n0: normals[a as usize].to_array(),
+                        n1: normals[b as usize].to_array(),
+                        n2: normals[c as usize].to_array(),
+                        ..Default::default()
+                    }
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
+        let corner_normal_buffer =
+            storage("corner normals", bytemuck::cast_slice(&corner_normals), size_of::<GpuCornerNormals>())?;
+        drop((flat, triangles, materials, corner_normals));
 
         let counter = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("ray counter"),
@@ -287,12 +361,33 @@ impl GpuTracer {
         };
         let trace_pipeline = pipeline("path tracer", include_str!("../shaders/path_tracer.wgsl"));
         let resolve_pipeline = pipeline("resolve", include_str!("../shaders/resolve.wgsl"));
+        let denoise_pipeline = pipeline("denoise", include_str!("../shaders/denoise.wgsl"));
+        let denoise_params: Vec<wgpu::Buffer> = (0..DENOISE_PASSES)
+            .map(|_| {
+                device.create_buffer(&wgpu::BufferDescriptor {
+                    label: Some("denoise parameters"),
+                    size: size_of::<DenoiseParams>() as u64,
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                    mapped_at_creation: false,
+                })
+            })
+            .collect();
 
         let target = Target::new(
             &device,
-            &trace_pipeline,
-            &resolve_pipeline,
-            [&uniform_buffer, &nodes, &triangle_buffer, &material_buffer, &counter, &resolve_buffer],
+            &Fixed {
+                uniforms: &uniform_buffer,
+                nodes: &nodes,
+                triangles: &triangle_buffer,
+                materials: &material_buffer,
+                counter: &counter,
+                resolve_params: &resolve_buffer,
+                corner_normals: &corner_normal_buffer,
+                denoise_params: &denoise_params,
+                trace: &trace_pipeline,
+                resolve: &resolve_pipeline,
+                denoise: &denoise_pipeline,
+            },
             width,
             height,
         );
@@ -301,6 +396,10 @@ impl GpuTracer {
             queue,
             trace_pipeline,
             resolve_pipeline,
+            denoise_pipeline,
+            denoise_params,
+            corner_normals: corner_normal_buffer,
+            denoise: false,
             uniform_buffer,
             resolve_buffer,
             nodes,
@@ -324,14 +423,40 @@ impl GpuTracer {
         &self.backend
     }
 
-    /// Bytes of video memory holding the hierarchy, triangles and materials.
+    /// Bytes of video memory holding the hierarchy, triangles, shading normals and materials.
     pub fn scene_bytes(&self) -> u64 {
-        self.nodes.size() + self.triangles.size() + self.materials.size()
+        self.nodes.size() + self.triangles.size() + self.materials.size() + self.corner_normals.size()
     }
 
-    /// Bytes of video memory holding the image being accumulated and the picture shown.
+    /// Bytes of video memory holding the image being accumulated, the picture shown and the denoiser's buffers.
     pub fn image_bytes(&self) -> u64 {
-        self.target.accumulation.size() + self.uniforms.width as u64 * self.uniforms.height as u64 * 4
+        self.target.accumulation.size() + self.target.working_bytes + self.uniforms.width as u64 * self.uniforms.height as u64 * 4
+    }
+
+    /// Turns the denoiser on or off for the pictures [`GpuTracer::resolve`] writes from now on. The accumulated
+    /// samples are never altered, so it can be switched at any time. Off by default.
+    pub fn set_denoise(&mut self, enabled: bool) {
+        self.denoise = enabled;
+    }
+
+    pub fn denoise(&self) -> bool {
+        self.denoise
+    }
+
+    fn fixed(&self) -> Fixed<'_> {
+        Fixed {
+            uniforms: &self.uniform_buffer,
+            nodes: &self.nodes,
+            triangles: &self.triangles,
+            materials: &self.materials,
+            counter: &self.counter,
+            resolve_params: &self.resolve_buffer,
+            corner_normals: &self.corner_normals,
+            denoise_params: &self.denoise_params,
+            trace: &self.trace_pipeline,
+            resolve: &self.resolve_pipeline,
+            denoise: &self.denoise_pipeline,
+        }
     }
 
     pub fn width(&self) -> u32 {
@@ -396,14 +521,8 @@ impl GpuTracer {
         }
         self.uniforms.width = width;
         self.uniforms.height = height;
-        self.target = Target::new(
-            &self.device,
-            &self.trace_pipeline,
-            &self.resolve_pipeline,
-            [&self.uniform_buffer, &self.nodes, &self.triangles, &self.materials, &self.counter, &self.resolve_buffer],
-            width,
-            height,
-        );
+        let target = Target::new(&self.device, &self.fixed(), width, height);
+        self.target = target;
         self.frames = 0;
         let mut encoder = self.device.create_command_encoder(&Default::default());
         encoder.clear_buffer(&self.counter, 0, None);
@@ -436,16 +555,46 @@ impl GpuTracer {
         }
     }
 
-    /// Writes the picture for the screen from what has been accumulated so far.
+    /// Writes the picture for the screen from what has been accumulated so far, filtered first when the denoiser
+    /// is on.
     pub fn resolve(&self, exposure: f32) {
-        let params = ResolveParams { width: self.uniforms.width, height: self.uniforms.height, exposure, pad: 0.0 };
+        let (width, height) = (self.uniforms.width, self.uniforms.height);
+        let params = ResolveParams { width, height, exposure, pad: 0.0 };
         self.queue.write_buffer(&self.resolve_buffer, 0, bytemuck::bytes_of(&params));
+        // Noise falls with the square root of the sample count, and so does how different two neighbours may be
+        // and still be averaged: the filter fades out by itself as the image converges.
+        let denoise = self.denoise && self.frames > 0;
+        if denoise {
+            let tolerance = 1.5 / (self.frames as f32).sqrt();
+            for (pass, buffer) in self.denoise_params.iter().enumerate() {
+                let params = DenoiseParams {
+                    camera_position: self.uniforms.camera_position,
+                    width,
+                    camera_right: self.uniforms.camera_right,
+                    height,
+                    camera_up: self.uniforms.camera_up,
+                    step: 1 << pass,
+                    camera_forward: self.uniforms.camera_forward,
+                    // Each pass halves the tolerance, so the wide passes cannot undo the edges the narrow ones kept.
+                    color_sigma: tolerance / (1 << pass) as f32,
+                };
+                self.queue.write_buffer(buffer, 0, bytemuck::bytes_of(&params));
+            }
+        }
         let mut encoder = self.device.create_command_encoder(&Default::default());
         {
             let mut pass = encoder.begin_compute_pass(&Default::default());
+            if denoise {
+                pass.set_pipeline(&self.denoise_pipeline);
+                for bind_group in &self.target.denoise_bind_groups {
+                    pass.set_bind_group(0, bind_group, &[]);
+                    pass.dispatch_workgroups(width.div_ceil(8), height.div_ceil(8), 1);
+                }
+            }
             pass.set_pipeline(&self.resolve_pipeline);
-            pass.set_bind_group(0, &self.target.resolve_bind_group, &[]);
-            pass.dispatch_workgroups(self.uniforms.width.div_ceil(8), self.uniforms.height.div_ceil(8), 1);
+            let source = if denoise { &self.target.resolve_denoised_bind_group } else { &self.target.resolve_bind_group };
+            pass.set_bind_group(0, source, &[]);
+            pass.dispatch_workgroups(width.div_ceil(8), height.div_ceil(8), 1);
         }
         self.queue.submit([encoder.finish()]);
     }
@@ -531,22 +680,20 @@ impl GpuTracer {
 }
 
 impl Target {
-    /// `buffers` are, in order: uniforms, nodes, triangles, materials, ray counter, resolve parameters.
-    fn new(
-        device: &wgpu::Device,
-        trace: &wgpu::ComputePipeline,
-        resolve: &wgpu::ComputePipeline,
-        buffers: [&wgpu::Buffer; 6],
-        width: u32,
-        height: u32,
-    ) -> Target {
-        let [uniforms, nodes, triangles, materials, counter, resolve_params] = buffers;
-        let accumulation = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("accumulation"),
-            size: width as u64 * height as u64 * 16,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
+    fn new(device: &wgpu::Device, fixed: &Fixed<'_>, width: u32, height: u32) -> Target {
+        let pixel_bytes = width as u64 * height as u64 * 16;
+        let per_pixel = |label: &str, readable: bool| {
+            let copies = if readable { wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST } else { wgpu::BufferUsages::empty() };
+            device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(label),
+                size: pixel_bytes,
+                usage: wgpu::BufferUsages::STORAGE | copies,
+                mapped_at_creation: false,
+            })
+        };
+        let accumulation = per_pixel("accumulation", true);
+        let features = per_pixel("denoiser guides", false);
+        let scratch = [per_pixel("denoiser scratch", false), per_pixel("denoiser scratch", false)];
         // The shader stores sRGB-encoded bytes and the window samples them as they are (egui composes in gamma
         // space), so both views keep the plain format. Each view declares the one use it has.
         let display = device.create_texture(&wgpu::TextureDescriptor {
@@ -573,25 +720,55 @@ impl Target {
         }
         let trace_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("path tracer"),
-            layout: &trace.get_bind_group_layout(0),
+            layout: &fixed.trace.get_bind_group_layout(0),
             entries: &[
-                entry(0, uniforms),
-                entry(1, nodes),
-                entry(2, triangles),
-                entry(3, materials),
+                entry(0, fixed.uniforms),
+                entry(1, fixed.nodes),
+                entry(2, fixed.triangles),
+                entry(3, fixed.materials),
                 entry(4, &accumulation),
-                entry(5, counter),
+                entry(5, fixed.counter),
+                entry(6, fixed.corner_normals),
+                entry(7, &features),
             ],
         });
-        let resolve_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("resolve"),
-            layout: &resolve.get_bind_group_layout(0),
-            entries: &[
-                entry(0, resolve_params),
-                entry(1, &accumulation),
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&storage_view) },
-            ],
-        });
-        Target { accumulation, display, display_view, trace_bind_group, resolve_bind_group }
+        let resolve_from = |source: &wgpu::Buffer| {
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("resolve"),
+                layout: &fixed.resolve.get_bind_group_layout(0),
+                entries: &[
+                    entry(0, fixed.resolve_params),
+                    entry(1, source),
+                    wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&storage_view) },
+                ],
+            })
+        };
+        let resolve_bind_group = resolve_from(&accumulation);
+
+        // The first pass reads the accumulation; after it the two scratch images take turns.
+        let denoise_layout = fixed.denoise.get_bind_group_layout(0);
+        let denoise_bind_groups: Vec<wgpu::BindGroup> = (0..fixed.denoise_params.len())
+            .map(|pass| {
+                let source = if pass == 0 { &accumulation } else { &scratch[(pass + 1) % 2] };
+                device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("denoise"),
+                    layout: &denoise_layout,
+                    entries: &[entry(0, &fixed.denoise_params[pass]), entry(1, source), entry(2, &features), entry(3, &scratch[pass % 2])],
+                })
+            })
+            .collect();
+        let last = &scratch[(fixed.denoise_params.len() + 1) % 2];
+        let resolve_denoised_bind_group = resolve_from(last);
+
+        Target {
+            accumulation,
+            display,
+            display_view,
+            trace_bind_group,
+            resolve_bind_group,
+            denoise_bind_groups,
+            resolve_denoised_bind_group,
+            working_bytes: pixel_bytes * 3,
+        }
     }
 }

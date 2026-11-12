@@ -29,3 +29,7 @@ path = "src/gpu.rs"
 [[bin]]
 name = "mesh"
 path = "src/mesh.rs"
+
+[[bin]]
+name = "denoise"
+path = "src/denoise.rs"

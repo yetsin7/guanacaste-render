@@ -63,3 +63,39 @@ Cómo leerlo:
 
 El motor Rust se ejecuta hoy desde la línea de comandos sobre escenas exportadas. **La aplicación instalada sigue
 renderizando con el motor C# en CPU**; nada de lo anterior es visible aún desde la interfaz.
+
+## 4. Normales suaves y eliminación de ruido en GPU (2026-11-12)
+
+**Normales suaves.** El trazador interpola ahora las normales por vértice que traen troncos, ramas, palmas y
+terreno, en vez de sombrearlos facetados. Se reutilizan las coordenadas baricéntricas que ya calcula la prueba de
+intersección, así que no cuesta tiempo medible: RTX 4050 2.37 ms/muestra en la casa de ejemplo (antes 2.40),
+Intel UHD 13.60 ms (antes 13.62). El primer impacto sigue coincidiendo con el BVH de CPU (0 y 1 píxel de 921 600).
+
+**Eliminación de ruido** (`shaders/denoise.wgsl`): filtro À-trous guiado por la normal y la distancia del primer
+impacto, cuatro pasadas (61 × 61 píxeles). Desactivado por defecto; se activa con `GpuTracer::set_denoise`.
+No altera las muestras acumuladas, así que puede encenderse y apagarse en cualquier momento.
+
+Medido con `gr-bench --bin denoise`, 1280 × 720, RTX 4050. PSNR de la imagen de 8 bits mostrada frente a una
+referencia de 1024 muestras (más alto es más cercano):
+
+| Escena | Muestras | Sin filtrar | Filtrada | Ganancia | Coste |
+|---|---:|---:|---:|---:|---:|
+| house-exterior | 1 | 19.8 dB | 31.4 dB | +11.6 dB | 2.1 ms |
+| house-exterior | 4 | 26.0 dB | 34.4 dB | +8.4 dB | 2.1 ms |
+| house-exterior | 16 | 32.2 dB | 38.4 dB | +6.2 dB | 2.1 ms |
+| house-exterior | 64 | 38.4 dB | 42.3 dB | +3.9 dB | 2.1 ms |
+| garden | 4 | 30.1 dB | 37.0 dB | +6.9 dB | 2.1 ms |
+| garden | 64 | 42.2 dB | 41.9 dB | −0.3 dB | 2.1 ms |
+| modern-house | 4 | 28.8 dB | 33.3 dB | +4.5 dB | 2.1 ms |
+| modern-house | 64 | 41.1 dB | 41.0 dB | −0.1 dB | 2.0 ms |
+
+Cómo leerlo:
+
+- 4 muestras filtradas se parecen a la referencia más que 16 sin filtrar: es lo que hace usable la navegación.
+- En escenas con vegetación deja de ayudar hacia 64 muestras (−0.3 dB): suaviza el detalle fino de las hojas.
+  **Uso recomendado:** encenderlo mientras la cámara se mueve y durante las primeras ~32 muestras, y apagarlo después.
+- Inspección visual (`artifacts/denoise/`): bordes de muros, marcos y sombras nítidos; el interior de una palma
+  pierde algo de definición a 4 muestras. No hay halos ni manchas de color.
+- Coste fijo de unos 2 ms por imagen mostrada, independiente del número de triángulos. Memoria de vídeo: tres
+  búferes más del tamaño de la imagen (42 MB a 1280 × 720).
+- **Aún no está conectado al estudio**: `gr-studio` lo lleva Codex; la llamada es una línea en `viewport.rs`.
