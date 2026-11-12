@@ -33,7 +33,10 @@ impl TerrainSurface {
             }
         }
         for &point in points {
-            anchors.retain(|existing| Point2::new(existing.x, existing.y).distance_to(Point2::new(point.x, point.y)) >= 0.01);
+            anchors.retain(|existing| {
+                Point2::new(existing.x, existing.y).distance_to(Point2::new(point.x, point.y))
+                    >= 0.01
+            });
             anchors.push(point);
         }
         let mut surface = Self {
@@ -45,8 +48,14 @@ impl TerrainSurface {
             scale: 1.0,
             minimum: slab.elevation_offset,
         };
-        if anchors.len() < 3 || anchors.iter().all(|anchor| (anchor.elevation - anchors[0].elevation).abs() < 1e-9) {
-            surface.constant = anchors.first().map_or(surface.constant, |anchor| anchor.elevation);
+        if anchors.len() < 3
+            || anchors
+                .iter()
+                .all(|anchor| (anchor.elevation - anchors[0].elevation).abs() < 1e-9)
+        {
+            surface.constant = anchors
+                .first()
+                .map_or(surface.constant, |anchor| anchor.elevation);
             surface.minimum = surface.constant;
             return surface;
         }
@@ -57,7 +66,11 @@ impl TerrainSurface {
         );
         surface.scale = anchors
             .iter()
-            .map(|anchor| (anchor.x - surface.center.0).abs().max((anchor.y - surface.center.1).abs()))
+            .map(|anchor| {
+                (anchor.x - surface.center.0)
+                    .abs()
+                    .max((anchor.y - surface.center.1).abs())
+            })
             .fold(0.0, f64::max)
             .max(1e-6);
         surface.centers = anchors
@@ -74,7 +87,8 @@ impl TerrainSurface {
         let mut values = vec![0.0; size];
         for row in 0..count {
             for column in 0..count {
-                matrix[row * size + column] = kernel(surface.centers[row].distance(surface.centers[column]));
+                matrix[row * size + column] =
+                    kernel(surface.centers[row].distance(surface.centers[column]));
             }
             matrix[row * size + row] += 1e-9;
             matrix[row * size + count] = 1.0;
@@ -86,18 +100,24 @@ impl TerrainSurface {
             values[row] = anchors[row].elevation;
         }
         let Some(solution) = solve(matrix, values) else {
-            surface.constant = anchors.iter().map(|anchor| anchor.elevation).sum::<f64>() / count as f64;
+            surface.constant =
+                anchors.iter().map(|anchor| anchor.elevation).sum::<f64>() / count as f64;
             return surface;
         };
         surface.weights = Some(solution[..count].to_vec());
         surface.affine.copy_from_slice(&solution[count..]);
-        surface.minimum = anchors.iter().map(|anchor| anchor.elevation).fold(f64::MAX, f64::min);
+        surface.minimum = anchors
+            .iter()
+            .map(|anchor| anchor.elevation)
+            .fold(f64::MAX, f64::min);
         surface
     }
 
     /// Evaluates the terrain elevation at a world-plan coordinate.
     pub fn elevation_at(&self, point: Point2) -> f64 {
-        let Some(weights) = &self.weights else { return self.constant };
+        let Some(weights) = &self.weights else {
+            return self.constant;
+        };
         let u = ((point.x - self.center.0) / self.scale) as f32;
         let v = ((point.y - self.center.1) / self.scale) as f32;
         let mut sum = self.affine[0] + self.affine[1] * u as f64 + self.affine[2] * v as f64;
@@ -110,7 +130,9 @@ impl TerrainSurface {
 
     /// Evaluates the analytic upward normal for smooth shading between survey points.
     pub fn normal_at(&self, point: Point2) -> Vec3 {
-        let Some(weights) = &self.weights else { return Vec3::Z };
+        let Some(weights) = &self.weights else {
+            return Vec3::Z;
+        };
         let u = (point.x - self.center.0) / self.scale;
         let v = (point.y - self.center.1) / self.scale;
         let (mut gradient_x, mut gradient_y) = (self.affine[1], self.affine[2]);
@@ -124,7 +146,12 @@ impl TerrainSurface {
             gradient_x += factor * dx;
             gradient_y += factor * dy;
         }
-        Vec3::new((-gradient_x / self.scale) as f32, (-gradient_y / self.scale) as f32, 1.0).normalize()
+        Vec3::new(
+            (-gradient_x / self.scale) as f32,
+            (-gradient_y / self.scale) as f32,
+            1.0,
+        )
+        .normalize()
     }
 }
 
@@ -175,5 +202,8 @@ fn solve(mut matrix: Vec<f64>, mut values: Vec<f64>) -> Option<Vec<f64>> {
         }
         result[row] = sum / matrix[row * size + row];
     }
-    result.iter().all(|value| value.is_finite()).then_some(result)
+    result
+        .iter()
+        .all(|value| value.is_finite())
+        .then_some(result)
 }

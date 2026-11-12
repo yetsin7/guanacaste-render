@@ -1,19 +1,40 @@
 //! Service-point geometry that does not require the plumbing-system analysis.
 
+use super::household_size::household_size;
 use super::plumbing_routing::SystemLayout;
 use super::plumbing_tank::add_tank;
-use super::household_size::household_size;
 use super::scene_mesh::{SceneMesh, SurfaceKind};
 use crate::document::{Document, PlumbingPoint, plumbing_point_kind as kind, plumbing_system_kind};
 use glam::Vec3;
 
 /// Adds a meter or outlet; vents are emitted by system analysis, and unported point kinds return false.
-pub(super) fn add_service_point(mesh: &mut SceneMesh, document: &Document, point: &PlumbingPoint, level: f64) -> bool {
-    let at = Vec3::new(point.position.x as f32, point.position.y as f32, level as f32);
+pub(super) fn add_service_point(
+    mesh: &mut SceneMesh,
+    document: &Document,
+    point: &PlumbingPoint,
+    level: f64,
+) -> bool {
+    let at = Vec3::new(
+        point.position.x as f32,
+        point.position.y as f32,
+        level as f32,
+    );
     match point.kind {
         kind::WATER_METER => {
-            add_tube(mesh, at - Vec3::Z * 0.25, at + Vec3::Z * 0.015, 0.17, SurfaceKind::Structure);
-            add_tube(mesh, at + Vec3::Z * 0.015, at + Vec3::Z * 0.025, 0.15, SurfaceKind::Metal);
+            add_tube(
+                mesh,
+                at - Vec3::Z * 0.25,
+                at + Vec3::Z * 0.015,
+                0.17,
+                SurfaceKind::Structure,
+            );
+            add_tube(
+                mesh,
+                at + Vec3::Z * 0.015,
+                at + Vec3::Z * 0.025,
+                0.15,
+                SurfaceKind::Metal,
+            );
         }
         kind::SEWER_OUTLET | kind::STORM_OUTLET => {
             let surface = if point.kind == kind::STORM_OUTLET {
@@ -21,10 +42,18 @@ pub(super) fn add_service_point(mesh: &mut SceneMesh, document: &Document, point
             } else {
                 SurfaceKind::PipeDrain
             };
-            add_tube(mesh, at - Vec3::Z * 0.02, at + Vec3::Z * 0.012, 0.07, surface);
+            add_tube(
+                mesh,
+                at - Vec3::Z * 0.02,
+                at + Vec3::Z * 0.012,
+                0.07,
+                surface,
+            );
         }
         kind::VENT_STACK | kind::SEPTIC_TANK => {}
-        kind::CISTERN | kind::ELEVATED_TANK => return add_tank(mesh, point, level, household_size(document, point)),
+        kind::CISTERN | kind::ELEVATED_TANK => {
+            return add_tank(mesh, point, level, household_size(document, point));
+        }
         _ => return false,
     }
     true
@@ -64,7 +93,13 @@ pub(super) fn add_system(mesh: &mut SceneMesh, layout: &SystemLayout) {
         for run in &layout.runs {
             if run.from.distance_to(run.to) < 1e-9 && run.to_z > run.from_z {
                 let top = Vec3::new(run.to.x as f32, run.to.y as f32, run.to_z as f32);
-                add_tube(mesh, top - Vec3::Z * 0.02, top + Vec3::Z * 0.03, 0.016, SurfaceKind::Metal);
+                add_tube(
+                    mesh,
+                    top - Vec3::Z * 0.02,
+                    top + Vec3::Z * 0.03,
+                    0.016,
+                    SurfaceKind::Metal,
+                );
             }
         }
     }
@@ -76,14 +111,25 @@ fn add_tube(mesh: &mut SceneMesh, a: Vec3, b: Vec3, radius: f32, surface: Surfac
 }
 
 /// Extrudes a closed polygonal tube with the requested number of sides.
-pub(super) fn add_tube_sides(mesh: &mut SceneMesh, a: Vec3, b: Vec3, radius: f32, surface: SurfaceKind, sides: usize) {
+pub(super) fn add_tube_sides(
+    mesh: &mut SceneMesh,
+    a: Vec3,
+    b: Vec3,
+    radius: f32,
+    surface: SurfaceKind,
+    sides: usize,
+) {
     let axis = b - a;
     let length = axis.length();
     if length < 1e-5 || radius <= 0.0 {
         return;
     }
     let direction = axis / length;
-    let reference_axis = if direction.z.abs() < 0.9 { Vec3::Z } else { Vec3::X };
+    let reference_axis = if direction.z.abs() < 0.9 {
+        Vec3::Z
+    } else {
+        Vec3::X
+    };
     let u = reference_axis.cross(direction).normalize();
     let v = direction.cross(u);
     let mut ring_a = vec![Vec3::ZERO; sides];
@@ -96,7 +142,13 @@ pub(super) fn add_tube_sides(mesh: &mut SceneMesh, a: Vec3, b: Vec3, radius: f32
     }
     for index in 0..sides {
         let next = (index + 1) % sides;
-        mesh.add_quad(ring_a[index], ring_a[next], ring_b[next], ring_b[index], surface);
+        mesh.add_quad(
+            ring_a[index],
+            ring_a[next],
+            ring_b[next],
+            ring_b[index],
+            surface,
+        );
     }
     for index in 1..sides - 1 {
         mesh.add_triangle(ring_b[0], ring_b[index], ring_b[index + 1], surface);

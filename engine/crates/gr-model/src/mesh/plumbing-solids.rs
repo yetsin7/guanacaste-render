@@ -20,8 +20,18 @@ pub(super) fn add_block(
     elevation: (f32, f32),
     surface: SurfaceKind,
 ) {
-    let point = |a, b, z| Vec3::new(frame.origin.x, frame.origin.y, 0.0) + frame.direction * a + frame.normal * b + Vec3::new(0.0, 0.0, z);
-    let corners = [(along.0, across.0), (along.1, across.0), (along.1, across.1), (along.0, across.1)];
+    let point = |a, b, z| {
+        Vec3::new(frame.origin.x, frame.origin.y, 0.0)
+            + frame.direction * a
+            + frame.normal * b
+            + Vec3::new(0.0, 0.0, z)
+    };
+    let corners = [
+        (along.0, across.0),
+        (along.1, across.0),
+        (along.1, across.1),
+        (along.0, across.1),
+    ];
     for index in 0..4 {
         let (aa, ab) = corners[index];
         let (ba, bb) = corners[(index + 1) % 4];

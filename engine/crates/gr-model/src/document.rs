@@ -7,10 +7,10 @@
 
 #[path = "component-shapes.rs"]
 pub mod component_shape;
-#[path = "electrical-device.rs"]
-mod electrical_device;
 #[path = "electrical-circuit.rs"]
 mod electrical_circuit;
+#[path = "electrical-device.rs"]
+mod electrical_device;
 #[path = "floor-slab.rs"]
 mod floor_slab;
 #[path = "plumbing-point.rs"]
@@ -20,10 +20,12 @@ mod room;
 #[path = "structural-element.rs"]
 mod structural_element;
 
-pub use floor_slab::{FloorSlab, TopographyPoint, floor};
-pub use electrical_device::{ElectricalDevice, electrical_device_kind};
 pub use electrical_circuit::ElectricalCircuit;
-pub use plumbing_point::{PlumbingPoint, PlumbingSystem, plumbing_point_kind, plumbing_system_kind};
+pub use electrical_device::{ElectricalDevice, electrical_device_kind};
+pub use floor_slab::{FloorSlab, TopographyPoint, floor};
+pub use plumbing_point::{
+    PlumbingPoint, PlumbingSystem, plumbing_point_kind, plumbing_system_kind,
+};
 pub use room::Room;
 pub use structural_element::{StructuralElement, element_kind, element_style};
 
@@ -79,7 +81,8 @@ impl<'de> Deserialize<'de> for Id {
     /// Rejects malformed identifiers while reading project JSON.
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Id, D::Error> {
         let text = <&str>::deserialize(deserializer)?;
-        Id::parse(text).ok_or_else(|| serde::de::Error::custom("an element identifier is not a GUID"))
+        Id::parse(text)
+            .ok_or_else(|| serde::de::Error::custom("an element identifier is not a GUID"))
     }
 }
 
@@ -130,7 +133,10 @@ impl Wall {
     /// Unit vector from the start towards the end.
     pub fn direction(&self) -> (f64, f64) {
         let length = self.length();
-        ((self.end.x - self.start.x) / length, (self.end.y - self.start.y) / length)
+        (
+            (self.end.x - self.start.x) / length,
+            (self.end.y - self.start.y) / length,
+        )
     }
 
     /// Unit normal on the left of the start-to-end direction.
@@ -141,19 +147,26 @@ impl Wall {
 
     /// The profile when it has at least two points, which is when it shapes the top.
     pub fn shaping_profile(&self) -> Option<&[Point2]> {
-        self.top_profile.as_deref().filter(|profile| profile.len() > 1)
+        self.top_profile
+            .as_deref()
+            .filter(|profile| profile.len() > 1)
     }
 
     /// Height of the top at a distance along the wall, following its profile and never above its height.
     pub fn top_height_at(&self, along: f64) -> f64 {
-        let Some(profile) = self.shaping_profile() else { return self.height };
+        let Some(profile) = self.shaping_profile() else {
+            return self.height;
+        };
         let on_profile = if along <= profile[0].x {
             profile[0].y
         } else {
             profile
                 .windows(2)
                 .find(|pair| along <= pair[1].x)
-                .map(|pair| pair[0].y + (pair[1].y - pair[0].y) * (along - pair[0].x) / (pair[1].x - pair[0].x))
+                .map(|pair| {
+                    pair[0].y
+                        + (pair[1].y - pair[0].y) * (along - pair[0].x) / (pair[1].x - pair[0].x)
+                })
                 .unwrap_or(profile[profile.len() - 1].y)
         };
         self.height.min(on_profile)
@@ -355,7 +368,10 @@ impl Document {
         !self.render_materials.is_empty()
             || self.render_setup.is_some()
             || !self.render_scenes.is_empty()
-            || self.extensions.keys().any(|key| key.starts_with("render.") && key != "render.modelsync")
+            || self
+                .extensions
+                .keys()
+                .any(|key| key.starts_with("render.") && key != "render.modelsync")
     }
 
     /// Reads and verifies a native project from disk.
@@ -371,7 +387,9 @@ impl Document {
     /// Accepts only project containers whose header and schema agree.
     fn from_container(container: Container) -> Result<Document, DocumentError> {
         if container.kind != DocumentKind::Project {
-            return Err(DocumentError::Unsupported("the file is a family or a template, not a project".into()));
+            return Err(DocumentError::Unsupported(
+                "the file is a family or a template, not a project".into(),
+            ));
         }
         if container.schema_version != SCHEMA_VERSION {
             return Err(DocumentError::Unsupported(format!(
@@ -379,9 +397,12 @@ impl Document {
                 container.schema_version
             )));
         }
-        let document: Document = serde_json::from_slice(&container.json).map_err(DocumentError::Json)?;
+        let document: Document =
+            serde_json::from_slice(&container.json).map_err(DocumentError::Json)?;
         if document.schema_version != container.schema_version {
-            return Err(DocumentError::Unsupported("the header and the contents disagree on the schema".into()));
+            return Err(DocumentError::Unsupported(
+                "the header and the contents disagree on the schema".into(),
+            ));
         }
         Ok(document)
     }

@@ -72,9 +72,13 @@ impl Container {
 
     pub fn parse(bytes: &[u8]) -> Result<Container, ContainerError> {
         if bytes.len() < HEADER_BYTES || &bytes[..8] != SIGNATURE {
-            return Err(ContainerError::Unsupported("the G3DNATV1 signature is missing"));
+            return Err(ContainerError::Unsupported(
+                "the G3DNATV1 signature is missing",
+            ));
         }
-        let i32_at = |at: usize| i32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]);
+        let i32_at = |at: usize| {
+            i32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]])
+        };
         let i64_at = |at: usize| {
             let mut value = [0u8; 8];
             value.copy_from_slice(&bytes[at..at + 8]);
@@ -108,12 +112,20 @@ impl Container {
             .read_to_end(&mut json)
             .map_err(|_| ContainerError::Damaged("the compressed payload is invalid"))?;
         if json.len() as i64 != uncompressed {
-            return Err(ContainerError::Damaged("the decompressed length does not match the header"));
+            return Err(ContainerError::Damaged(
+                "the decompressed length does not match the header",
+            ));
         }
         if Sha256::digest(&json).as_slice() != expected_hash {
-            return Err(ContainerError::Damaged("the integrity checksum does not match"));
+            return Err(ContainerError::Damaged(
+                "the integrity checksum does not match",
+            ));
         }
-        Ok(Container { kind, schema_version, json })
+        Ok(Container {
+            kind,
+            schema_version,
+            json,
+        })
     }
 }
 
@@ -133,10 +145,21 @@ mod tests {
 
     #[test]
     fn refuses_foreign_truncated_and_altered_files() {
-        assert!(matches!(Container::parse(b"PK\x03\x04"), Err(ContainerError::Unsupported(_))));
-        assert!(matches!(Container::parse(&HOUSE[..HOUSE.len() - 40]), Err(ContainerError::Damaged(_))));
+        assert!(matches!(
+            Container::parse(b"PK\x03\x04"),
+            Err(ContainerError::Unsupported(_))
+        ));
+        assert!(matches!(
+            Container::parse(&HOUSE[..HOUSE.len() - 40]),
+            Err(ContainerError::Damaged(_))
+        ));
         let mut altered = HOUSE.to_vec();
         altered[60] ^= 0x01; // one bit of the stored checksum
-        assert!(matches!(Container::parse(&altered), Err(ContainerError::Damaged("the integrity checksum does not match"))));
+        assert!(matches!(
+            Container::parse(&altered),
+            Err(ContainerError::Damaged(
+                "the integrity checksum does not match"
+            ))
+        ));
     }
 }

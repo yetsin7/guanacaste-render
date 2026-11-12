@@ -54,12 +54,20 @@ pub fn section_outline(shape: i32, center: Point2, width: f64, depth: f64) -> Ve
         ],
         _ => vec![(-hw, -hd), (hw, -hd), (hw, hd), (-hw, hd)],
     };
-    local.into_iter().map(|(x, y)| Point2::new(center.x + x, center.y + y)).collect()
+    local
+        .into_iter()
+        .map(|(x, y)| Point2::new(center.x + x, center.y + y))
+        .collect()
 }
 
 /// A square or round footprint of the given size around a point.
 pub fn point_footprint(center: Point2, size: f64, round: bool) -> Vec<Point2> {
-    section_outline(if round { column_shape::ROUND } else { 0 }, center, size, size)
+    section_outline(
+        if round { column_shape::ROUND } else { 0 },
+        center,
+        size,
+        size,
+    )
 }
 
 /// A rectangle along the segment `from`..`to`, `width` wide, its centreline shifted `lateral` to the left.
@@ -77,7 +85,10 @@ pub fn strip(from: Point2, to: Point2, lateral: f64, width: f64) -> Vec<Point2> 
 
 /// The point a fraction of the way from one point to another.
 pub fn lerp(from: Point2, to: Point2, fraction: f64) -> Point2 {
-    Point2::new(from.x + (to.x - from.x) * fraction, from.y + (to.y - from.y) * fraction)
+    Point2::new(
+        from.x + (to.x - from.x) * fraction,
+        from.y + (to.y - from.y) * fraction,
+    )
 }
 
 #[cfg(test)]
@@ -90,7 +101,10 @@ mod tests {
     fn every_section_is_counter_clockwise_and_fits_its_extent() {
         for shape in 0..=4 {
             let outline = section_outline(shape, Point2::new(5.0, -3.0), 0.6, 0.4);
-            assert!(signed_double_area(&outline) > 0.0, "shape {shape} is not counter-clockwise");
+            assert!(
+                signed_double_area(&outline) > 0.0,
+                "shape {shape} is not counter-clockwise"
+            );
             assert!(
                 outline
                     .iter()

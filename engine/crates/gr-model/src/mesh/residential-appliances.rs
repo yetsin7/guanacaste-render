@@ -7,11 +7,17 @@ use crate::document::component_shape as catalog;
 use std::f64::consts::PI;
 
 /// Selects the appliance recipes represented by catalog numbers in project files.
-pub(super) fn parts(geometry: &ComponentGeometry<'_>, component_shape: i32) -> Option<Vec<ElementPart>> {
+pub(super) fn parts(
+    geometry: &ComponentGeometry<'_>,
+    component_shape: i32,
+) -> Option<Vec<ElementPart>> {
     match component_shape {
         catalog::REFRIGERATOR => Some(refrigerator(geometry)),
         catalog::RANGE => Some(range(geometry)),
-        catalog::DISHWASHER | catalog::WASHER_DRYER | catalog::CLOTHES_DRYER | catalog::MICROWAVE => Some(appliance(
+        catalog::DISHWASHER
+        | catalog::WASHER_DRYER
+        | catalog::CLOTHES_DRYER
+        | catalog::MICROWAVE => Some(appliance(
             geometry,
             component_shape == catalog::WASHER_DRYER || component_shape == catalog::CLOTHES_DRYER,
         )),
@@ -27,21 +33,36 @@ fn range_hood(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     vec![
         geometry.block((0.0, 0.0), (width, depth), (0.0, 0.06), Surface::Metal),
-        geometry.block((0.0, depth * 0.12), (width * 0.72, depth * 0.76), (0.06, 0.20), Surface::Metal),
+        geometry.block(
+            (0.0, depth * 0.12),
+            (width * 0.72, depth * 0.76),
+            (0.06, 0.20),
+            Surface::Metal,
+        ),
         geometry.block(
             (0.0, depth / 2.0 - 0.14),
             (0.30_f64.min(width * 0.4), 0.26),
             (0.20, height),
             Surface::Metal,
         ),
-        geometry.block((0.0, 0.0), (width * 0.9, depth * 0.8), (-0.004, 0.0), Surface::OpeningFrame),
+        geometry.block(
+            (0.0, 0.0),
+            (width * 0.9, depth * 0.8),
+            (-0.004, 0.0),
+            Surface::OpeningFrame,
+        ),
     ]
 }
 
 /// Builds a refrigerator body, split doors, and projecting handles.
 fn refrigerator(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
-    let mut parts = vec![geometry.block((0.0, 0.0), (width, depth), (0.0, height), Surface::OpeningFrame)];
+    let mut parts = vec![geometry.block(
+        (0.0, 0.0),
+        (width, depth),
+        (0.0, height),
+        Surface::OpeningFrame,
+    )];
     for side in [-1.0, 1.0] {
         parts.push(geometry.block(
             (side * width * 0.25, -depth / 2.0 - 0.012),
@@ -63,8 +84,18 @@ fn refrigerator(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 fn range(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let mut parts = vec![
-        geometry.block((0.0, 0.0), (width, depth), (0.0, height * 0.82), Surface::OpeningFrame),
-        geometry.block((0.0, 0.0), (width, depth), (height * 0.82, height * 0.87), Surface::Structure),
+        geometry.block(
+            (0.0, 0.0),
+            (width, depth),
+            (0.0, height * 0.82),
+            Surface::OpeningFrame,
+        ),
+        geometry.block(
+            (0.0, 0.0),
+            (width, depth),
+            (height * 0.82, height * 0.87),
+            Surface::Structure,
+        ),
         geometry.block(
             (0.0, depth * 0.42),
             (width, depth * 0.14),
@@ -74,7 +105,12 @@ fn range(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     ];
     for x in [-width * 0.24, width * 0.24] {
         for y in [-depth * 0.24, depth * 0.24] {
-            parts.push(geometry.round((x, y), width.min(depth) * 0.22, (height * 0.87, height * 0.89), Surface::Structure));
+            parts.push(geometry.round(
+                (x, y),
+                width.min(depth) * 0.22,
+                (height * 0.87, height * 0.89),
+                Surface::Structure,
+            ));
         }
     }
     parts
@@ -84,7 +120,12 @@ fn range(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 fn appliance(geometry: &ComponentGeometry<'_>, laundry: bool) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let mut parts = vec![
-        geometry.block((0.0, 0.0), (width, depth), (0.0, height), Surface::OpeningFrame),
+        geometry.block(
+            (0.0, 0.0),
+            (width, depth),
+            (0.0, height),
+            Surface::OpeningFrame,
+        ),
         geometry.block(
             (0.0, -depth / 2.0 - 0.012),
             (width * 0.86, 0.024),
@@ -108,8 +149,18 @@ fn kitchen_sink(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let toe = 0.10_f64.min(height / 6.0);
     let mut parts = vec![
-        geometry.block((0.0, 0.0), (width, depth), (toe, height - 0.24), Surface::DoorLeaf),
-        geometry.block((0.0, depth * 0.08), (width * 0.88, depth * 0.82), (0.0, toe), Surface::Structure),
+        geometry.block(
+            (0.0, 0.0),
+            (width, depth),
+            (toe, height - 0.24),
+            Surface::DoorLeaf,
+        ),
+        geometry.block(
+            (0.0, depth * 0.08),
+            (width * 0.88, depth * 0.82),
+            (0.0, toe),
+            Surface::Structure,
+        ),
     ];
     for side in [-1.0, 1.0] {
         parts.push(geometry.block(
@@ -155,7 +206,10 @@ fn kitchen_sink(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 
 /// Builds the heater's legs, tank, cap, controls, and pipe connections.
 fn water_heater(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
-    let (diameter, height) = (geometry.width().min(geometry.depth()), geometry.element.height);
+    let (diameter, height) = (
+        geometry.width().min(geometry.depth()),
+        geometry.element.height,
+    );
     let mut parts = Vec::new();
     for angle in [PI / 2.0, PI * 7.0 / 6.0, PI * 11.0 / 6.0] {
         parts.push(geometry.block(
@@ -165,11 +219,31 @@ fn water_heater(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             Surface::Metal,
         ));
     }
-    parts.push(geometry.round((0.0, 0.0), diameter, (0.06, height - 0.06), Surface::Ceramic));
-    parts.push(geometry.round((0.0, 0.0), diameter * 0.92, (height - 0.06, height), Surface::Metal));
-    parts.push(geometry.block((0.0, -diameter / 2.0 + 0.01), (0.12, 0.05), (0.22, 0.38), Surface::OpeningFrame));
+    parts.push(geometry.round(
+        (0.0, 0.0),
+        diameter,
+        (0.06, height - 0.06),
+        Surface::Ceramic,
+    ));
+    parts.push(geometry.round(
+        (0.0, 0.0),
+        diameter * 0.92,
+        (height - 0.06, height),
+        Surface::Metal,
+    ));
+    parts.push(geometry.block(
+        (0.0, -diameter / 2.0 + 0.01),
+        (0.12, 0.05),
+        (0.22, 0.38),
+        Surface::OpeningFrame,
+    ));
     for side in [-1.0, 1.0] {
-        parts.push(geometry.round((side * diameter * 0.2, 0.0), 0.025, (height, height + 0.30), Surface::Metal));
+        parts.push(geometry.round(
+            (side * diameter * 0.2, 0.0),
+            0.025,
+            (height, height + 0.30),
+            Surface::Metal,
+        ));
     }
     parts
 }

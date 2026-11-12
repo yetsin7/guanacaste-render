@@ -90,7 +90,9 @@ pub struct StructuralElement {
 
 impl StructuralElement {
     /// Kinds without a solid of their own: drafting marks, and the openings and shafts that only cut slabs.
-    const WITHOUT_SOLID: [i32; 21] = [7, 8, 9, 10, 19, 20, 21, 22, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43];
+    const WITHOUT_SOLID: [i32; 21] = [
+        7, 8, 9, 10, 19, 20, 21, 22, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+    ];
     /// Kinds whose footprint is the rectangle between their two points rather than a strip along them.
     const RECTANGULAR: [i32; 11] = [8, 9, 11, 18, 22, 29, 31, 32, 34, 35, 54];
 
@@ -128,17 +130,31 @@ impl StructuralElement {
     /// around a point element, and otherwise a strip as wide as the element along its two points.
     pub fn footprint(&self) -> Vec<Point2> {
         let half = self.width / 2.0;
-        let half_depth = (if self.depth > 0.0 { self.depth } else { self.width }) / 2.0;
+        let half_depth = (if self.depth > 0.0 {
+            self.depth
+        } else {
+            self.width
+        }) / 2.0;
         let length = self.length();
         if Self::RECTANGULAR.contains(&self.kind) && length >= 1e-9 {
             return self.plan_extent().corners().to_vec();
         }
         if length < 1e-9 {
             let (cos, sin) = (self.rotation.cos(), self.rotation.sin());
-            return [(-half, -half_depth), (half, -half_depth), (half, half_depth), (-half, half_depth)]
-                .into_iter()
-                .map(|(x, y)| Point2::new(self.start.x + x * cos - y * sin, self.start.y + x * sin + y * cos))
-                .collect();
+            return [
+                (-half, -half_depth),
+                (half, -half_depth),
+                (half, half_depth),
+                (-half, half_depth),
+            ]
+            .into_iter()
+            .map(|(x, y)| {
+                Point2::new(
+                    self.start.x + x * cos - y * sin,
+                    self.start.y + x * sin + y * cos,
+                )
+            })
+            .collect();
         }
         let normal_x = -(self.end.y - self.start.y) / length * half;
         let normal_y = (self.end.x - self.start.x) / length * half;

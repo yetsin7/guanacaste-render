@@ -4,14 +4,14 @@
 //! Ported from `BuildingMesher.Build` in `geometry/building-mesher.cs`, element kind by element kind and in the
 //! same order. What is not ported yet is counted in [`Coverage`], never silently left out.
 
-use super::element_part::add_part;
-use super::electrical_geometry::add_electrical_device;
 use super::electrical_analysis::ElectricalAnalysis;
-use super::interior_test::InteriorTest;
+use super::electrical_geometry::add_electrical_device;
+use super::element_part::add_part;
 use super::elements::element_parts;
+use super::interior_test::InteriorTest;
 use super::openings::{add_opening_assembly, add_security_bars};
-use super::plants::add_plant;
 use super::pitched_roof::add_pitched_roof;
+use super::plants::add_plant;
 use super::plumbing_geometry::{add_service_point, add_system};
 use super::plumbing_routing::route_system;
 use super::plumbing_septic::add_septic;
@@ -20,7 +20,10 @@ use super::scene_mesh::{SceneMesh, SurfaceKind};
 use super::terrain_mesh::{add_terrain, contains as terrain_contains};
 use super::terrain_surface::TerrainSurface;
 use crate::document::{Document, FloorSlab, Id, Wall, WallOpening, element_kind, floor, wall};
-use crate::plan::{PlanRectangle, Point2, WallJoins, column_outline, contains_rectangle, counter_clockwise, slab_pieces, wall_solids};
+use crate::plan::{
+    PlanRectangle, Point2, WallJoins, column_outline, contains_rectangle, counter_clockwise,
+    slab_pieces, wall_solids,
+};
 use glam::{Vec2, Vec3};
 use std::collections::HashMap;
 
@@ -58,23 +61,44 @@ impl Coverage {
 
 /// Builds the mesh of a project. `include_ground` adds the endless ground plane under it.
 pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Coverage) {
-    let elevations: HashMap<Id, f64> = document.levels.iter().map(|level| (level.id, level.elevation)).collect();
+    let elevations: HashMap<Id, f64> = document
+        .levels
+        .iter()
+        .map(|level| (level.id, level.elevation))
+        .collect();
     let elevation_of = |level: Id| elevations.get(&level).copied().unwrap_or(0.0);
-    let opening_types: HashMap<Id, _> = document.opening_types.iter().map(|kind| (kind.id, kind)).collect();
-    let wall_types: HashMap<Id, _> = document.wall_types.iter().map(|kind| (kind.id, kind)).collect();
+    let opening_types: HashMap<Id, _> = document
+        .opening_types
+        .iter()
+        .map(|kind| (kind.id, kind))
+        .collect();
+    let wall_types: HashMap<Id, _> = document
+        .wall_types
+        .iter()
+        .map(|kind| (kind.id, kind))
+        .collect();
     let joins = WallJoins::build(&document.walls);
     let mut openings_of: HashMap<Id, Vec<&WallOpening>> = HashMap::new();
     for opening in &document.openings {
-        openings_of.entry(opening.wall_id).or_default().push(opening);
+        openings_of
+            .entry(opening.wall_id)
+            .or_default()
+            .push(opening);
     }
-    let interiors: HashMap<Id, InteriorTest> =
-        document.levels.iter().map(|level| (level.id, InteriorTest::new(document, level.id))).collect();
+    let interiors: HashMap<Id, InteriorTest> = document
+        .levels
+        .iter()
+        .map(|level| (level.id, InteriorTest::new(document, level.id)))
+        .collect();
     let outside_everything = InteriorTest { walls: Vec::new() };
 
     let mut mesh = SceneMesh::default();
     for wall in &document.walls {
         let z = elevation_of(wall.level_id);
-        let openings = openings_of.get(&wall.id).map(Vec::as_slice).unwrap_or_default();
+        let openings = openings_of
+            .get(&wall.id)
+            .map(Vec::as_slice)
+            .unwrap_or_default();
         let interior = interiors.get(&wall.level_id).unwrap_or(&outside_everything);
         let wall_type = wall_types.get(&wall.wall_type_id);
         let construction = wall_type.map_or(wall::PLASTER, |kind| kind.construction);
@@ -92,38 +116,77 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
             && matches!(construction, wall::BRICK | wall::BLOCK | wall::CONCRETE);
         // A face that looks into the building is plaster; one that looks out is the facade.
         let face = |middle: Vec2, outward: Vec2| {
-            let probe = Point2::new(middle.x as f64 + outward.x as f64 * 0.3, middle.y as f64 + outward.y as f64 * 0.3);
-            if interior.contains(probe) && !exposed_inside { SurfaceKind::InteriorWall } else { facade }
+            let probe = Point2::new(
+                middle.x as f64 + outward.x as f64 * 0.3,
+                middle.y as f64 + outward.y as f64 * 0.3,
+            );
+            if interior.contains(probe) && !exposed_inside {
+                SurfaceKind::InteriorWall
+            } else {
+                facade
+            }
         };
 
         let wall_first = mesh.triangle_count();
         for solid in wall_solids(wall, openings) {
             if construction == wall::GLASS {
-                add_glass_wall(&mut mesh, wall, solid.from, solid.to, z + solid.bottom, z + solid.top);
+                add_glass_wall(
+                    &mut mesh,
+                    wall,
+                    solid.from,
+                    solid.to,
+                    z + solid.bottom,
+                    z + solid.top,
+                );
                 continue;
             }
             let outline = to_f32(&joins.section_outline(wall, solid.from, solid.to));
             let (bottom, top) = ((z + solid.bottom) as f32, (z + solid.top) as f32);
             if !solid.sloped() {
-                add_prism(&mut mesh, &outline, bottom, top, facade, &PrismShape { side_kind: Some(&face), top_at: None });
+                add_prism(
+                    &mut mesh,
+                    &outline,
+                    bottom,
+                    top,
+                    facade,
+                    &PrismShape {
+                        side_kind: Some(&face),
+                        top_at: None,
+                    },
+                );
                 continue;
             }
             // A wedge: the top at each corner is the height of the slope above that corner's place along the wall.
             let (axis_x, axis_y) = wall.direction();
             let top_at = |corner: Vec2| {
-                let along = (corner.x as f64 - wall.start.x) * axis_x + (corner.y as f64 - wall.start.y) * axis_y;
+                let along = (corner.x as f64 - wall.start.x) * axis_x
+                    + (corner.y as f64 - wall.start.y) * axis_y;
                 (z + (solid.bottom + 0.001).max(solid.top_height_at(along))) as f32
             };
-            add_prism(&mut mesh, &outline, bottom, top, facade, &PrismShape { side_kind: Some(&face), top_at: Some(&top_at) });
+            add_prism(
+                &mut mesh,
+                &outline,
+                bottom,
+                top,
+                facade,
+                &PrismShape {
+                    side_kind: Some(&face),
+                    top_at: Some(&top_at),
+                },
+            );
         }
         mesh.mark_element(wall.id, wall_first);
 
         for &opening in openings {
-            let Some(&kind) = opening_types.get(&opening.opening_type_id) else { continue };
+            let Some(&kind) = opening_types.get(&opening.opening_type_id) else {
+                continue;
+            };
             let opening_first = mesh.triangle_count();
             add_opening_assembly(&mut mesh, wall, opening, kind, z);
             if kind.security_bars {
-                add_security_bars(&mut mesh, wall, opening, z, &|point| interior.contains(point));
+                add_security_bars(&mut mesh, wall, opening, z, &|point| {
+                    interior.contains(point)
+                });
             }
             mesh.mark_element(opening.id, opening_first);
         }
@@ -140,7 +203,8 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
             }
             let first = mesh.triangle_count();
             let surface = TerrainSurface::new(slab);
-            if let Some(edge) = add_terrain(&mut mesh, slab, &surface, elevation_of(slab.level_id)) {
+            if let Some(edge) = add_terrain(&mut mesh, slab, &surface, elevation_of(slab.level_id))
+            {
                 site_edge = Some(site_edge.map_or(edge, |existing| existing.min(edge)));
                 mesh.mark_element(slab.id, first);
                 terrain_surfaces.push((slab, surface));
@@ -150,19 +214,34 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
             continue;
         }
         if slab.is_pitched() {
-            if !matches!(slab.shape, floor::SHAPE_SHED | floor::SHAPE_GABLE | floor::SHAPE_HIP) {
+            if !matches!(
+                slab.shape,
+                floor::SHAPE_SHED | floor::SHAPE_GABLE | floor::SHAPE_HIP
+            ) {
                 coverage.pitched_roofs += 1;
                 continue;
             }
             let first = mesh.triangle_count();
-            add_pitched_roof(&mut mesh, slab, &with_overhang(slab), elevation_of(slab.level_id));
+            add_pitched_roof(
+                &mut mesh,
+                slab,
+                &with_overhang(slab),
+                elevation_of(slab.level_id),
+            );
             mesh.mark_element(slab.id, first);
             continue;
         }
         let first = mesh.triangle_count();
         let top = elevation_of(slab.level_id) + slab.elevation_offset;
         let openings = slab_openings(document, slab, &elevation_of);
-        add_slab(&mut mesh, &with_overhang(slab), top, slab.thickness, &openings, slab_surface(slab));
+        add_slab(
+            &mut mesh,
+            &with_overhang(slab),
+            top,
+            slab.thickness,
+            &openings,
+            slab_surface(slab),
+        );
         mesh.mark_element(slab.id, first);
     }
 
@@ -170,25 +249,45 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         let first = mesh.triangle_count();
         let base = elevation_of(column.level_id);
         let outline = to_f32(&column_outline(column));
-        add_prism(&mut mesh, &outline, base as f32, (base + column.height) as f32, SurfaceKind::Wall, &PrismShape::default());
+        add_prism(
+            &mut mesh,
+            &outline,
+            base as f32,
+            (base + column.height) as f32,
+            SurfaceKind::Wall,
+            &PrismShape::default(),
+        );
         mesh.mark_element(column.id, first);
     }
 
     let electrical = ElectricalAnalysis::new(document);
     for device in &document.electrical_devices {
         let first = mesh.triangle_count();
-        let brightness = if device.is_luminaire() { electrical.brightness(device.id) } else { 0.0 };
-        if !elevations.get(&device.level_id).is_some_and(|&level| add_electrical_device(&mut mesh, device, level, brightness > 0.0)) {
+        let brightness = if device.is_luminaire() {
+            electrical.brightness(device.id)
+        } else {
+            0.0
+        };
+        if !elevations
+            .get(&device.level_id)
+            .is_some_and(|&level| add_electrical_device(&mut mesh, device, level, brightness > 0.0))
+        {
             coverage.electrical_devices += 1;
         }
-        if brightness > 0.0 { mesh.dim_since(first, brightness); }
+        if brightness > 0.0 {
+            mesh.dim_since(first, brightness);
+        }
         mesh.mark_element(device.id, first);
     }
 
     // Buried service geometry contributes to the framing bounds but must not lower the ground plane.
     let buried_from = mesh.positions.len();
     for kind in 0..=3 {
-        for system in document.plumbing_systems.iter().filter(|system| system.kind == kind) {
+        for system in document
+            .plumbing_systems
+            .iter()
+            .filter(|system| system.kind == kind)
+        {
             if let Some(layout) = route_system(document, system, &elevations) {
                 add_system(&mut mesh, &layout);
             } else {
@@ -196,14 +295,25 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
             }
         }
     }
-    coverage.plumbing_systems += document.plumbing_systems.iter().filter(|system| !(0..=3).contains(&system.kind)).count();
-    for point in document.plumbing_points.iter().filter(|point| point.kind == crate::document::plumbing_point_kind::SEPTIC_TANK) {
+    coverage.plumbing_systems += document
+        .plumbing_systems
+        .iter()
+        .filter(|system| !(0..=3).contains(&system.kind))
+        .count();
+    for point in document
+        .plumbing_points
+        .iter()
+        .filter(|point| point.kind == crate::document::plumbing_point_kind::SEPTIC_TANK)
+    {
         if let Some(&level) = elevations.get(&point.level_id) {
             add_septic(&mut mesh, document, point, level);
         }
     }
     for point in &document.plumbing_points {
-        if !elevations.get(&point.level_id).is_some_and(|&level| add_service_point(&mut mesh, document, point, level)) {
+        if !elevations
+            .get(&point.level_id)
+            .is_some_and(|&level| add_service_point(&mut mesh, document, point, level))
+        {
             coverage.plumbing_points += 1;
         }
     }
@@ -213,26 +323,46 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         // Plants use the first site on their own level that contains their insertion point.
         if element.is_procedural_plant() && coverage.toposolids == 0 {
             let first = mesh.triangle_count();
-            let ground = terrain_surfaces.iter()
-                .find(|(slab, _)| slab.level_id == element.level_id && terrain_contains(&slab.boundary, element.start))
+            let ground = terrain_surfaces
+                .iter()
+                .find(|(slab, _)| {
+                    slab.level_id == element.level_id
+                        && terrain_contains(&slab.boundary, element.start)
+                })
                 .map_or(0.0, |(_, surface)| surface.elevation_at(element.start));
             // A small embed hides the gap between a trunk and uneven ground.
-            add_plant(&mut mesh, element, elevation_of(element.level_id) + ground - 0.08);
+            add_plant(
+                &mut mesh,
+                element,
+                elevation_of(element.level_id) + ground - 0.08,
+            );
             mesh.mark_element(element.id, first);
             continue;
         }
         // Family meshes, unhandled plant placements, elevators, and members with cuts remain unsupported.
-        let parts = if element.family_id.is_some() || element.kind == element_kind::PLANTING { None } else { element_parts(element) };
+        let parts = if element.family_id.is_some() || element.kind == element_kind::PLANTING {
+            None
+        } else {
+            element_parts(element)
+        };
         match parts {
             Some(parts) => {
                 let first = mesh.triangle_count();
                 let datum = elevation_of(element.level_id);
-                let brightness = if element.kind == element_kind::COMPONENT { electrical.brightness(element.id) } else { 1.0 };
+                let brightness = if element.kind == element_kind::COMPONENT {
+                    electrical.brightness(element.id)
+                } else {
+                    1.0
+                };
                 for mut part in parts {
-                    if brightness <= 0.0 && part.kind == SurfaceKind::LightEmitter { part.kind = SurfaceKind::LightOff; }
+                    if brightness <= 0.0 && part.kind == SurfaceKind::LightEmitter {
+                        part.kind = SurfaceKind::LightOff;
+                    }
                     add_part(&mut mesh, &part, datum);
                 }
-                if brightness > 0.0 { mesh.dim_since(first, brightness); }
+                if brightness > 0.0 {
+                    mesh.dim_since(first, brightness);
+                }
                 mesh.mark_element(element.id, first);
             }
             None => coverage.structural_elements += 1,
@@ -245,9 +375,13 @@ pub fn build_mesh(document: &Document, include_ground: bool) -> (SceneMesh, Cove
         let center = (min + max) / 2.0;
         // Large enough that the ground meets the sky at the horizon from typical orbit distances.
         let extent = ((max - min).length() * 20.0).max(500.0);
-        let lowest = mesh.positions.iter().enumerate()
+        let lowest = mesh
+            .positions
+            .iter()
+            .enumerate()
             .filter(|(index, _)| *index < buried_from || *index >= buried_to)
-            .map(|(_, position)| position.z).fold(f32::MAX, f32::min);
+            .map(|(_, position)| position.z)
+            .fold(f32::MAX, f32::min);
         let z = site_edge.map_or_else(
             || (if lowest == f32::MAX { 0.0 } else { lowest }).min(0.0) - 0.01,
             |edge| edge as f32 - 0.02,
@@ -269,27 +403,71 @@ fn add_glass_wall(mesh: &mut SceneMesh, wall: &Wall, from: f64, to: f64, bottom:
     let frame = WallFrame::new(wall);
     let half = (wall.thickness / 2.0).max(0.025);
     const CHANNEL: f64 = 0.05;
-    frame.block(mesh, from, to, -half, half, bottom, bottom + CHANNEL, SurfaceKind::Metal);
-    frame.block(mesh, from, to, -half, half, top - CHANNEL, top, SurfaceKind::Metal);
-    frame.block(mesh, from, to, -0.006, 0.006, bottom + CHANNEL, top - CHANNEL, SurfaceKind::Glass);
+    frame.block(
+        mesh,
+        from,
+        to,
+        -half,
+        half,
+        bottom,
+        bottom + CHANNEL,
+        SurfaceKind::Metal,
+    );
+    frame.block(
+        mesh,
+        from,
+        to,
+        -half,
+        half,
+        top - CHANNEL,
+        top,
+        SurfaceKind::Metal,
+    );
+    frame.block(
+        mesh,
+        from,
+        to,
+        -0.006,
+        0.006,
+        bottom + CHANNEL,
+        top - CHANNEL,
+        SurfaceKind::Glass,
+    );
     let bays = (((to - from) / 1.2).ceil() as i32).max(1);
     for index in 0..=bays {
         let at = from + (to - from) * index as f64 / bays as f64;
-        frame.block(mesh, from.max(at - 0.025), to.min(at + 0.025), -half, half, bottom + CHANNEL, top - CHANNEL, SurfaceKind::Metal);
+        frame.block(
+            mesh,
+            from.max(at - 0.025),
+            to.min(at + 0.025),
+            -half,
+            half,
+            bottom + CHANNEL,
+            top - CHANNEL,
+            SurfaceKind::Metal,
+        );
     }
 }
 
 /// The openings that cut a slab: openings of its own level (floors only), shafts from at or below it, and the
 /// dormers and skylights of a roof. An opening that is not wholly inside the slab does not cut it.
-fn slab_openings(document: &Document, slab: &FloorSlab, elevation_of: &dyn Fn(Id) -> f64) -> Vec<PlanRectangle> {
+fn slab_openings(
+    document: &Document,
+    slab: &FloorSlab,
+    elevation_of: &dyn Fn(Id) -> f64,
+) -> Vec<PlanRectangle> {
     let slab_elevation = elevation_of(slab.level_id);
     document
         .structural_elements
         .iter()
         .filter(|element| match element.kind {
-            element_kind::OPENING => slab.kind == floor::KIND_FLOOR && element.level_id == slab.level_id,
+            element_kind::OPENING => {
+                slab.kind == floor::KIND_FLOOR && element.level_id == slab.level_id
+            }
             element_kind::SHAFT => elevation_of(element.level_id) <= slab_elevation,
-            element_kind::DORMER | element_kind::SKYLIGHT => slab.kind == floor::KIND_ROOF && element.level_id == slab.level_id,
+            element_kind::DORMER | element_kind::SKYLIGHT => {
+                slab.kind == floor::KIND_ROOF && element.level_id == slab.level_id
+            }
             _ => false,
         })
         .filter_map(|element| PlanRectangle::of(&element.footprint()))
@@ -299,26 +477,60 @@ fn slab_openings(document: &Document, slab: &FloorSlab, elevation_of: &dyn Fn(Id
 
 /// Adds a slab whose top face is at `elevation`. Openings are cut out: the top and bottom faces are built from
 /// convex pieces, and each opening gets its own inner walls.
-fn add_slab(mesh: &mut SceneMesh, boundary: &[Point2], elevation: f64, thickness: f64, openings: &[PlanRectangle], surface: SurfaceKind) {
+fn add_slab(
+    mesh: &mut SceneMesh,
+    boundary: &[Point2],
+    elevation: f64,
+    thickness: f64,
+    openings: &[PlanRectangle],
+    surface: SurfaceKind,
+) {
     let (bottom, top) = ((elevation - thickness) as f32, elevation as f32);
     let ordered = counter_clockwise(boundary);
-    let pieces = if openings.is_empty() { None } else { slab_pieces(&ordered, openings).ok() };
+    let pieces = if openings.is_empty() {
+        None
+    } else {
+        slab_pieces(&ordered, openings).ok()
+    };
     let Some(pieces) = pieces else {
-        add_prism(mesh, &to_f32(boundary), bottom, top, surface, &PrismShape::default());
+        add_prism(
+            mesh,
+            &to_f32(boundary),
+            bottom,
+            top,
+            surface,
+            &PrismShape::default(),
+        );
         return;
     };
     let lift = |point: Point2, z: f32| Vec3::new(point.x as f32, point.y as f32, z);
     // A cut slab is drawn as flooring whatever its finish, as in the application.
     for piece in &pieces {
         for corner in 1..piece.len() - 1 {
-            mesh.add_triangle(lift(piece[0], top), lift(piece[corner], top), lift(piece[corner + 1], top), SurfaceKind::Floor);
-            mesh.add_triangle(lift(piece[corner + 1], bottom), lift(piece[corner], bottom), lift(piece[0], bottom), SurfaceKind::Floor);
+            mesh.add_triangle(
+                lift(piece[0], top),
+                lift(piece[corner], top),
+                lift(piece[corner + 1], top),
+                SurfaceKind::Floor,
+            );
+            mesh.add_triangle(
+                lift(piece[corner + 1], bottom),
+                lift(piece[corner], bottom),
+                lift(piece[0], bottom),
+                SurfaceKind::Floor,
+            );
         }
     }
     let mut side_walls = |outline: &[Point2]| {
         for index in 0..outline.len() {
             let (current, next) = (outline[index], outline[(index + 1) % outline.len()]);
-            mesh.add_quad(lift(current, bottom), lift(next, bottom), lift(next, top), lift(current, top), SurfaceKind::Floor);
+            mesh.add_quad(
+                lift(current, bottom),
+                lift(next, bottom),
+                lift(next, top),
+                lift(current, top),
+                SurfaceKind::Floor,
+            );
         }
     };
     side_walls(&ordered);
@@ -369,7 +581,10 @@ pub(super) fn with_overhang(slab: &FloorSlab) -> Vec<Point2> {
         }
         // A mitred corner moves along the bisector by distance / cos(half angle) = 2 * distance / |n1 + n2|^2.
         let scale = slab.overhang * 2.0 / (bisector_x * bisector_x + bisector_y * bisector_y);
-        grown.push(Point2::new(current.x + bisector_x * scale, current.y + bisector_y * scale));
+        grown.push(Point2::new(
+            current.x + bisector_x * scale,
+            current.y + bisector_y * scale,
+        ));
     }
     grown
 }

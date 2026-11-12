@@ -106,9 +106,16 @@ impl SceneMesh {
     }
 
     /// A triangle shaded with interpolated normals, for curved surfaces such as trunks.
-    pub fn add_smooth_triangle(&mut self, corners: [Vec3; 3], normals: [Vec3; 3], kind: SurfaceKind) {
+    pub fn add_smooth_triangle(
+        &mut self,
+        corners: [Vec3; 3],
+        normals: [Vec3; 3],
+        kind: SurfaceKind,
+    ) {
         let count = self.positions.len();
-        self.normals.get_or_insert_with(|| vec![Vec3::ZERO; count]).extend(normals);
+        self.normals
+            .get_or_insert_with(|| vec![Vec3::ZERO; count])
+            .extend(normals);
         self.positions.extend(corners);
         self.kinds.push(kind);
         if let Some(scale) = &mut self.emission_scale {
@@ -151,7 +158,9 @@ impl SceneMesh {
             return;
         }
         let triangles = self.triangle_count();
-        let scale = self.emission_scale.get_or_insert_with(|| vec![1.0; triangles]);
+        let scale = self
+            .emission_scale
+            .get_or_insert_with(|| vec![1.0; triangles]);
         for value in &mut scale[first..triangles] {
             *value = output.max(0.0) as f32;
         }
@@ -181,6 +190,8 @@ impl SceneMesh {
         }
         self.positions
             .iter()
-            .fold((Vec3::MAX, Vec3::MIN), |(min, max), &p| (min.min(p), max.max(p)))
+            .fold((Vec3::MAX, Vec3::MIN), |(min, max), &p| {
+                (min.min(p), max.max(p))
+            })
     }
 }

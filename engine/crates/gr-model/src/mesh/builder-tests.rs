@@ -54,7 +54,10 @@ fn a_roof_overhang_grows_the_slab_evenly() {
     let (mesh, coverage) = build_mesh(&document(&json), false);
     assert!(coverage.is_complete());
     let (min, max) = mesh.bounds();
-    assert!((min - Vec3::new(-0.5, -0.5, 2.8)).length() < 1e-5 && (max - Vec3::new(4.5, 6.5, 3.0)).length() < 1e-5);
+    assert!(
+        (min - Vec3::new(-0.5, -0.5, 2.8)).length() < 1e-5
+            && (max - Vec3::new(4.5, 6.5, 3.0)).length() < 1e-5
+    );
 }
 
 /// A hot-water system can produce pipes even when there are no plumbing service points.

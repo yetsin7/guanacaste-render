@@ -17,7 +17,14 @@ pub struct WallSolid {
 
 impl WallSolid {
     fn flat(from: f64, to: f64, bottom: f64, top: f64) -> WallSolid {
-        WallSolid { from, to, bottom, top, top_at_from: None, top_at_to: None }
+        WallSolid {
+            from,
+            to,
+            bottom,
+            top,
+            top_at_from: None,
+            top_at_to: None,
+        }
     }
 
     pub fn top_start(&self) -> f64 {
@@ -38,7 +45,8 @@ impl WallSolid {
         if self.to - self.from < 1e-9 {
             self.top
         } else {
-            self.top_start() + (self.top_end() - self.top_start()) * (along - self.from) / (self.to - self.from)
+            self.top_start()
+                + (self.top_end() - self.top_start()) * (along - self.from) / (self.to - self.from)
         }
     }
 }
@@ -57,11 +65,21 @@ pub fn wall_solids(wall: &Wall, openings: &[&WallOpening]) -> Vec<WallSolid> {
             parts.push(WallSolid::flat(cursor, opening.begin(), 0.0, wall.height));
         }
         if opening.sill > 0.0 {
-            parts.push(WallSolid::flat(opening.begin(), opening.end(), 0.0, opening.sill));
+            parts.push(WallSolid::flat(
+                opening.begin(),
+                opening.end(),
+                0.0,
+                opening.sill,
+            ));
         }
         let top = opening.sill + opening.height;
         if top < wall.height {
-            parts.push(WallSolid::flat(opening.begin(), opening.end(), top, wall.height));
+            parts.push(WallSolid::flat(
+                opening.begin(),
+                opening.end(),
+                top,
+                wall.height,
+            ));
         }
         cursor = opening.end();
     }
@@ -69,8 +87,16 @@ pub fn wall_solids(wall: &Wall, openings: &[&WallOpening]) -> Vec<WallSolid> {
         parts.push(WallSolid::flat(cursor, length, 0.0, wall.height));
     }
 
-    let shaped = if wall.shaping_profile().is_some() { follow_profile(wall, parts) } else { parts };
-    if wall.base_offset == 0.0 { shaped } else { reshape_base(wall, shaped) }
+    let shaped = if wall.shaping_profile().is_some() {
+        follow_profile(wall, parts)
+    } else {
+        parts
+    };
+    if wall.base_offset == 0.0 {
+        shaped
+    } else {
+        reshape_base(wall, shaped)
+    }
 }
 
 /// Cuts every solid that reaches the top of the wall at each point of the profile, so the top of each piece is one
@@ -83,8 +109,11 @@ fn follow_profile(wall: &Wall, parts: Vec<WallSolid>) -> Vec<WallSolid> {
             result.push(part);
             continue;
         }
-        let mut stations: Vec<f64> =
-            profile.iter().map(|point| point.x).filter(|&x| x > part.from + 1e-6 && x < part.to - 1e-6).collect();
+        let mut stations: Vec<f64> = profile
+            .iter()
+            .map(|point| point.x)
+            .filter(|&x| x > part.from + 1e-6 && x < part.to - 1e-6)
+            .collect();
         stations.push(part.from);
         stations.push(part.to);
         stations.sort_by(f64::total_cmp);
@@ -113,9 +142,23 @@ fn reshape_base(wall: &Wall, parts: Vec<WallSolid>) -> Vec<WallSolid> {
             if highest <= wall.base_offset + 1e-9 {
                 continue;
             }
-            result.push(if part.bottom < wall.base_offset { WallSolid { bottom: wall.base_offset, ..part } } else { part });
+            result.push(if part.bottom < wall.base_offset {
+                WallSolid {
+                    bottom: wall.base_offset,
+                    ..part
+                }
+            } else {
+                part
+            });
         } else {
-            result.push(if part.bottom <= 1e-9 { WallSolid { bottom: wall.base_offset, ..part } } else { part });
+            result.push(if part.bottom <= 1e-9 {
+                WallSolid {
+                    bottom: wall.base_offset,
+                    ..part
+                }
+            } else {
+                part
+            });
         }
     }
     result
@@ -144,11 +187,24 @@ mod tests {
     }
 
     fn opening(offset: f64, width: f64, sill: f64, height: f64) -> WallOpening {
-        WallOpening { id: Id(9), wall_id: Id(1), kind: 1, offset, width, sill, height, opening_type_id: Id(4), flip_hand: false }
+        WallOpening {
+            id: Id(9),
+            wall_id: Id(1),
+            kind: 1,
+            offset,
+            width,
+            sill,
+            height,
+            opening_type_id: Id(4),
+            flip_hand: false,
+        }
     }
 
     fn volume(parts: &[WallSolid]) -> f64 {
-        parts.iter().map(|p| (p.to - p.from) * ((p.top_start() + p.top_end()) / 2.0 - p.bottom)).sum()
+        parts
+            .iter()
+            .map(|p| (p.to - p.from) * ((p.top_start() + p.top_end()) / 2.0 - p.bottom))
+            .sum()
     }
 
     #[test]
@@ -174,7 +230,11 @@ mod tests {
     #[test]
     fn a_gable_profile_makes_wedges_and_a_raised_base_trims_them() {
         let mut gable = wall(4.0);
-        gable.top_profile = Some(vec![Point2::new(0.0, 2.0), Point2::new(3.0, 4.0), Point2::new(6.0, 2.0)]);
+        gable.top_profile = Some(vec![
+            Point2::new(0.0, 2.0),
+            Point2::new(3.0, 4.0),
+            Point2::new(6.0, 2.0),
+        ]);
         let parts = wall_solids(&gable, &[]);
         assert_eq!(parts.len(), 2);
         assert!(parts.iter().all(WallSolid::sloped));

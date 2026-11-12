@@ -8,7 +8,12 @@ use crate::document::{Document, PlumbingPoint};
 use glam::Vec3;
 
 /// Builds the tank, outlet, distribution box, and infiltration trenches from household and soil data.
-pub(super) fn add_septic(mesh: &mut SceneMesh, document: &Document, point: &PlumbingPoint, level: f64) {
+pub(super) fn add_septic(
+    mesh: &mut SceneMesh,
+    document: &Document,
+    point: &PlumbingPoint,
+    level: f64,
+) {
     let people = household_size(document, point) as f64;
     let daily = people * 150.0;
     let detention = if daily <= 1500.0 {
@@ -24,18 +29,34 @@ pub(super) fn add_septic(mesh: &mut SceneMesh, document: &Document, point: &Plum
     let width = (volume / 1000.0 / (2.0 * 1.2)).sqrt();
     let field_length = daily / point.percolation.max(1.0) / 0.6;
     let trenches = ((field_length / 20.0).ceil() as i32).max(1);
-    let walls: Vec<_> = document.walls.iter().filter(|wall| wall.level_id == point.level_id).collect();
+    let walls: Vec<_> = document
+        .walls
+        .iter()
+        .filter(|wall| wall.level_id == point.level_id)
+        .collect();
     let (cx, cy) = if walls.is_empty() {
         (point.position.x - 1.0, point.position.y)
     } else {
         (
-            walls.iter().map(|wall| (wall.start.x + wall.end.x) / 2.0).sum::<f64>() / walls.len() as f64,
-            walls.iter().map(|wall| (wall.start.y + wall.end.y) / 2.0).sum::<f64>() / walls.len() as f64,
+            walls
+                .iter()
+                .map(|wall| (wall.start.x + wall.end.x) / 2.0)
+                .sum::<f64>()
+                / walls.len() as f64,
+            walls
+                .iter()
+                .map(|wall| (wall.start.y + wall.end.y) / 2.0)
+                .sum::<f64>()
+                / walls.len() as f64,
         )
     };
     let (dx, dy) = (point.position.x - cx, point.position.y - cy);
     let length = (dx * dx + dy * dy).sqrt();
-    let (dx, dy) = if length > 1e-6 { (dx / length, dy / length) } else { (1.0, 0.0) };
+    let (dx, dy) = if length > 1e-6 {
+        (dx / length, dy / length)
+    } else {
+        (1.0, 0.0)
+    };
     let direction = Vec3::new(dx as f32, dy as f32, 0.0);
     let normal = Vec3::new(-direction.y, direction.x, 0.0);
     let center = Vec3::new(point.position.x as f32, point.position.y as f32, 0.0);
@@ -139,7 +160,10 @@ pub(super) fn add_septic(mesh: &mut SceneMesh, document: &Document, point: &Plum
         let gravel_top = pipe_z - 0.02;
         add_block(
             mesh,
-            BlockFrame { origin: start, ..frame },
+            BlockFrame {
+                origin: start,
+                ..frame
+            },
             (0.0, trench_length),
             (-0.6 / 2.0, 0.6 / 2.0),
             (gravel_top - 0.35, gravel_top),
@@ -148,7 +172,9 @@ pub(super) fn add_septic(mesh: &mut SceneMesh, document: &Document, point: &Plum
         add_tube_sides(
             mesh,
             start + Vec3::new(0.0, 0.0, gravel_top - 0.10),
-            start + direction * trench_length + Vec3::new(0.0, 0.0, gravel_top - 0.10 - 0.005 * trench_length),
+            start
+                + direction * trench_length
+                + Vec3::new(0.0, 0.0, gravel_top - 0.10 - 0.005 * trench_length),
             0.05,
             SurfaceKind::PipeDrain,
             8,

@@ -6,7 +6,10 @@ use super::scene_mesh::SurfaceKind as Surface;
 use crate::document::component_shape as catalog;
 
 /// Selects ported lighting and outdoor catalog recipes.
-pub(super) fn parts(geometry: &ComponentGeometry<'_>, component_shape: i32) -> Option<Vec<ElementPart>> {
+pub(super) fn parts(
+    geometry: &ComponentGeometry<'_>,
+    component_shape: i32,
+) -> Option<Vec<ElementPart>> {
     match component_shape {
         catalog::FLOOR_LAMP => Some(floor_lamp(geometry)),
         catalog::CEILING_LIGHT => Some(ceiling_light(geometry)),
@@ -20,19 +23,45 @@ pub(super) fn parts(geometry: &ComponentGeometry<'_>, component_shape: i32) -> O
 
 /// Builds a floor lamp with a round base, stem, and luminous shade.
 fn floor_lamp(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
-    let (diameter, height) = (geometry.width().min(geometry.depth()), geometry.element.height);
+    let (diameter, height) = (
+        geometry.width().min(geometry.depth()),
+        geometry.element.height,
+    );
     vec![
-        geometry.round((0.0, 0.0), diameter * 0.65, (0.0, 0.04), Surface::OpeningFrame),
-        geometry.round((0.0, 0.0), 0.025, (0.04, height * 0.78), Surface::OpeningFrame),
-        geometry.round((0.0, 0.0), diameter, (height * 0.72, height), Surface::LightEmitter),
+        geometry.round(
+            (0.0, 0.0),
+            diameter * 0.65,
+            (0.0, 0.04),
+            Surface::OpeningFrame,
+        ),
+        geometry.round(
+            (0.0, 0.0),
+            0.025,
+            (0.04, height * 0.78),
+            Surface::OpeningFrame,
+        ),
+        geometry.round(
+            (0.0, 0.0),
+            diameter,
+            (height * 0.72, height),
+            Surface::LightEmitter,
+        ),
     ]
 }
 
 /// Builds the luminous diffuser and metal canopy of a ceiling light.
 fn ceiling_light(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
-    let (diameter, height) = (geometry.width().min(geometry.depth()), geometry.element.height);
+    let (diameter, height) = (
+        geometry.width().min(geometry.depth()),
+        geometry.element.height,
+    );
     vec![
-        geometry.round((0.0, 0.0), diameter * 0.82, (0.0, height * 0.6), Surface::LightEmitter),
+        geometry.round(
+            (0.0, 0.0),
+            diameter * 0.82,
+            (0.0, height * 0.6),
+            Surface::LightEmitter,
+        ),
         geometry.round((0.0, 0.0), diameter, (height * 0.6, height), Surface::Metal),
     ]
 }
@@ -41,7 +70,12 @@ fn ceiling_light(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 fn barbecue(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let mut parts = vec![
-        geometry.block((0.0, 0.0), (width * 0.62, depth), (0.42, height * 0.76), Surface::OpeningFrame),
+        geometry.block(
+            (0.0, 0.0),
+            (width * 0.62, depth),
+            (0.42, height * 0.76),
+            Surface::OpeningFrame,
+        ),
         geometry.block(
             (0.0, depth * 0.10),
             (width * 0.62, depth * 0.70),
@@ -56,7 +90,12 @@ fn barbecue(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             (height * 0.62, height * 0.68),
             Surface::OpeningFrame,
         ));
-        parts.push(geometry.block((side * width * 0.23, 0.0), (0.05, 0.05), (0.0, 0.42), Surface::OpeningFrame));
+        parts.push(geometry.block(
+            (side * width * 0.23, 0.0),
+            (0.05, 0.05),
+            (0.0, 0.42),
+            Surface::OpeningFrame,
+        ));
     }
     parts
 }
@@ -65,10 +104,25 @@ fn barbecue(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 fn hammock(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let post_x = width / 2.0 - 0.06;
-    let mut parts = vec![geometry.block((0.0, 0.0), (width - 0.1, 0.08), (0.0, 0.08), Surface::DoorLeaf)];
+    let mut parts = vec![geometry.block(
+        (0.0, 0.0),
+        (width - 0.1, 0.08),
+        (0.0, 0.08),
+        Surface::DoorLeaf,
+    )];
     for side in [-1.0, 1.0] {
-        parts.push(geometry.block((side * post_x, 0.0), (0.10, depth), (0.0, 0.07), Surface::DoorLeaf));
-        parts.push(geometry.block((side * post_x, 0.0), (0.08, 0.08), (0.07, height), Surface::DoorLeaf));
+        parts.push(geometry.block(
+            (side * post_x, 0.0),
+            (0.10, depth),
+            (0.0, 0.07),
+            Surface::DoorLeaf,
+        ));
+        parts.push(geometry.block(
+            (side * post_x, 0.0),
+            (0.08, 0.08),
+            (0.07, height),
+            Surface::DoorLeaf,
+        ));
     }
     let end = width * 0.30;
     let high = (height - 0.35).min(0.85);
@@ -90,7 +144,12 @@ fn hammock(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             let t = (step as f64 + 0.5) / 8.0;
             let x = side * (post_x - (post_x - end) * t);
             let z = height - 0.08 - (height - 0.08 - high) * t;
-            parts.push(geometry.block((x, 0.0), ((post_x - end) / 8.0 + 0.01, 0.012), (z - 0.012, z), Surface::Bark));
+            parts.push(geometry.block(
+                (x, 0.0),
+                ((post_x - end) / 8.0 + 0.01, 0.012),
+                (z - 0.012, z),
+                Surface::Bark,
+            ));
         }
     }
     parts
@@ -105,7 +164,12 @@ fn sun_lounger(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     }
     let hinge = depth * 0.18;
     let center = (-depth / 2.0 + hinge) / 2.0;
-    parts.push(geometry.block((0.0, center), (width, hinge + depth / 2.0), (0.30, 0.34), Surface::DoorLeaf));
+    parts.push(geometry.block(
+        (0.0, center),
+        (width, hinge + depth / 2.0),
+        (0.30, 0.34),
+        Surface::DoorLeaf,
+    ));
     parts.push(geometry.soft(
         (0.0, center),
         (width - 0.06, hinge + depth / 2.0 - 0.04),
@@ -130,7 +194,10 @@ fn sun_lounger(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 
 /// Builds a weighted base, pole, stepped canopy, and finial for a patio umbrella.
 fn parasol(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
-    let (diameter, height) = (geometry.width().min(geometry.depth()), geometry.element.height);
+    let (diameter, height) = (
+        geometry.width().min(geometry.depth()),
+        geometry.element.height,
+    );
     let mut parts = vec![
         geometry.round((0.0, 0.0), 0.45, (0.0, 0.08), Surface::Structure),
         geometry.round((0.0, 0.0), 0.04, (0.08, height), Surface::DoorLeaf),
@@ -140,7 +207,10 @@ fn parasol(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
         parts.push(geometry.round(
             (0.0, 0.0),
             diameter * (1.0 - tier as f64 * 0.16),
-            (bottom + tier as f64 * 0.07, bottom + tier as f64 * 0.07 + 0.07),
+            (
+                bottom + tier as f64 * 0.07,
+                bottom + tier as f64 * 0.07 + 0.07,
+            ),
             Surface::Upholstery,
         ));
     }

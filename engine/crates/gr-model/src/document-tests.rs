@@ -5,12 +5,21 @@ use super::*;
 /// Saved render materials and camera settings must not be mistaken for the native scene defaults.
 #[test]
 fn saved_scene_customizations_are_detected() {
-    let defaults: Document = serde_json::from_str(r#"{"SchemaVersion":15}"#).expect("default project");
-    let materials: Document = serde_json::from_str(r#"{"SchemaVersion":15,"RenderMaterials":[{}]}"#).expect("material assignment");
-    let camera: Document = serde_json::from_str(r#"{"SchemaVersion":15,"RenderSetup":{}}"#).expect("saved render setup");
-    let scene: Document = serde_json::from_str(r#"{"SchemaVersion":15,"RenderScenes":[{}]}"#).expect("saved scene");
-    let effects: Document = serde_json::from_str(r#"{"SchemaVersion":15,"Extensions":{"render.ocean":"{}"}}"#).expect("render effects");
-    let sync: Document = serde_json::from_str(r#"{"SchemaVersion":15,"Extensions":{"render.modelsync":"token"}}"#).expect("sync token");
+    let defaults: Document =
+        serde_json::from_str(r#"{"SchemaVersion":15}"#).expect("default project");
+    let materials: Document =
+        serde_json::from_str(r#"{"SchemaVersion":15,"RenderMaterials":[{}]}"#)
+            .expect("material assignment");
+    let camera: Document = serde_json::from_str(r#"{"SchemaVersion":15,"RenderSetup":{}}"#)
+        .expect("saved render setup");
+    let scene: Document =
+        serde_json::from_str(r#"{"SchemaVersion":15,"RenderScenes":[{}]}"#).expect("saved scene");
+    let effects: Document =
+        serde_json::from_str(r#"{"SchemaVersion":15,"Extensions":{"render.ocean":"{}"}}"#)
+            .expect("render effects");
+    let sync: Document =
+        serde_json::from_str(r#"{"SchemaVersion":15,"Extensions":{"render.modelsync":"token"}}"#)
+            .expect("sync token");
     assert!(!defaults.has_scene_customizations());
     assert!(materials.has_scene_customizations());
     assert!(camera.has_scene_customizations());
@@ -31,8 +40,16 @@ fn identifiers_round_trip_through_text() {
 #[test]
 /// Checks the native reader against a project written by the application.
 fn loads_the_demonstration_house() {
-    let document = Document::parse(include_bytes!("../tests/fixtures/demo-house.gr")).expect("valid project");
-    assert_eq!((document.levels.len(), document.walls.len(), document.openings.len()), (2, 6, 11));
+    let document =
+        Document::parse(include_bytes!("../tests/fixtures/demo-house.gr")).expect("valid project");
+    assert_eq!(
+        (
+            document.levels.len(),
+            document.walls.len(),
+            document.openings.len()
+        ),
+        (2, 6, 11)
+    );
     assert_eq!(document.floors.len(), 1);
     assert!(document.walls.iter().all(|wall| wall.length() > 0.0));
 }

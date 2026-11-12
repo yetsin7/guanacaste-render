@@ -33,7 +33,9 @@ impl InteriorTest {
         (0..8).all(|index| {
             let angle = index as f64 * std::f64::consts::PI / 4.0 + 0.1;
             let direction = (angle.cos(), angle.sin());
-            self.walls.iter().any(|&(a, b)| ray_hits(point, direction, a, b))
+            self.walls
+                .iter()
+                .any(|&(a, b)| ray_hits(point, direction, a, b))
         })
     }
 }

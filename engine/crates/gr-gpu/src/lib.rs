@@ -10,5 +10,5 @@ mod camera;
 mod tracer;
 
 pub use camera::CameraFrame;
-pub use tracer::{GpuError, GpuOptions, GpuTracer, Mode};
+pub use tracer::{GpuError, GpuOptions, GpuTracer, Mode, RasterFrame, raster_supported};
 pub use wgpu;

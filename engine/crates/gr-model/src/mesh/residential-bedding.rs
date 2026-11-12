@@ -6,7 +6,10 @@ use super::scene_mesh::SurfaceKind as Surface;
 use crate::document::component_shape as catalog;
 
 /// Selects the bunk-bed and crib recipes by catalog identifier.
-pub(super) fn parts(geometry: &ComponentGeometry<'_>, component_shape: i32) -> Option<Vec<ElementPart>> {
+pub(super) fn parts(
+    geometry: &ComponentGeometry<'_>,
+    component_shape: i32,
+) -> Option<Vec<ElementPart>> {
     match component_shape {
         catalog::BUNK_BED => Some(bunk_bed(geometry)),
         catalog::CRIB => Some(crib(geometry)),
@@ -83,7 +86,12 @@ fn bunk_bed(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     }
     let mut z = 0.30;
     while z < upper + 0.3 {
-        parts.push(geometry.block((-width / 2.0 - 0.02, ladder_y), (0.03, 0.40), (z, z + 0.03), Surface::DoorLeaf));
+        parts.push(geometry.block(
+            (-width / 2.0 - 0.02, ladder_y),
+            (0.03, 0.40),
+            (z, z + 0.03),
+            Surface::DoorLeaf,
+        ));
         z += 0.28;
     }
     parts
@@ -135,6 +143,12 @@ fn crib(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             x += 0.07;
         }
     }
-    parts.push(geometry.soft((0.0, 0.0), (width - 0.08, depth - 0.08), (0.30, 0.42), 0.04, Surface::Bedding));
+    parts.push(geometry.soft(
+        (0.0, 0.0),
+        (width - 0.08, depth - 0.08),
+        (0.30, 0.42),
+        0.04,
+        Surface::Bedding,
+    ));
     parts
 }

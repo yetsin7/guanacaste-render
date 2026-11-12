@@ -48,13 +48,19 @@ pub fn is_composite(stair: &StructuralElement) -> bool {
 
 /// Moves a plan point along a direction by a signed distance.
 fn offset(point: Point2, direction: Point2, distance: f64) -> Point2 {
-    Point2::new(point.x + direction.x * distance, point.y + direction.y * distance)
+    Point2::new(
+        point.x + direction.x * distance,
+        point.y + direction.y * distance,
+    )
 }
 
 /// Unit vector along the stair and the one to its left.
 fn axes(stair: &StructuralElement) -> (Point2, Point2) {
     let length = stair.length().max(1e-9);
-    let direction = Point2::new((stair.end.x - stair.start.x) / length, (stair.end.y - stair.start.y) / length);
+    let direction = Point2::new(
+        (stair.end.x - stair.start.x) / length,
+        (stair.end.y - stair.start.y) / length,
+    );
     (direction, Point2::new(-direction.y, direction.x))
 }
 
@@ -88,7 +94,11 @@ fn flights(stair: &StructuralElement) -> Vec<Flight> {
             risers: second_risers,
         }
     } else {
-        let start = offset(offset(stair.start, direction, first_run), left, width + SWITCHBACK_GAP);
+        let start = offset(
+            offset(stair.start, direction, first_run),
+            left,
+            width + SWITCHBACK_GAP,
+        );
         Flight {
             start,
             end: offset(start, direction, -(second_risers as f64) * going),
@@ -113,8 +123,16 @@ pub fn composite_parts(stair: &StructuralElement) -> Vec<ElementPart> {
     for flight in &flights {
         let riser = flight.rise / flight.risers as f64;
         for index in 0..flight.risers {
-            let from = lerp(flight.start, flight.end, index as f64 / flight.risers as f64);
-            let to = lerp(flight.start, flight.end, (index + 1) as f64 / flight.risers as f64);
+            let from = lerp(
+                flight.start,
+                flight.end,
+                index as f64 / flight.risers as f64,
+            );
+            let to = lerp(
+                flight.start,
+                flight.end,
+                (index + 1) as f64 / flight.risers as f64,
+            );
             let top = flight.bottom + riser * (index + 1) as f64;
             parts.push(ElementPart::block(
                 strip(from, to, 0.0, stair.width),
@@ -145,7 +163,12 @@ fn landing(stair: &StructuralElement, first: &Flight) -> ElementPart {
         offset(far, left, reach),
         offset(near, left, reach),
     ];
-    ElementPart::block(outline, stair.offset.max(top - 0.20), top, SurfaceKind::Structure)
+    ElementPart::block(
+        outline,
+        stair.offset.max(top - 0.20),
+        top,
+        SurfaceKind::Structure,
+    )
 }
 
 /// Wedge-shaped treads winding around a central column.
@@ -160,11 +183,16 @@ fn spiral_parts(stair: &StructuralElement) -> Vec<ElementPart> {
     };
     // About 22 cm of going (or the requested tread) on the walking line at 60 % of the radius, between 15 and 40
     // degrees per tread.
-    let going = if stair.tread_depth > 0.0 { stair.tread_depth } else { 0.22 };
+    let going = if stair.tread_depth > 0.0 {
+        stair.tread_depth
+    } else {
+        0.22
+    };
     let step = (going / (radius * 0.6)).clamp(15.0 * PI / 180.0, 40.0 * PI / 180.0);
     let riser = stair.height / risers as f64;
     const ARC_STEPS: i32 = 4;
-    let on_circle = |r: f64, angle: f64| Point2::new(center.x + r * angle.cos(), center.y + r * angle.sin());
+    let on_circle =
+        |r: f64, angle: f64| Point2::new(center.x + r * angle.cos(), center.y + r * angle.sin());
     let mut parts = Vec::new();
     for index in 0..risers {
         let a = start_angle + step * index as f64;
@@ -174,7 +202,12 @@ fn spiral_parts(stair: &StructuralElement) -> Vec<ElementPart> {
         outline.push(on_circle(COLUMN_RADIUS, a + step));
         outline.push(on_circle(COLUMN_RADIUS, a));
         let top = stair.offset + riser * (index + 1) as f64;
-        parts.push(ElementPart::block(outline, top - TREAD_THICKNESS, top, SurfaceKind::Structure));
+        parts.push(ElementPart::block(
+            outline,
+            top - TREAD_THICKNESS,
+            top,
+            SurfaceKind::Structure,
+        ));
     }
     parts.push(ElementPart::block(
         point_footprint(center, COLUMN_RADIUS * 2.0, true),
@@ -240,7 +273,12 @@ mod tests {
     fn a_u_stair_comes_back_beside_its_first_flight() {
         let parts = composite_parts(&stair(element_style::U_SHAPED, 4.0));
         let last_step = &parts[17];
-        assert!(last_step.footprint.iter().all(|point| point.y > 0.5 && point.x < 3.1));
+        assert!(
+            last_step
+                .footprint
+                .iter()
+                .all(|point| point.y > 0.5 && point.x < 3.1)
+        );
     }
 
     #[test]

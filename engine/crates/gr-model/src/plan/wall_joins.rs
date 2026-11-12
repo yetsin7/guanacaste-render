@@ -38,11 +38,19 @@ pub struct WallJoins<'a> {
 }
 
 fn corner_at(wall: &Wall, end: End) -> Point2 {
-    if end == End::Start { wall.start } else { wall.end }
+    if end == End::Start {
+        wall.start
+    } else {
+        wall.end
+    }
 }
 
 fn setting_at(wall: &Wall, end: End) -> i32 {
-    if end == End::Start { wall.start_join } else { wall.end_join }
+    if end == End::Start {
+        wall.start_join
+    } else {
+        wall.end_join
+    }
 }
 
 fn stays_apart(setting: i32) -> bool {
@@ -50,19 +58,33 @@ fn stays_apart(setting: i32) -> bool {
 }
 
 fn square(corner: Point2, offset_x: f64, offset_y: f64) -> (Point2, Point2) {
-    (Point2::new(corner.x + offset_x, corner.y + offset_y), Point2::new(corner.x - offset_x, corner.y - offset_y))
+    (
+        Point2::new(corner.x + offset_x, corner.y + offset_y),
+        Point2::new(corner.x - offset_x, corner.y - offset_y),
+    )
 }
+
+/// The wall ends that fall in one grid cell of a level.
+type CellEnds<'a> = Vec<(&'a Wall, End, Point2)>;
 
 impl<'a> WallJoins<'a> {
     pub fn build(walls: &'a [Wall]) -> WallJoins<'a> {
         // End points by level and a tolerance-sized grid cell; floor (not round) matters for negative coordinates.
-        let cell = |point: Point2| ((point.x / TOLERANCE).floor() as i64, (point.y / TOLERANCE).floor() as i64);
-        let mut cells: HashMap<(Id, i64, i64), Vec<(&Wall, End, Point2)>> = HashMap::new();
+        let cell = |point: Point2| {
+            (
+                (point.x / TOLERANCE).floor() as i64,
+                (point.y / TOLERANCE).floor() as i64,
+            )
+        };
+        let mut cells: HashMap<(Id, i64, i64), CellEnds<'a>> = HashMap::new();
         for wall in walls {
             for end in [End::Start, End::End] {
                 let corner = corner_at(wall, end);
                 let (x, y) = cell(corner);
-                cells.entry((wall.level_id, x, y)).or_default().push((wall, end, corner));
+                cells
+                    .entry((wall.level_id, x, y))
+                    .or_default()
+                    .push((wall, end, corner));
             }
         }
 
@@ -77,8 +99,12 @@ impl<'a> WallJoins<'a> {
                     .flat_map(|dx| (-1..=1).map(move |dy| (dx, dy)))
                     .filter_map(|(dx, dy)| cells.get(&(wall.level_id, x + dx, y + dy)))
                     .flatten()
-                    .filter(|other| other.0.id != wall.id && corner.distance_to(other.2) <= TOLERANCE);
-                let Some(first) = neighbours.next() else { continue };
+                    .filter(|other| {
+                        other.0.id != wall.id && corner.distance_to(other.2) <= TOLERANCE
+                    });
+                let Some(first) = neighbours.next() else {
+                    continue;
+                };
                 touching.insert((wall.id, end));
                 if neighbours.next().is_none() {
                     joins.insert((wall.id, end), (first.0, first.1));
@@ -91,14 +117,20 @@ impl<'a> WallJoins<'a> {
         let reciprocal: Vec<EndKey> = joins
             .iter()
             .filter(|(key, (other, other_end))| {
-                joins.get(&(other.id, *other_end)).is_some_and(|back| back.0.id == key.0 && back.1 == key.1)
+                joins
+                    .get(&(other.id, *other_end))
+                    .is_some_and(|back| back.0.id == key.0 && back.1 == key.1)
             })
             .map(|(key, _)| *key)
             .collect();
         let reciprocal: HashSet<EndKey> = reciprocal.into_iter().collect();
         joins.retain(|key, _| reciprocal.contains(key));
 
-        let mut index = WallJoins { joins, roles: HashMap::new(), tees: HashMap::new() };
+        let mut index = WallJoins {
+            joins,
+            roles: HashMap::new(),
+            tees: HashMap::new(),
+        };
         index.resolve_styles(walls, &touching);
         index
     }
@@ -106,7 +138,8 @@ impl<'a> WallJoins<'a> {
     /// Applies the per-end settings to the corners found by end-point matching, then finds the tees.
     fn resolve_styles(&mut self, walls: &'a [Wall], touching: &HashSet<EndKey>) {
         let by_id: HashMap<Id, &Wall> = walls.iter().rev().map(|wall| (wall.id, wall)).collect();
-        let corners: Vec<(EndKey, (&Wall, End))> = self.joins.iter().map(|(key, join)| (*key, *join)).collect();
+        let corners: Vec<(EndKey, (&Wall, End))> =
+            self.joins.iter().map(|(key, join)| (*key, *join)).collect();
         for (key, (other, other_end)) in corners {
             let own = setting_at(by_id[&key.0], key.1);
             let theirs = setting_at(other, other_end);
@@ -124,7 +157,10 @@ impl<'a> WallJoins<'a> {
         let mut grid: Option<SegmentGrid> = None;
         for wall in walls {
             for end in [End::Start, End::End] {
-                if wall.length() < TOLERANCE || touching.contains(&(wall.id, end)) || stays_apart(setting_at(wall, end)) {
+                if wall.length() < TOLERANCE
+                    || touching.contains(&(wall.id, end))
+                    || stays_apart(setting_at(wall, end))
+                {
                     continue;
                 }
                 let grid = grid.get_or_insert_with(|| SegmentGrid::build(walls));
@@ -152,10 +188,18 @@ impl<'a> WallJoins<'a> {
         let at_start = from <= TOLERANCE;
         let at_end = to >= wall.length() - TOLERANCE;
         [
-            if at_start { start_left } else { station(from, 1.0) },
+            if at_start {
+                start_left
+            } else {
+                station(from, 1.0)
+            },
             if at_end { end_left } else { station(to, 1.0) },
             if at_end { end_right } else { station(to, -1.0) },
-            if at_start { start_right } else { station(from, -1.0) },
+            if at_start {
+                start_right
+            } else {
+                station(from, -1.0)
+            },
         ]
     }
 
@@ -185,7 +229,8 @@ impl<'a> WallJoins<'a> {
         // Solves n.x = half for both walls: x is the left-face corner relative to the shared corner.
         let offset_x = (half * other_normal_y - other_half * normal_y) / determinant;
         let offset_y = (normal_x * other_half - other_normal_x * half) / determinant;
-        let limit = (MAXIMUM_MITER_FACTOR * half.max(other_half)).min(wall.length().min(other.length()) / 2.0);
+        let limit = (MAXIMUM_MITER_FACTOR * half.max(other_half))
+            .min(wall.length().min(other.length()) / 2.0);
         if (offset_x * offset_x + offset_y * offset_y).sqrt() > limit {
             return square(corner, normal_x * half, normal_y * half);
         }
@@ -203,7 +248,11 @@ impl<'a> WallJoins<'a> {
         };
         Some(cut_against(wall, end, target, near).unwrap_or_else(|| {
             let (normal_x, normal_y) = wall.left_normal();
-            square(corner_at(wall, end), normal_x * wall.thickness / 2.0, normal_y * wall.thickness / 2.0)
+            square(
+                corner_at(wall, end),
+                normal_x * wall.thickness / 2.0,
+                normal_y * wall.thickness / 2.0,
+            )
         }))
     }
 }
@@ -217,7 +266,11 @@ fn cut_against(wall: &Wall, end: End, other: &Wall, near_face: bool) -> Option<(
     let (other_x, other_y) = other.direction();
     let (other_normal_x, other_normal_y) = other.left_normal();
     // The wall's body lies on the side of `other` that its inward direction points to.
-    let (inward_x, inward_y) = if end == End::Start { (direction_x, direction_y) } else { (-direction_x, -direction_y) };
+    let (inward_x, inward_y) = if end == End::Start {
+        (direction_x, direction_y)
+    } else {
+        (-direction_x, -direction_y)
+    };
     let projection = inward_x * other_normal_x + inward_y * other_normal_y;
     if projection == 0.0 || projection.is_nan() {
         return None;
@@ -231,7 +284,8 @@ fn cut_against(wall: &Wall, end: End, other: &Wall, near_face: bool) -> Option<(
     );
     let (normal_x, normal_y) = wall.left_normal();
     let half = wall.thickness / 2.0;
-    let limit = (MAXIMUM_MITER_FACTOR * half.max(other_half)).min(wall.length().min(other.length()) / 2.0);
+    let limit =
+        (MAXIMUM_MITER_FACTOR * half.max(other_half)).min(wall.length().min(other.length()) / 2.0);
     let face_cut = |offset_x: f64, offset_y: f64| {
         let cross = direction_x * other_y - direction_y * other_x;
         if cross.abs() < 1e-6 {
@@ -239,9 +293,13 @@ fn cut_against(wall: &Wall, end: End, other: &Wall, near_face: bool) -> Option<(
         }
         let (origin_x, origin_y) = (corner.x + offset_x, corner.y + offset_y);
         let t = ((face.x - origin_x) * other_y - (face.y - origin_y) * other_x) / cross;
-        (t.abs() <= limit).then(|| Point2::new(origin_x + direction_x * t, origin_y + direction_y * t))
+        (t.abs() <= limit)
+            .then(|| Point2::new(origin_x + direction_x * t, origin_y + direction_y * t))
     };
-    Some((face_cut(normal_x * half, normal_y * half)?, face_cut(-normal_x * half, -normal_y * half)?))
+    Some((
+        face_cut(normal_x * half, normal_y * half)?,
+        face_cut(-normal_x * half, -normal_y * half)?,
+    ))
 }
 
 /// The only wall whose body a free end rests on; `None` when there is none or more than one.
@@ -250,7 +308,10 @@ fn find_host<'a>(wall: &Wall, end: End, grid: &SegmentGrid<'a>) -> Option<&'a Wa
     let (direction_x, direction_y) = wall.direction();
     let mut found: Option<&Wall> = None;
     for other in grid.near(wall.level_id, corner) {
-        if other.id == wall.id || other.length() < TOLERANCE || found.is_some_and(|host| host.id == other.id) {
+        if other.id == wall.id
+            || other.length() < TOLERANCE
+            || found.is_some_and(|host| host.id == other.id)
+        {
             continue;
         }
         let (other_x, other_y) = other.direction();
@@ -259,7 +320,8 @@ fn find_host<'a>(wall: &Wall, end: End, grid: &SegmentGrid<'a>) -> Option<&'a Wa
             continue;
         }
         let across = -(corner.x - other.start.x) * other_y + (corner.y - other.start.y) * other_x;
-        if across.abs() > TOLERANCE || (direction_x * other_y - direction_y * other_x).abs() < 1e-3 {
+        if across.abs() > TOLERANCE || (direction_x * other_y - direction_y * other_x).abs() < 1e-3
+        {
             continue;
         }
         if found.is_some() {
@@ -282,11 +344,17 @@ impl<'a> SegmentGrid<'a> {
     const MAXIMUM_SAMPLES: usize = 4096;
 
     fn cell_of(x: f64, y: f64) -> (i64, i64) {
-        ((x / Self::CELL_SIZE).floor() as i64, (y / Self::CELL_SIZE).floor() as i64)
+        (
+            (x / Self::CELL_SIZE).floor() as i64,
+            (y / Self::CELL_SIZE).floor() as i64,
+        )
     }
 
     fn build(walls: &'a [Wall]) -> SegmentGrid<'a> {
-        let mut grid = SegmentGrid { cells: HashMap::new(), long_walls: HashMap::new() };
+        let mut grid = SegmentGrid {
+            cells: HashMap::new(),
+            long_walls: HashMap::new(),
+        };
         for wall in walls {
             let steps = (wall.length() / (Self::CELL_SIZE / 2.0)).ceil() as usize;
             if steps > Self::MAXIMUM_SAMPLES {
@@ -295,7 +363,11 @@ impl<'a> SegmentGrid<'a> {
             }
             let mut last = None;
             for step in 0..=steps.max(1) {
-                let fraction = if steps == 0 { 0.0 } else { step as f64 / steps as f64 };
+                let fraction = if steps == 0 {
+                    0.0
+                } else {
+                    step as f64 / steps as f64
+                };
                 let cell = Self::cell_of(
                     wall.start.x + (wall.end.x - wall.start.x) * fraction,
                     wall.start.y + (wall.end.y - wall.start.y) * fraction,
@@ -304,7 +376,10 @@ impl<'a> SegmentGrid<'a> {
                     continue;
                 }
                 last = Some(cell);
-                grid.cells.entry((wall.level_id, cell.0, cell.1)).or_default().push(wall);
+                grid.cells
+                    .entry((wall.level_id, cell.0, cell.1))
+                    .or_default()
+                    .push(wall);
             }
         }
         grid
@@ -348,7 +423,10 @@ mod tests {
 
     #[test]
     fn a_right_angle_corner_is_mitred_on_the_diagonal() {
-        let walls = [wall(1, (0., 0.), (4., 0.), 0.2), wall(2, (4., 0.), (4., 3.), 0.2)];
+        let walls = [
+            wall(1, (0., 0.), (4., 0.), 0.2),
+            wall(2, (4., 0.), (4., 3.), 0.2),
+        ];
         let joins = WallJoins::build(&walls);
         let outline = joins.section_outline(&walls[0], 0.0, 4.0);
         // The free start is square; the joined end meets the other wall's faces on the diagonal.
@@ -358,7 +436,10 @@ mod tests {
 
     #[test]
     fn a_section_in_the_middle_of_a_wall_is_square() {
-        let walls = [wall(1, (0., 0.), (4., 0.), 0.2), wall(2, (4., 0.), (4., 3.), 0.2)];
+        let walls = [
+            wall(1, (0., 0.), (4., 0.), 0.2),
+            wall(2, (4., 0.), (4., 3.), 0.2),
+        ];
         let joins = WallJoins::build(&walls);
         let outline = joins.section_outline(&walls[0], 1.0, 2.0);
         assert!(close(outline[0], 1.0, 0.1) && close(outline[1], 2.0, 0.1));
@@ -367,7 +448,11 @@ mod tests {
 
     #[test]
     fn three_walls_at_one_point_stay_square() {
-        let walls = [wall(1, (0., 0.), (4., 0.), 0.2), wall(2, (4., 0.), (4., 3.), 0.2), wall(3, (4., 0.), (8., 0.), 0.2)];
+        let walls = [
+            wall(1, (0., 0.), (4., 0.), 0.2),
+            wall(2, (4., 0.), (4., 3.), 0.2),
+            wall(3, (4., 0.), (8., 0.), 0.2),
+        ];
         let joins = WallJoins::build(&walls);
         let outline = joins.section_outline(&walls[0], 0.0, 4.0);
         assert!(close(outline[1], 4.0, 0.1) && close(outline[2], 4.0, -0.1));
@@ -376,7 +461,10 @@ mod tests {
     #[test]
     fn an_end_resting_on_another_wall_stops_at_its_face() {
         // A partition running up into the middle of a 0.3 m wall along y = 3.
-        let walls = [wall(1, (0., 3.), (8., 3.), 0.3), wall(2, (4., 0.), (4., 3.), 0.1)];
+        let walls = [
+            wall(1, (0., 3.), (8., 3.), 0.3),
+            wall(2, (4., 0.), (4., 3.), 0.1),
+        ];
         let joins = WallJoins::build(&walls);
         let outline = joins.section_outline(&walls[1], 0.0, 3.0);
         assert!(close(outline[1], 3.95, 2.85) && close(outline[2], 4.05, 2.85));
@@ -384,7 +472,10 @@ mod tests {
 
     #[test]
     fn a_squared_off_end_does_not_mitre() {
-        let mut walls = [wall(1, (0., 0.), (4., 0.), 0.2), wall(2, (4., 0.), (4., 3.), 0.2)];
+        let mut walls = [
+            wall(1, (0., 0.), (4., 0.), 0.2),
+            wall(2, (4., 0.), (4., 3.), 0.2),
+        ];
         walls[0].end_join = join_setting::SQUARE_OFF;
         let joins = WallJoins::build(&walls);
         let outline = joins.section_outline(&walls[0], 0.0, 4.0);

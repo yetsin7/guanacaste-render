@@ -72,7 +72,9 @@ fn clip(polygon: &[Point2], side: Side) -> Vec<Point2> {
         if current_distance <= 0.0 {
             output.push(current);
         }
-        if (current_distance < 0.0 && next_distance > 0.0) || (current_distance > 0.0 && next_distance < 0.0) {
+        if (current_distance < 0.0 && next_distance > 0.0)
+            || (current_distance > 0.0 && next_distance < 0.0)
+        {
             let t = current_distance / (current_distance - next_distance);
             output.push(Point2::new(
                 current.x + t * (next.x - current.x),
@@ -90,7 +92,10 @@ fn has_area(polygon: &[Point2]) -> bool {
 
 /// Convex counter-clockwise pieces that cover the outline minus every opening: the outline is ear-clipped and each
 /// rectangle is then subtracted from every piece with half-plane clips.
-pub fn slab_pieces(outline: &[Point2], openings: &[PlanRectangle]) -> Result<Vec<Vec<Point2>>, Degenerate> {
+pub fn slab_pieces(
+    outline: &[Point2],
+    openings: &[PlanRectangle],
+) -> Result<Vec<Vec<Point2>>, Degenerate> {
     let mut pieces: Vec<Vec<Point2>> = triangulate(outline)?
         .into_iter()
         .map(|[a, b, c]| vec![outline[a], outline[b], outline[c]])
@@ -99,7 +104,10 @@ pub fn slab_pieces(outline: &[Point2], openings: &[PlanRectangle]) -> Result<Vec
         pieces = pieces
             .iter()
             .flat_map(|piece| {
-                let middle = clip(&clip(piece, Side::XAtLeast(opening.min_x)), Side::XAtMost(opening.max_x));
+                let middle = clip(
+                    &clip(piece, Side::XAtLeast(opening.min_x)),
+                    Side::XAtMost(opening.max_x),
+                );
                 [
                     clip(piece, Side::XAtMost(opening.min_x)),
                     clip(piece, Side::XAtLeast(opening.max_x)),
@@ -115,8 +123,14 @@ pub fn slab_pieces(outline: &[Point2], openings: &[PlanRectangle]) -> Result<Vec
 
 /// Whether the whole rectangle is covered by a simple polygon, boundary included. Comparing areas also detects
 /// concave notches that lie between four interior corners.
-pub fn contains_rectangle(outline: &[Point2], rectangle: &PlanRectangle) -> Result<bool, Degenerate> {
-    let (width, height) = (rectangle.max_x - rectangle.min_x, rectangle.max_y - rectangle.min_y);
+pub fn contains_rectangle(
+    outline: &[Point2],
+    rectangle: &PlanRectangle,
+) -> Result<bool, Degenerate> {
+    let (width, height) = (
+        rectangle.max_x - rectangle.min_x,
+        rectangle.max_y - rectangle.min_y,
+    );
     if !width.is_finite() || !height.is_finite() || width <= 0.0 || height <= 0.0 {
         return Ok(false);
     }
@@ -164,7 +178,10 @@ mod tests {
             max_y: 3.0,
         };
         let pieces = slab_pieces(&square(4.0), &[hole]).expect("a simple outline");
-        let area: f64 = pieces.iter().map(|piece| signed_double_area(piece) / 2.0).sum();
+        let area: f64 = pieces
+            .iter()
+            .map(|piece| signed_double_area(piece) / 2.0)
+            .sum();
         assert!((area - 14.0).abs() < 1e-12);
         assert!(pieces.iter().all(|piece| signed_double_area(piece) > 0.0));
     }
@@ -188,7 +205,17 @@ mod tests {
         assert_eq!(contains_rectangle(&slab, &inside), Ok(true));
         assert_eq!(contains_rectangle(&slab, &across_the_edge), Ok(false));
         // A C-shaped slab: the four corners of this rectangle are inside it, but it spans the notch.
-        let c = [(0., 0.), (4., 0.), (4., 1.), (1., 1.), (1., 3.), (4., 3.), (4., 4.), (0., 4.)].map(|(x, y)| Point2::new(x, y));
+        let c = [
+            (0., 0.),
+            (4., 0.),
+            (4., 1.),
+            (1., 1.),
+            (1., 3.),
+            (4., 3.),
+            (4., 4.),
+            (0., 4.),
+        ]
+        .map(|(x, y)| Point2::new(x, y));
         let over_the_notch = PlanRectangle {
             min_x: 0.5,
             min_y: 0.5,
@@ -201,7 +228,8 @@ mod tests {
     #[test]
     /// Keeps opening walls consistently oriented.
     fn corners_run_counter_clockwise() {
-        let rectangle = PlanRectangle::of(&[Point2::new(3.0, 1.0), Point2::new(1.0, 2.0)]).expect("two points");
+        let rectangle =
+            PlanRectangle::of(&[Point2::new(3.0, 1.0), Point2::new(1.0, 2.0)]).expect("two points");
         assert!(signed_double_area(&rectangle.corners()) > 0.0);
         assert_eq!(rectangle.corners()[0], Point2::new(1.0, 1.0));
     }

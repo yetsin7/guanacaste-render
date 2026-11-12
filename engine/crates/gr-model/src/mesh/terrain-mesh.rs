@@ -7,12 +7,24 @@ use crate::plan::{PlanRectangle, Point2, counter_clockwise, signed_double_area, 
 use glam::Vec3;
 
 /// Appends the sampled terrain solid and returns the lowest elevation at a boundary corner.
-pub(super) fn add_terrain(mesh: &mut SceneMesh, slab: &FloorSlab, surface: &TerrainSurface, level: f64) -> Option<f64> {
+pub(super) fn add_terrain(
+    mesh: &mut SceneMesh,
+    slab: &FloorSlab,
+    surface: &TerrainSurface,
+    level: f64,
+) -> Option<f64> {
     let boundary = counter_clockwise(&slab.boundary);
     let extent = PlanRectangle::of(&boundary)?;
-    let spacing = ((extent.max_x - extent.min_x).max(extent.max_y - extent.min_y) / 90.0).clamp(0.2, 5.0);
+    let spacing =
+        ((extent.max_x - extent.min_x).max(extent.max_y - extent.min_y) / 90.0).clamp(0.2, 5.0);
     let datum = level as f32;
-    let lift = |point: Point2| Vec3::new(point.x as f32, point.y as f32, datum + surface.elevation_at(point) as f32);
+    let lift = |point: Point2| {
+        Vec3::new(
+            point.x as f32,
+            point.y as f32,
+            datum + surface.elevation_at(point) as f32,
+        )
+    };
     let mut lowest = f64::MAX;
     let columns = (((extent.max_x - extent.min_x) / spacing).ceil() as i32).max(1);
     let rows = (((extent.max_y - extent.min_y) / spacing).ceil() as i32).max(1);
@@ -40,14 +52,21 @@ pub(super) fn add_terrain(mesh: &mut SceneMesh, slab: &FloorSlab, surface: &Terr
                             let [a, b, c] = *triangle;
                             contains(
                                 &boundary,
-                                Point2::new((cell[a].x + cell[b].x + cell[c].x) / 3.0, (cell[a].y + cell[b].y + cell[c].y) / 3.0),
+                                Point2::new(
+                                    (cell[a].x + cell[b].x + cell[c].x) / 3.0,
+                                    (cell[a].y + cell[b].y + cell[c].y) / 3.0,
+                                ),
                             )
                         })
                         .collect()
                 }
             };
             let lifted: Vec<Vec3> = piece.iter().copied().map(lift).collect();
-            let normals: Vec<Vec3> = piece.iter().copied().map(|point| surface.normal_at(point)).collect();
+            let normals: Vec<Vec3> = piece
+                .iter()
+                .copied()
+                .map(|point| surface.normal_at(point))
+                .collect();
             for point in &lifted {
                 lowest = lowest.min((point.z - datum) as f64);
             }
@@ -100,7 +119,10 @@ pub(super) fn add_terrain(mesh: &mut SceneMesh, slab: &FloorSlab, surface: &Terr
             );
         }
     }
-    boundary.iter().map(|&point| level + surface.elevation_at(point)).reduce(f64::min)
+    boundary
+        .iter()
+        .map(|&point| level + surface.elevation_at(point))
+        .reduce(f64::min)
 }
 
 /// Tests the even-odd interior rule used when positioning plants on a site.
@@ -113,7 +135,9 @@ pub(super) fn contains(polygon: &[Point2], point: Point2) -> bool {
     for index in 0..polygon.len() {
         let a = polygon[index];
         let b = polygon[previous];
-        if (a.y > point.y) != (b.y > point.y) && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x {
+        if (a.y > point.y) != (b.y > point.y)
+            && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x
+        {
             inside = !inside;
         }
         previous = index;
@@ -156,7 +180,10 @@ fn clip_to_cell(subject: &[Point2], cell: &[Point2]) -> Vec<Point2> {
     }
     let mut cleaned: Vec<Point2> = Vec::new();
     for point in output {
-        if cleaned.last().is_none_or(|last| last.distance_to(point) > 1e-9) {
+        if cleaned
+            .last()
+            .is_none_or(|last| last.distance_to(point) > 1e-9)
+        {
             cleaned.push(point);
         }
     }

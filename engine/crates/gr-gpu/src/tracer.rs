@@ -1,9 +1,13 @@
 //! The path tracer on a wgpu device: scene upload, sample passes, the on-screen picture and readback.
 
+#[path = "raster.rs"]
+mod raster;
+
 use crate::camera::CameraFrame;
 use glam::Vec3;
 use gr_core::bvh::{FlatBvh, FlatNode};
-use gr_core::scene_file::Scene;
+use gr_core::scene_file::{Material, Scene};
+pub use raster::{RasterFrame, raster_supported};
 use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -130,6 +134,21 @@ struct GpuMaterial {
     pad: [f32; 3],
 }
 
+impl From<&Material> for GpuMaterial {
+    fn from(material: &Material) -> GpuMaterial {
+        GpuMaterial {
+            base_color: material.base_color.to_array(),
+            roughness: material.roughness.clamp(0.0, 1.0),
+            emission: material.emission.to_array(),
+            metallic: material.metallic.clamp(0.0, 1.0),
+            transmission_tint: material.transmission_tint.to_array(),
+            transmission: material.transmission.clamp(0.0, 1.0),
+            ior: material.ior.max(1.0),
+            pad: [0.0; 3],
+        }
+    }
+}
+
 /// Adapter name fragment to prefer, e.g. "nvidia" or "intel"; `None` takes the high-performance adapter.
 pub struct GpuOptions<'a> {
     pub adapter: Option<&'a str>,
@@ -200,6 +219,8 @@ pub struct GpuTracer {
     frames: u32,
     /// Sample passes submitted and not yet finished by the GPU.
     in_flight: Arc<AtomicU32>,
+    /// The navigation view, created on its first frame.
+    raster: Option<raster::Raster>,
 }
 
 impl GpuTracer {
@@ -272,20 +293,7 @@ impl GpuTracer {
                 }
             })
             .collect();
-        let materials: Vec<GpuMaterial> = scene
-            .materials
-            .iter()
-            .map(|material| GpuMaterial {
-                base_color: material.base_color.to_array(),
-                roughness: material.roughness.clamp(0.0, 1.0),
-                emission: material.emission.to_array(),
-                metallic: material.metallic.clamp(0.0, 1.0),
-                transmission_tint: material.transmission_tint.to_array(),
-                transmission: material.transmission.clamp(0.0, 1.0),
-                ior: material.ior.max(1.0),
-                pad: [0.0; 3],
-            })
-            .collect();
+        let materials: Vec<GpuMaterial> = scene.materials.iter().map(GpuMaterial::from).collect();
 
         // Storage buffers cannot be empty; an empty scene still gets one inert element of each kind.
         let storage =
@@ -460,6 +468,7 @@ impl GpuTracer {
             backend: format!("{:?}", adapter.backend),
             frames: 0,
             in_flight: Arc::new(AtomicU32::new(0)),
+            raster: None,
         })
     }
 
@@ -676,7 +685,20 @@ impl GpuTracer {
 
     /// The picture written by [`GpuTracer::resolve`] as tightly packed RGBA bytes, for saving to a file.
     pub fn read_display(&self) -> Result<Vec<u8>, GpuError> {
-        let (width, height) = (self.uniforms.width, self.uniforms.height);
+        self.read_texture(
+            &self.target.display,
+            self.uniforms.width,
+            self.uniforms.height,
+        )
+    }
+
+    /// Copies an 8-bit RGBA texture to tightly packed bytes.
+    fn read_texture(
+        &self,
+        texture: &wgpu::Texture,
+        width: u32,
+        height: u32,
+    ) -> Result<Vec<u8>, GpuError> {
         // Rows of a texture copy are padded to a multiple of 256 bytes.
         let stride = (width * 4).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
             * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
@@ -688,7 +710,7 @@ impl GpuTracer {
         });
         let mut encoder = self.device.create_command_encoder(&Default::default());
         encoder.copy_texture_to_buffer(
-            self.target.display.as_image_copy(),
+            texture.as_image_copy(),
             wgpu::TexelCopyBufferInfo {
                 buffer: &staging,
                 layout: wgpu::TexelCopyBufferLayout {

@@ -6,7 +6,10 @@ use super::scene_mesh::SurfaceKind as Surface;
 use crate::document::component_shape as catalog;
 
 /// Selects the sedan geometry and paint associated with its catalog identifier.
-pub(super) fn parts(geometry: &ComponentGeometry<'_>, component_shape: i32) -> Option<Vec<ElementPart>> {
+pub(super) fn parts(
+    geometry: &ComponentGeometry<'_>,
+    component_shape: i32,
+) -> Option<Vec<ElementPart>> {
     let paint = match component_shape {
         catalog::CAR => Surface::CarPaint,
         catalog::SILVER_CAR => Surface::CarPaintSilver,
@@ -52,10 +55,25 @@ fn sedan(geometry: &ComponentGeometry<'_>, paint: Surface) -> Vec<ElementPart> {
         (-axle + arch_half, axle - arch_half),
         (axle + arch_half, length / 2.0 - 0.04),
     ] {
-        parts.push(geometry.block((0.0, (from + to) / 2.0), (width - 0.04, to - from), (SILL, ARCH), paint));
+        parts.push(geometry.block(
+            (0.0, (from + to) / 2.0),
+            (width - 0.04, to - from),
+            (SILL, ARCH),
+            paint,
+        ));
     }
-    parts.push(geometry.block((0.0, 0.0), (width - 0.02, length - 0.06), (ARCH, height * 0.53), paint));
-    parts.push(geometry.block((0.0, 0.05), (width - 0.10, length - 0.30), (height * 0.53, height * 0.57), paint));
+    parts.push(geometry.block(
+        (0.0, 0.0),
+        (width - 0.02, length - 0.06),
+        (ARCH, height * 0.53),
+        paint,
+    ));
+    parts.push(geometry.block(
+        (0.0, 0.05),
+        (width - 0.10, length - 0.30),
+        (height * 0.53, height * 0.57),
+        paint,
+    ));
     let glass_bottom = height * 0.57;
     let roof = height - 0.05;
     for band in 0..5 {

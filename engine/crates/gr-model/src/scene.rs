@@ -18,8 +18,14 @@ pub fn stock_materials() -> Vec<Material> {
         .filter(|line| !line.trim().is_empty())
         .map(|line| {
             let fields: Vec<&str> = line.split('\t').collect();
-            let number = |index: usize| fields.get(index).and_then(|field| field.parse::<f32>().ok()).unwrap_or(0.0);
-            let colour = |index: usize| Vec3::new(number(index), number(index + 1), number(index + 2));
+            let number = |index: usize| {
+                fields
+                    .get(index)
+                    .and_then(|field| field.parse::<f32>().ok())
+                    .unwrap_or(0.0)
+            };
+            let colour =
+                |index: usize| Vec3::new(number(index), number(index + 1), number(index + 2));
             Material {
                 base_color: colour(2),
                 roughness: number(5),
@@ -38,12 +44,26 @@ pub fn stock_materials() -> Vec<Material> {
     materials
 }
 
+/// The Spanish name of each stock material ("Pared", "Vidrio"…), in the order of [`stock_materials`].
+pub fn stock_material_names() -> Vec<&'static str> {
+    STOCK_MATERIALS
+        .lines()
+        .skip(1)
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| line.split('\t').nth(1).unwrap_or(""))
+        .collect()
+}
+
 /// Frames bounds from a south-east, elevated three-quarter viewpoint, as `RenderCamera.FrameBounds` does.
 pub fn framing_camera(min: Vec3, max: Vec3) -> Camera {
     let center = (min + max) / 2.0;
     let radius = ((max - min).length() / 2.0).max(3.0);
     let (azimuth, elevation) = ((-50.0f32).to_radians(), 28.0f32.to_radians());
-    let direction = Vec3::new(elevation.cos() * azimuth.cos(), elevation.cos() * azimuth.sin(), elevation.sin());
+    let direction = Vec3::new(
+        elevation.cos() * azimuth.cos(),
+        elevation.cos() * azimuth.sin(),
+        elevation.sin(),
+    );
     const FIELD_OF_VIEW: f32 = 45.0;
     // A bounding-sphere fit is conservative for box-like buildings; 0.8 frames them more tightly.
     let distance = radius / (FIELD_OF_VIEW.to_radians() / 2.0).sin() * 0.8;
@@ -65,7 +85,10 @@ pub fn to_scene(mesh: SceneMesh, building_bounds: (Vec3, Vec3)) -> Scene {
         .enumerate()
         .map(|(index, &kind)| {
             let original = kind as usize;
-            let scale = mesh.emission_scale.as_ref().map_or(1.0, |values| values[index]);
+            let scale = mesh
+                .emission_scale
+                .as_ref()
+                .map_or(1.0, |values| values[index]);
             if scale >= 1.0 || materials[original].emission == Vec3::ZERO {
                 return original as u32;
             }

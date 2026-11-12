@@ -39,7 +39,13 @@ impl DeviceFrame {
 }
 
 /// Triangulates an electrical catalog prism with the source application's ordering.
-fn add_prism(mesh: &mut SceneMesh, outline: &mut [Vec3], bottom: f32, top: f32, surface: SurfaceKind) {
+fn add_prism(
+    mesh: &mut SceneMesh,
+    outline: &mut [Vec3],
+    bottom: f32,
+    top: f32,
+    surface: SurfaceKind,
+) {
     let area: f32 = (0..outline.len())
         .map(|index| {
             let a = outline[index];
@@ -53,8 +59,18 @@ fn add_prism(mesh: &mut SceneMesh, outline: &mut [Vec3], bottom: f32, top: f32, 
     let up = Vec3::Z * top;
     let down = Vec3::Z * bottom;
     for index in 1..outline.len() - 1 {
-        mesh.add_triangle(outline[0] + up, outline[index] + up, outline[index + 1] + up, surface);
-        mesh.add_triangle(outline[index + 1] + down, outline[index] + down, outline[0] + down, surface);
+        mesh.add_triangle(
+            outline[0] + up,
+            outline[index] + up,
+            outline[index + 1] + up,
+            surface,
+        );
+        mesh.add_triangle(
+            outline[index + 1] + down,
+            outline[index] + down,
+            outline[0] + down,
+            surface,
+        );
     }
     for index in 0..outline.len() {
         let a = outline[index];
@@ -64,7 +80,14 @@ fn add_prism(mesh: &mut SceneMesh, outline: &mut [Vec3], bottom: f32, top: f32, 
 }
 
 /// Adds a sixteen-sided vertical cylinder with heights relative to its center.
-fn add_disc(mesh: &mut SceneMesh, center: Vec3, radius: f32, bottom: f32, top: f32, surface: SurfaceKind) {
+fn add_disc(
+    mesh: &mut SceneMesh,
+    center: Vec3,
+    radius: f32,
+    bottom: f32,
+    top: f32,
+    surface: SurfaceKind,
+) {
     let mut outline: Vec<_> = (0..16)
         .map(|index| {
             let angle = index as f32 * std::f32::consts::TAU / 16.0;
@@ -75,7 +98,12 @@ fn add_disc(mesh: &mut SceneMesh, center: Vec3, radius: f32, bottom: f32, top: f
 }
 
 /// Adds supported device solids, returning false when device or lighting behavior still requires the source application.
-pub(super) fn add_electrical_device(mesh: &mut SceneMesh, device: &ElectricalDevice, datum: f64, lit: bool) -> bool {
+pub(super) fn add_electrical_device(
+    mesh: &mut SceneMesh,
+    device: &ElectricalDevice,
+    datum: f64,
+    lit: bool,
+) -> bool {
     let facing = device.facing as f32;
     let outward = Vec3::new(facing.cos(), facing.sin(), 0.0);
     let frame = DeviceFrame {
@@ -87,33 +115,75 @@ pub(super) fn add_electrical_device(mesh: &mut SceneMesh, device: &ElectricalDev
         along: Vec3::new(-outward.y, outward.x, 0.0),
         outward,
     };
-    let glow = if lit { SurfaceKind::LightEmitter } else { SurfaceKind::LightOff };
+    let glow = if lit {
+        SurfaceKind::LightEmitter
+    } else {
+        SurfaceKind::LightOff
+    };
     match device.kind {
         kind::OUTLET | kind::GFCI_OUTLET | kind::USB_OUTLET => {
-            frame.block(mesh, [0.0375, 0.004, 0.004, -0.06, 0.06], SurfaceKind::Ceramic);
+            frame.block(
+                mesh,
+                [0.0375, 0.004, 0.004, -0.06, 0.06],
+                SurfaceKind::Ceramic,
+            );
             for row in [-0.025, 0.025] {
                 for slot in [-0.007, 0.007] {
-                    frame
-                        .offset(slot)
-                        .block(mesh, [0.0012, 0.0015, 0.009, row - 0.006, row + 0.006], SurfaceKind::OpeningFrame);
+                    frame.offset(slot).block(
+                        mesh,
+                        [0.0012, 0.0015, 0.009, row - 0.006, row + 0.006],
+                        SurfaceKind::OpeningFrame,
+                    );
                 }
-                frame.block(mesh, [0.002, 0.0015, 0.009, row - 0.016, row - 0.012], SurfaceKind::OpeningFrame);
+                frame.block(
+                    mesh,
+                    [0.002, 0.0015, 0.009, row - 0.016, row - 0.012],
+                    SurfaceKind::OpeningFrame,
+                );
             }
             if device.kind == kind::GFCI_OUTLET {
-                frame.block(mesh, [0.012, 0.002, 0.0095, -0.004, 0.004], SurfaceKind::Metal);
+                frame.block(
+                    mesh,
+                    [0.012, 0.002, 0.0095, -0.004, 0.004],
+                    SurfaceKind::Metal,
+                );
             }
         }
         kind::OUTLET_240 => {
-            frame.block(mesh, [0.06, 0.005, 0.005, -0.06, 0.06], SurfaceKind::Ceramic);
-            frame.block(mesh, [0.025, 0.0015, 0.011, -0.025, 0.025], SurfaceKind::OpeningFrame);
+            frame.block(
+                mesh,
+                [0.06, 0.005, 0.005, -0.06, 0.06],
+                SurfaceKind::Ceramic,
+            );
+            frame.block(
+                mesh,
+                [0.025, 0.0015, 0.011, -0.025, 0.025],
+                SurfaceKind::OpeningFrame,
+            );
         }
         kind::SWITCH | kind::THREE_WAY_SWITCH | kind::DIMMER => {
-            frame.block(mesh, [0.0375, 0.004, 0.004, -0.06, 0.06], SurfaceKind::Ceramic);
+            frame.block(
+                mesh,
+                [0.0375, 0.004, 0.004, -0.06, 0.06],
+                SurfaceKind::Ceramic,
+            );
             let tilt = if device.is_on { 0.004 } else { -0.004 };
-            frame.block(mesh, [0.016, 0.008, 0.012 + tilt, 0.0, 0.03], SurfaceKind::Ceramic);
-            frame.block(mesh, [0.016, 0.008, 0.012 - tilt, -0.03, 0.0], SurfaceKind::Ceramic);
+            frame.block(
+                mesh,
+                [0.016, 0.008, 0.012 + tilt, 0.0, 0.03],
+                SurfaceKind::Ceramic,
+            );
+            frame.block(
+                mesh,
+                [0.016, 0.008, 0.012 - tilt, -0.03, 0.0],
+                SurfaceKind::Ceramic,
+            );
             if device.kind == kind::DIMMER {
-                frame.block(mesh, [0.004, 0.012, 0.014, -0.045, -0.035], SurfaceKind::Metal);
+                frame.block(
+                    mesh,
+                    [0.004, 0.012, 0.014, -0.045, -0.035],
+                    SurfaceKind::Metal,
+                );
             }
         }
         kind::CEILING_FIXTURE => {
@@ -128,7 +198,11 @@ pub(super) fn add_electrical_device(mesh: &mut SceneMesh, device: &ElectricalDev
                 0.055,
                 -0.010,
                 -0.006,
-                if lit { SurfaceKind::SpotEmitter } else { SurfaceKind::LightOff },
+                if lit {
+                    SurfaceKind::SpotEmitter
+                } else {
+                    SurfaceKind::LightOff
+                },
             );
         }
         kind::WALL_SCONCE => {
@@ -141,13 +215,31 @@ pub(super) fn add_electrical_device(mesh: &mut SceneMesh, device: &ElectricalDev
         }
         kind::PENDANT => {
             add_disc(mesh, frame.origin, 0.05, -0.02, 0.0, SurfaceKind::Metal);
-            add_disc(mesh, frame.origin, 0.004, -0.70, -0.02, SurfaceKind::OpeningFrame);
-            add_disc(mesh, frame.origin, 0.17, -0.95, -0.70, SurfaceKind::OpeningFrame);
+            add_disc(
+                mesh,
+                frame.origin,
+                0.004,
+                -0.70,
+                -0.02,
+                SurfaceKind::OpeningFrame,
+            );
+            add_disc(
+                mesh,
+                frame.origin,
+                0.17,
+                -0.95,
+                -0.70,
+                SurfaceKind::OpeningFrame,
+            );
             add_disc(mesh, frame.origin, 0.15, -0.96, -0.93, glow);
         }
         kind::PANEL => {
             frame.block(mesh, [0.21, 0.05, 0.05, -0.30, 0.30], SurfaceKind::Metal);
-            frame.block(mesh, [0.16, 0.004, 0.103, -0.24, 0.20], SurfaceKind::OpeningFrame);
+            frame.block(
+                mesh,
+                [0.16, 0.004, 0.103, -0.24, 0.20],
+                SurfaceKind::OpeningFrame,
+            );
             frame
                 .offset(0.15)
                 .block(mesh, [0.01, 0.006, 0.106, -0.05, 0.05], SurfaceKind::Metal);
@@ -163,14 +255,25 @@ pub(super) fn add_electrical_device(mesh: &mut SceneMesh, device: &ElectricalDev
         }
         kind::INVERTER => {
             frame.block(mesh, [0.22, 0.09, 0.09, -0.30, 0.30], SurfaceKind::Ceramic);
+            frame.offset(0.10).block(
+                mesh,
+                [0.03, 0.004, 0.182, 0.18, 0.22],
+                SurfaceKind::LightEmitter,
+            );
             frame
-                .offset(0.10)
-                .block(mesh, [0.03, 0.004, 0.182, 0.18, 0.22], SurfaceKind::LightEmitter);
-            frame.offset(-0.38).block(mesh, [0.09, 0.06, 0.06, -0.20, 0.05], SurfaceKind::Metal);
+                .offset(-0.38)
+                .block(mesh, [0.09, 0.06, 0.06, -0.20, 0.05], SurfaceKind::Metal);
         }
         kind::SMOKE_DETECTOR => {
             add_disc(mesh, frame.origin, 0.065, -0.035, 0.0, SurfaceKind::Ceramic);
-            add_disc(mesh, frame.origin, 0.05, -0.045, -0.035, SurfaceKind::Ceramic);
+            add_disc(
+                mesh,
+                frame.origin,
+                0.05,
+                -0.045,
+                -0.035,
+                SurfaceKind::Ceramic,
+            );
             add_disc(
                 mesh,
                 frame.origin + Vec3::new(0.03, 0.0, 0.0),
@@ -183,18 +286,32 @@ pub(super) fn add_electrical_device(mesh: &mut SceneMesh, device: &ElectricalDev
         kind::EMERGENCY_LIGHT => {
             frame.block(mesh, [0.17, 0.04, 0.04, -0.06, 0.06], SurfaceKind::Ceramic);
             for side in [-0.10, 0.10] {
-                frame
-                    .offset(side)
-                    .block(mesh, [0.035, 0.035, 0.07, 0.06, 0.11], SurfaceKind::LightOff);
+                frame.offset(side).block(
+                    mesh,
+                    [0.035, 0.035, 0.07, 0.06, 0.11],
+                    SurfaceKind::LightOff,
+                );
             }
         }
         kind::EXIT_SIGN => {
             frame.block(mesh, [0.17, 0.012, 0.012, -0.10, 0.10], SurfaceKind::Metal);
-            frame.block(mesh, [0.15, 0.004, 0.026, -0.08, 0.08], SurfaceKind::LightEmitter);
+            frame.block(
+                mesh,
+                [0.15, 0.004, 0.026, -0.08, 0.08],
+                SurfaceKind::LightEmitter,
+            );
         }
         kind::FIRE_ALARM_PULL_STATION => {
-            frame.block(mesh, [0.065, 0.03, 0.03, -0.085, 0.085], SurfaceKind::FireRed);
-            frame.block(mesh, [0.03, 0.006, 0.064, -0.02, 0.02], SurfaceKind::Ceramic);
+            frame.block(
+                mesh,
+                [0.065, 0.03, 0.03, -0.085, 0.085],
+                SurfaceKind::FireRed,
+            );
+            frame.block(
+                mesh,
+                [0.03, 0.006, 0.064, -0.02, 0.02],
+                SurfaceKind::Ceramic,
+            );
         }
         kind::HORN_STROBE => {
             frame.block(mesh, [0.07, 0.03, 0.03, -0.07, 0.07], SurfaceKind::FireRed);
@@ -236,7 +353,11 @@ fn add_ceiling_fan(mesh: &mut SceneMesh, frame: DeviceFrame, glow: SurfaceKind) 
             outward: radial,
         };
         blade_frame.block(mesh, [0.012, 0.06, 0.14, -0.42, -0.41], SurfaceKind::Metal);
-        blade_frame.block(mesh, [0.065, 0.27, 0.42, -0.425, -0.415], SurfaceKind::DoorLeaf);
+        blade_frame.block(
+            mesh,
+            [0.065, 0.27, 0.42, -0.425, -0.415],
+            SurfaceKind::DoorLeaf,
+        );
     }
     add_disc(mesh, frame.origin, 0.09, -0.50, -0.44, glow);
 }
@@ -245,12 +366,24 @@ fn add_ceiling_fan(mesh: &mut SceneMesh, frame: DeviceFrame, glow: SurfaceKind) 
 fn add_mini_split(mesh: &mut SceneMesh, frame: DeviceFrame, device: &ElectricalDevice, datum: f64) {
     frame.block(mesh, [0.40, 0.095, 0.10, -0.14, 0.14], SurfaceKind::Ceramic);
     frame.block(mesh, [0.39, 0.08, 0.11, 0.14, 0.15], SurfaceKind::Ceramic);
-    frame.block(mesh, [0.36, 0.012, 0.20, -0.13, -0.09], SurfaceKind::OpeningFrame);
-    frame
-        .offset(0.30)
-        .block(mesh, [0.012, 0.004, 0.196, 0.02, 0.035], SurfaceKind::LightEmitter);
-    let Some(outdoor_position) = device.outdoor_position else { return };
-    let outdoor = Vec3::new(outdoor_position.x as f32, outdoor_position.y as f32, datum as f32);
+    frame.block(
+        mesh,
+        [0.36, 0.012, 0.20, -0.13, -0.09],
+        SurfaceKind::OpeningFrame,
+    );
+    frame.offset(0.30).block(
+        mesh,
+        [0.012, 0.004, 0.196, 0.02, 0.035],
+        SurfaceKind::LightEmitter,
+    );
+    let Some(outdoor_position) = device.outdoor_position else {
+        return;
+    };
+    let outdoor = Vec3::new(
+        outdoor_position.x as f32,
+        outdoor_position.y as f32,
+        datum as f32,
+    );
     let line_z = frame.origin.z - 0.05;
     for (offset, radius) in [(-0.33, 0.011), (-0.29, 0.015)] {
         let mut start = frame.origin + frame.along * offset + frame.outward * 0.03;
@@ -272,9 +405,11 @@ fn add_mini_split(mesh: &mut SceneMesh, frame: DeviceFrame, device: &ElectricalD
     };
     outdoor_frame.block(mesh, [0.46, 0.22, 0.02, 0.0, 0.08], SurfaceKind::Structure);
     outdoor_frame.block(mesh, [0.40, 0.15, 0.02, 0.10, 0.66], SurfaceKind::Ceramic);
-    outdoor_frame
-        .offset(-0.08)
-        .block(mesh, [0.22, 0.006, 0.172, 0.16, 0.60], SurfaceKind::OpeningFrame);
+    outdoor_frame.offset(-0.08).block(
+        mesh,
+        [0.22, 0.006, 0.172, 0.16, 0.60],
+        SurfaceKind::OpeningFrame,
+    );
     outdoor_frame
         .offset(0.30)
         .block(mesh, [0.07, 0.006, 0.172, 0.20, 0.45], SurfaceKind::Metal);
@@ -308,5 +443,7 @@ fn add_water_pump(mesh: &mut SceneMesh, frame: DeviceFrame) {
         SurfaceKind::PipeCold,
         8,
     );
-    frame.offset(-0.18).block(mesh, [0.09, 0.12, 0.0, 0.08, 0.12], SurfaceKind::Metal);
+    frame
+        .offset(-0.18)
+        .block(mesh, [0.09, 0.12, 0.0, 0.08, 0.12], SurfaceKind::Metal);
 }

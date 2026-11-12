@@ -46,14 +46,22 @@ pub(super) fn add_solar_array(mesh: &mut SceneMesh, device: &ElectricalDevice, d
                 Vec3::new(width / 2.0 - 0.02, length / 2.0 - 0.02, 0.004),
                 SurfaceKind::SolarCell,
             );
-            add_oriented_box(mesh, middle, frame, Vec3::new(width / 2.0, length / 2.0, 0.018), SurfaceKind::Metal);
+            add_oriented_box(
+                mesh,
+                middle,
+                frame,
+                Vec3::new(width / 2.0, length / 2.0, 0.018),
+                SurfaceKind::Metal,
+            );
             placed += 1;
         }
     }
     for row in 0..rows {
         for at in [-0.25, 0.25] {
-            let middle =
-                center + frame.up_slope * ((row as f32 - (rows as f32 - 1.0) / 2.0) * (length + gap) + at * length) - frame.normal * 0.04;
+            let middle = center
+                + frame.up_slope
+                    * ((row as f32 - (rows as f32 - 1.0) / 2.0) * (length + gap) + at * length)
+                - frame.normal * 0.04;
             add_oriented_box(
                 mesh,
                 middle,
@@ -66,15 +74,41 @@ pub(super) fn add_solar_array(mesh: &mut SceneMesh, device: &ElectricalDevice, d
 }
 
 /// Emits a box centered on three arbitrary axes with the original renderer's face order.
-fn add_oriented_box(mesh: &mut SceneMesh, center: Vec3, frame: SolarFrame, half: Vec3, surface: SurfaceKind) {
-    let point = |u: f32, v: f32, n: f32| center + frame.across * (u * half.x) + frame.up_slope * (v * half.y) + frame.normal * (n * half.z);
+fn add_oriented_box(
+    mesh: &mut SceneMesh,
+    center: Vec3,
+    frame: SolarFrame,
+    half: Vec3,
+    surface: SurfaceKind,
+) {
+    let point = |u: f32, v: f32, n: f32| {
+        center
+            + frame.across * (u * half.x)
+            + frame.up_slope * (v * half.y)
+            + frame.normal * (n * half.z)
+    };
     for corners in [
         [(-1., -1., 1.), (1., -1., 1.), (1., 1., 1.), (-1., 1., 1.)],
-        [(-1., 1., -1.), (1., 1., -1.), (1., -1., -1.), (-1., -1., -1.)],
-        [(-1., -1., -1.), (1., -1., -1.), (1., -1., 1.), (-1., -1., 1.)],
+        [
+            (-1., 1., -1.),
+            (1., 1., -1.),
+            (1., -1., -1.),
+            (-1., -1., -1.),
+        ],
+        [
+            (-1., -1., -1.),
+            (1., -1., -1.),
+            (1., -1., 1.),
+            (-1., -1., 1.),
+        ],
         [(1., 1., -1.), (-1., 1., -1.), (-1., 1., 1.), (1., 1., 1.)],
         [(1., -1., -1.), (1., 1., -1.), (1., 1., 1.), (1., -1., 1.)],
-        [(-1., 1., -1.), (-1., -1., -1.), (-1., -1., 1.), (-1., 1., 1.)],
+        [
+            (-1., 1., -1.),
+            (-1., -1., -1.),
+            (-1., -1., 1.),
+            (-1., 1., 1.),
+        ],
     ] {
         let [a, b, c, d] = corners.map(|(u, v, n)| point(u, v, n));
         mesh.add_quad(a, b, c, d, surface);

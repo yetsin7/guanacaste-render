@@ -4,7 +4,8 @@ use super::element_part::ElementPart;
 use super::residential_furniture;
 use super::scene_mesh::SurfaceKind;
 use super::{
-    residential_appliances, residential_bedding, residential_decor, residential_fixtures, residential_seating, residential_vehicles,
+    residential_appliances, residential_bedding, residential_decor, residential_fixtures,
+    residential_seating, residential_vehicles,
 };
 use crate::document::StructuralElement;
 use crate::plan::Point2;
@@ -56,8 +57,17 @@ impl ComponentGeometry<'_> {
     }
 
     /// Places a rectangular prism in component coordinates, before the instance is rotated.
-    pub fn block(&self, center: (f64, f64), size: (f64, f64), levels: (f64, f64), kind: SurfaceKind) -> ElementPart {
-        let (x, y) = (self.element.start.x + center.0, self.element.start.y + center.1);
+    pub fn block(
+        &self,
+        center: (f64, f64),
+        size: (f64, f64),
+        levels: (f64, f64),
+        kind: SurfaceKind,
+    ) -> ElementPart {
+        let (x, y) = (
+            self.element.start.x + center.0,
+            self.element.start.y + center.1,
+        );
         let (half_width, half_depth) = (size.0 / 2.0, size.1 / 2.0);
         ElementPart::block(
             vec![
@@ -73,7 +83,13 @@ impl ComponentGeometry<'_> {
     }
 
     /// Places a twelve-sided prism for round pots, stems, and fittings.
-    pub fn round(&self, center: (f64, f64), diameter: f64, levels: (f64, f64), kind: SurfaceKind) -> ElementPart {
+    pub fn round(
+        &self,
+        center: (f64, f64),
+        diameter: f64,
+        levels: (f64, f64),
+        kind: SurfaceKind,
+    ) -> ElementPart {
         let outline = (0..12)
             .map(|index| {
                 let angle = 2.0 * PI * index as f64 / 12.0;
@@ -83,16 +99,35 @@ impl ComponentGeometry<'_> {
                 )
             })
             .collect();
-        ElementPart::block(outline, self.element.offset + levels.0, self.element.offset + levels.1, kind)
+        ElementPart::block(
+            outline,
+            self.element.offset + levels.0,
+            self.element.offset + levels.1,
+            kind,
+        )
     }
 
     /// Gives upholstered pieces the same twelve rounded plan corners as the source geometry.
-    pub fn soft(&self, center: (f64, f64), size: (f64, f64), levels: (f64, f64), radius: f64, kind: SurfaceKind) -> ElementPart {
+    pub fn soft(
+        &self,
+        center: (f64, f64),
+        size: (f64, f64),
+        levels: (f64, f64),
+        radius: f64,
+        kind: SurfaceKind,
+    ) -> ElementPart {
         let radius = radius.min(size.0.min(size.1) * 0.3);
-        let (x, y) = (self.element.start.x + center.0, self.element.start.y + center.1);
+        let (x, y) = (
+            self.element.start.x + center.0,
+            self.element.start.y + center.1,
+        );
         let (width, depth) = size;
         let corners = [
-            (x + width / 2.0 - radius, y - depth / 2.0 + radius, -PI / 2.0),
+            (
+                x + width / 2.0 - radius,
+                y - depth / 2.0 + radius,
+                -PI / 2.0,
+            ),
             (x + width / 2.0 - radius, y + depth / 2.0 - radius, 0.0),
             (x - width / 2.0 + radius, y + depth / 2.0 - radius, PI / 2.0),
             (x - width / 2.0 + radius, y - depth / 2.0 + radius, PI),
@@ -101,10 +136,18 @@ impl ComponentGeometry<'_> {
         for (corner_x, corner_y, start) in corners {
             for step in 0..=2 {
                 let angle = start + step as f64 * PI / 4.0;
-                outline.push(Point2::new(corner_x + radius * angle.cos(), corner_y + radius * angle.sin()));
+                outline.push(Point2::new(
+                    corner_x + radius * angle.cos(),
+                    corner_y + radius * angle.sin(),
+                ));
             }
         }
-        ElementPart::block(outline, self.element.offset + levels.0, self.element.offset + levels.1, kind)
+        ElementPart::block(
+            outline,
+            self.element.offset + levels.0,
+            self.element.offset + levels.1,
+            kind,
+        )
     }
 
     /// Returns the four inset corners in the order used for legs and supports.
@@ -125,10 +168,30 @@ impl ComponentGeometry<'_> {
         let side = (outer.0 - inner.0) / 2.0;
         let end = (outer.1 - inner.1) / 2.0;
         vec![
-            self.block((center.0, center.1 - inner.1 / 2.0 - end / 2.0), (outer.0, end), levels, kind),
-            self.block((center.0, center.1 + inner.1 / 2.0 + end / 2.0), (outer.0, end), levels, kind),
-            self.block((center.0 - inner.0 / 2.0 - side / 2.0, center.1), (side, inner.1), levels, kind),
-            self.block((center.0 + inner.0 / 2.0 + side / 2.0, center.1), (side, inner.1), levels, kind),
+            self.block(
+                (center.0, center.1 - inner.1 / 2.0 - end / 2.0),
+                (outer.0, end),
+                levels,
+                kind,
+            ),
+            self.block(
+                (center.0, center.1 + inner.1 / 2.0 + end / 2.0),
+                (outer.0, end),
+                levels,
+                kind,
+            ),
+            self.block(
+                (center.0 - inner.0 / 2.0 - side / 2.0, center.1),
+                (side, inner.1),
+                levels,
+                kind,
+            ),
+            self.block(
+                (center.0 + inner.0 / 2.0 + side / 2.0, center.1),
+                (side, inner.1),
+                levels,
+                kind,
+            ),
         ]
     }
 
@@ -159,10 +222,20 @@ impl ComponentGeometry<'_> {
     }
 
     /// Places a narrow member between two plan points relative to the component insertion point.
-    pub fn bar(&self, from: (f64, f64), to: (f64, f64), thickness: f64, levels: (f64, f64), kind: SurfaceKind) -> ElementPart {
+    pub fn bar(
+        &self,
+        from: (f64, f64),
+        to: (f64, f64),
+        thickness: f64,
+        levels: (f64, f64),
+        kind: SurfaceKind,
+    ) -> ElementPart {
         let (dx, dy) = (to.0 - from.0, to.1 - from.1);
         let length = (dx * dx + dy * dy).sqrt().max(1e-6);
-        let (normal_x, normal_y) = (-dy / length * thickness / 2.0, dx / length * thickness / 2.0);
+        let (normal_x, normal_y) = (
+            -dy / length * thickness / 2.0,
+            dx / length * thickness / 2.0,
+        );
         let (x, y) = (self.element.start.x, self.element.start.y);
         ElementPart::block(
             vec![

@@ -15,7 +15,11 @@ use std::f32::consts::{PI, TAU};
 /// Appends the plant standing at `base_elevation` (the ground under it, in metres).
 pub fn add_plant(mesh: &mut SceneMesh, plant: &StructuralElement, base_elevation: f64) {
     let mut local = SceneMesh::default();
-    let root = Vec3::new(plant.start.x as f32, plant.start.y as f32, (base_elevation + plant.offset) as f32);
+    let root = Vec3::new(
+        plant.start.x as f32,
+        plant.start.y as f32,
+        (base_elevation + plant.offset) as f32,
+    );
     let height = plant.height.max(0.2) as f32;
     let spread = plant.width.max(0.2) as f32;
     let mut tree = Tree::new(&mut local, DotNetRandom::new(seed(plant.id)));
@@ -44,11 +48,27 @@ fn seed(id: Id) -> i32 {
 fn proportions(style: i32, height: f32) -> (f64, f64, f64) {
     let height = height as f64;
     match style {
-        element_style::GUANACASTE => (height * 0.45, height * 0.42, (height * 0.055).clamp(0.15, 1.2)),
-        element_style::PALM => (height * 0.88, height * 0.70, (height * 0.018).clamp(0.10, 0.35)),
-        element_style::CONIFER => (height * 0.20, height * 0.12, (height * 0.022).clamp(0.06, 0.6)),
+        element_style::GUANACASTE => (
+            height * 0.45,
+            height * 0.42,
+            (height * 0.055).clamp(0.15, 1.2),
+        ),
+        element_style::PALM => (
+            height * 0.88,
+            height * 0.70,
+            (height * 0.018).clamp(0.10, 0.35),
+        ),
+        element_style::CONIFER => (
+            height * 0.20,
+            height * 0.12,
+            (height * 0.022).clamp(0.06, 0.6),
+        ),
         element_style::SHRUB => (0.0, 0.0, 0.0),
-        _ => (height * 0.45, height * 0.34, (height * 0.03).clamp(0.08, 0.6)),
+        _ => (
+            height * 0.45,
+            height * 0.34,
+            (height * 0.03).clamp(0.08, 0.6),
+        ),
     }
 }
 
@@ -65,10 +85,22 @@ fn fit_to_box(mesh: &mut SceneMesh, root: Vec3, height: f32, spread: f32) {
     if mesh.positions.is_empty() {
         return;
     }
-    let (min, max) = mesh.positions.iter().fold((Vec3::MAX, Vec3::MIN), |(min, max), &p| (min.min(p), max.max(p)));
-    let across = (max.x - root.x).max(root.x - min.x).max((max.y - root.y).max(root.y - min.y)) * 2.0;
+    let (min, max) = mesh
+        .positions
+        .iter()
+        .fold((Vec3::MAX, Vec3::MIN), |(min, max), &p| {
+            (min.min(p), max.max(p))
+        });
+    let across = (max.x - root.x)
+        .max(root.x - min.x)
+        .max((max.y - root.y).max(root.y - min.y))
+        * 2.0;
     let horizontal = if across > 1e-4 { spread / across } else { 1.0 };
-    let vertical = if max.z - min.z > 1e-4 { height / (max.z - min.z) } else { 1.0 };
+    let vertical = if max.z - min.z > 1e-4 {
+        height / (max.z - min.z)
+    } else {
+        1.0
+    };
     for point in &mut mesh.positions {
         *point = Vec3::new(
             root.x + (point.x - root.x) * horizontal,
@@ -78,7 +110,11 @@ fn fit_to_box(mesh: &mut SceneMesh, root: Vec3, height: f32, spread: f32) {
     }
     if let Some(normals) = &mut mesh.normals {
         for normal in normals.iter_mut().filter(|normal| **normal != Vec3::ZERO) {
-            *normal = normalize(Vec3::new(normal.x / horizontal, normal.y / horizontal, normal.z / vertical));
+            *normal = normalize(Vec3::new(
+                normal.x / horizontal,
+                normal.y / horizontal,
+                normal.z / vertical,
+            ));
         }
     }
 }
@@ -101,10 +137,22 @@ fn grow_broadleaf(tree: &mut Tree<'_>, root: Vec3, height: f32, spread: f32) {
         let azimuth = (index as f32 + tree.random.jitter(0.3)) * TAU / limbs as f32;
         let tilt = 0.55 + 0.35 * tree.random.next_f32();
         let direction = normalize(Vec3::new(azimuth.cos() * tilt, azimuth.sin() * tilt, 1.0));
-        tree.branch(top, direction, crown_height * 0.42, trunk_radius as f32 * 0.62, 1);
+        tree.branch(
+            top,
+            direction,
+            crown_height * 0.42,
+            trunk_radius as f32 * 0.62,
+            1,
+        );
     }
     // A leader carries the top of the crown.
-    tree.branch(top, Vec3::Z, crown_height * 0.45, trunk_radius as f32 * 0.55, 1);
+    tree.branch(
+        top,
+        Vec3::Z,
+        crown_height * 0.45,
+        trunk_radius as f32 * 0.55,
+        1,
+    );
     tree.fill_crown(340, 0.55, false);
 }
 
@@ -124,11 +172,20 @@ fn grow_guanacaste(tree: &mut Tree<'_>, root: Vec3, height: f32, spread: f32) {
     tree.leaves_per_twig = 44;
     tree.max_depth = 6;
     tree.upward_bias = 0.05;
-    let fork = tree.trunk(root, trunk_top as f32 * 0.6, trunk_radius as f32 * 1.1, 0.02);
+    let fork = tree.trunk(
+        root,
+        trunk_top as f32 * 0.6,
+        trunk_radius as f32 * 1.1,
+        0.02,
+    );
     let limbs = 5 + tree.random.next_below(2);
     for index in 0..limbs {
         let azimuth = (index as f32 + tree.random.jitter(0.25)) * TAU / limbs as f32;
-        let direction = normalize(Vec3::new(azimuth.cos(), azimuth.sin(), 0.75 + 0.2 * tree.random.next_f32()));
+        let direction = normalize(Vec3::new(
+            azimuth.cos(),
+            azimuth.sin(),
+            0.75 + 0.2 * tree.random.next_f32(),
+        ));
         tree.branch(fork, direction, spread * 0.3, trunk_radius as f32 * 0.55, 1);
     }
     tree.fill_crown(1500, 0.5, true);
@@ -149,13 +206,24 @@ fn grow_shrub(tree: &mut Tree<'_>, root: Vec3, height: f32, spread: f32) {
         let start = root + Vec3::new(tree.random.jitter(0.08), tree.random.jitter(0.08), 0.0);
         tree.branch(start, direction, height * 0.5, 0.018, 1);
     }
-    tree.fill_crown((spread * spread * 40.0).clamp(60.0, 400.0) as i32, 0.35, false);
+    tree.fill_crown(
+        (spread * spread * 40.0).clamp(60.0, 400.0) as i32,
+        0.35,
+        false,
+    );
 }
 
 fn grow_conifer(tree: &mut Tree<'_>, root: Vec3, height: f32, spread: f32) {
     let (_, canopy_bottom, trunk_radius) = proportions(element_style::CONIFER, height);
     let (canopy_bottom, trunk_radius) = (canopy_bottom as f32, trunk_radius as f32);
-    tree.tube(root, root + Vec3::new(0.0, 0.0, height), trunk_radius * 1.3, trunk_radius * 0.08, SurfaceKind::Bark, 10);
+    tree.tube(
+        root,
+        root + Vec3::new(0.0, 0.0, height),
+        trunk_radius * 1.3,
+        trunk_radius * 0.08,
+        SurfaceKind::Bark,
+        10,
+    );
     tree.leaf_size = 0.075;
     tree.leaf_width = 0.45;
     tree.leaves_per_twig = 22;
@@ -172,20 +240,32 @@ fn grow_conifer(tree: &mut Tree<'_>, root: Vec3, height: f32, spread: f32) {
             let start = root + Vec3::new(0.0, 0.0, z);
             // A drooping branch: out and slightly down, with sprays of needles on side shoots.
             let end = start + outward * reach + Vec3::new(0.0, 0.0, -reach * 0.25);
-            tree.tube(start, end, (reach * 0.025).max(0.006), 0.004, SurfaceKind::Bark, 4);
+            tree.tube(
+                start,
+                end,
+                (reach * 0.025).max(0.006),
+                0.004,
+                SurfaceKind::Bark,
+                4,
+            );
             let shoots = ((reach / 0.12) as i32).max(2);
             for shoot in 1..=shoots {
                 let at = lerp(start, end, shoot as f32 / (shoots + 1) as f32);
-                let side = normalize(outward.cross(Vec3::Z)) * if shoot % 2 == 0 { 1.0 } else { -1.0 };
+                let side =
+                    normalize(outward.cross(Vec3::Z)) * if shoot % 2 == 0 { 1.0 } else { -1.0 };
                 let shoot_end = at
-                    + (side * 0.6 + outward * 0.6) * (reach * 0.22 * (1.0 - shoot as f32 / (shoots + 2) as f32))
+                    + (side * 0.6 + outward * 0.6)
+                        * (reach * 0.22 * (1.0 - shoot as f32 / (shoots + 2) as f32))
                     + Vec3::new(0.0, 0.0, -0.03);
                 tree.needle_spray(at, shoot_end);
             }
             tree.needle_spray(lerp(start, end, 0.85), end);
         }
     }
-    tree.needle_spray(root + Vec3::new(0.0, 0.0, height * 0.94), root + Vec3::new(0.0, 0.0, height));
+    tree.needle_spray(
+        root + Vec3::new(0.0, 0.0, height * 0.94),
+        root + Vec3::new(0.0, 0.0, height),
+    );
 }
 
 fn grow_palm(tree: &mut Tree<'_>, root: Vec3, height: f32, spread: f32) {
@@ -199,21 +279,37 @@ fn grow_palm(tree: &mut Tree<'_>, root: Vec3, height: f32, spread: f32) {
         let t = index as f32 / SEGMENTS as f32;
         let point = root + lean * (t * t) + Vec3::new(0.0, 0.0, trunk_top * t);
         // Leaf scars ring the trunk: each segment swells at its base.
-        tree.tube(previous, point, trunk_radius * (1.35 - 0.35 * t + 0.06), trunk_radius * (1.35 - 0.35 * t), SurfaceKind::Bark, 12);
+        tree.tube(
+            previous,
+            point,
+            trunk_radius * (1.35 - 0.35 * t + 0.06),
+            trunk_radius * (1.35 - 0.35 * t),
+            SurfaceKind::Bark,
+            12,
+        );
         previous = point;
     }
     let crown = previous;
     // Coconuts hang under the crown.
     for index in 0..7 {
         let azimuth = index as f32 * TAU / 7.0 + tree.random.jitter(0.3);
-        tree.sphere(crown + Vec3::new(azimuth.cos() * 0.22, azimuth.sin() * 0.22, -0.25), 0.12, SurfaceKind::DoorLeaf);
+        tree.sphere(
+            crown + Vec3::new(azimuth.cos() * 0.22, azimuth.sin() * 0.22, -0.25),
+            0.12,
+            SurfaceKind::DoorLeaf,
+        );
     }
     let fronds = 15 + tree.random.next_below(4);
     for index in 0..fronds {
         let azimuth = (index as f32 + tree.random.jitter(0.35)) * TAU / fronds as f32;
         let rise = 0.9 - 1.4 * tree.random.next_f32();
         let length = spread * (0.5 + 0.08 * tree.random.next_f32());
-        tree.frond(crown, Vec3::new(azimuth.cos(), azimuth.sin(), 0.0), rise, length);
+        tree.frond(
+            crown,
+            Vec3::new(azimuth.cos(), azimuth.sin(), 0.0),
+            rise,
+            length,
+        );
     }
 }
 
@@ -234,7 +330,11 @@ impl Envelope {
 
     fn outward(&self, point: Vec3) -> Vec3 {
         let d = point - self.center;
-        if d.length_squared() < 1e-8 { Vec3::Z } else { normalize(d / (self.radii * self.radii)) }
+        if d.length_squared() < 1e-8 {
+            Vec3::Z
+        } else {
+            normalize(d / (self.radii * self.radii))
+        }
     }
 }
 
@@ -259,7 +359,10 @@ impl<'a> Tree<'a> {
             random,
             tips: Vec::new(),
             leaf_width: 1.0,
-            envelope: Envelope { center: Vec3::ZERO, radii: Vec3::ONE },
+            envelope: Envelope {
+                center: Vec3::ZERO,
+                radii: Vec3::ONE,
+            },
             leaf_size: 0.1,
             leaves_per_twig: 40,
             max_depth: 5,
@@ -269,18 +372,48 @@ impl<'a> Tree<'a> {
 
     /// A trunk with a flared base and a slight lean; returns its top.
     fn trunk(&mut self, root: Vec3, length: f32, radius: f32, lean: f32) -> Vec3 {
-        let lean_direction = Vec3::new(self.random.jitter(1.0), self.random.jitter(1.0), 0.0) * lean;
+        let lean_direction =
+            Vec3::new(self.random.jitter(1.0), self.random.jitter(1.0), 0.0) * lean;
         let flare = root + Vec3::new(0.0, 0.0, (length * 0.15).min(0.45));
-        self.tube(root, flare, radius * 1.55, radius * 1.05, SurfaceKind::Bark, 14);
+        self.tube(
+            root,
+            flare,
+            radius * 1.55,
+            radius * 1.05,
+            SurfaceKind::Bark,
+            14,
+        );
         let top = root + Vec3::new(lean_direction.x * length, lean_direction.y * length, length);
-        let middle = lerp(flare, top, 0.5) + Vec3::new(self.random.jitter(0.03), self.random.jitter(0.03), 0.0) * length;
-        self.tube(flare, middle, radius * 1.05, radius * 0.92, SurfaceKind::Bark, 14);
-        self.tube(middle, top, radius * 0.92, radius * 0.8, SurfaceKind::Bark, 12);
+        let middle = lerp(flare, top, 0.5)
+            + Vec3::new(self.random.jitter(0.03), self.random.jitter(0.03), 0.0) * length;
+        self.tube(
+            flare,
+            middle,
+            radius * 1.05,
+            radius * 0.92,
+            SurfaceKind::Bark,
+            14,
+        );
+        self.tube(
+            middle,
+            top,
+            radius * 0.92,
+            radius * 0.8,
+            SurfaceKind::Bark,
+            12,
+        );
         top
     }
 
     /// One branch and, recursively, its children; twigs end in leaf clusters.
-    fn branch(&mut self, start: Vec3, mut direction: Vec3, mut length: f32, radius: f32, depth: i32) {
+    fn branch(
+        &mut self,
+        start: Vec3,
+        mut direction: Vec3,
+        mut length: f32,
+        radius: f32,
+        depth: i32,
+    ) {
         // Keep the branch inside the crown: turn it back toward the middle rather than letting it poke out.
         let mut end = start + direction * length;
         let mut attempt = 0;
@@ -303,8 +436,22 @@ impl<'a> Tree<'a> {
         } else {
             4
         };
-        self.tube(start, middle, radius, (radius + tip_radius) / 2.0, SurfaceKind::Bark, sides);
-        self.tube(middle, end, (radius + tip_radius) / 2.0, tip_radius, SurfaceKind::Bark, sides);
+        self.tube(
+            start,
+            middle,
+            radius,
+            (radius + tip_radius) / 2.0,
+            SurfaceKind::Bark,
+            sides,
+        );
+        self.tube(
+            middle,
+            end,
+            (radius + tip_radius) / 2.0,
+            tip_radius,
+            SurfaceKind::Bark,
+            sides,
+        );
 
         if depth >= self.max_depth || length < 0.08 || tip_radius < 0.003 {
             self.tips.push((end, tip_radius));
@@ -314,25 +461,60 @@ impl<'a> Tree<'a> {
         if depth >= 3 {
             self.tips.push((end, tip_radius));
         }
-        let children = if depth < 2 { 3 } else { 2 + (self.random.next_double() < 0.45) as i32 };
+        let children = if depth < 2 {
+            3
+        } else {
+            2 + (self.random.next_double() < 0.45) as i32
+        };
         let heading = normalize(end - start);
         let child_radius = tip_radius / (children as f32).sqrt();
         for index in 0..children {
             let leader = index == 0;
-            let spread_angle = if leader { 0.25 } else { 0.45 + 0.35 * self.random.next_f32() };
+            let spread_angle = if leader {
+                0.25
+            } else {
+                0.45 + 0.35 * self.random.next_f32()
+            };
             let (u, v) = basis(heading);
             let azimuth = self.random.next_f32() * TAU;
             let deviation = u * azimuth.cos() + v * azimuth.sin();
             let child_direction = normalize(
-                heading * spread_angle.cos() + deviation * spread_angle.sin() + self.envelope.outward(end) * 0.25 + Vec3::Z * self.upward_bias,
+                heading * spread_angle.cos()
+                    + deviation * spread_angle.sin()
+                    + self.envelope.outward(end) * 0.25
+                    + Vec3::Z * self.upward_bias,
             );
-            let child_length = length * if leader { 0.82 } else { 0.62 + 0.18 * self.random.next_f32() };
-            let child_start = if leader { end } else { lerp(middle, end, 0.4 + 0.6 * self.random.next_f32()) };
-            self.branch(child_start, child_direction, child_length, if leader { tip_radius * 0.82 } else { child_radius }, depth + 1);
+            let child_length = length
+                * if leader {
+                    0.82
+                } else {
+                    0.62 + 0.18 * self.random.next_f32()
+                };
+            let child_start = if leader {
+                end
+            } else {
+                lerp(middle, end, 0.4 + 0.6 * self.random.next_f32())
+            };
+            self.branch(
+                child_start,
+                child_direction,
+                child_length,
+                if leader {
+                    tip_radius * 0.82
+                } else {
+                    child_radius
+                },
+                depth + 1,
+            );
         }
         // Inner twigs keep the crown dense rather than hollow.
         if depth >= self.max_depth - 2 {
-            self.leaf_cluster(middle, heading, length * 0.6, Some(self.leaves_per_twig / 3));
+            self.leaf_cluster(
+                middle,
+                heading,
+                length * 0.6,
+                Some(self.leaves_per_twig / 3),
+            );
         }
     }
 
@@ -347,7 +529,11 @@ impl<'a> Tree<'a> {
             let mut attempts = 0;
             loop {
                 let mut direction = normalize(
-                    Vec3::new(self.random.jitter(1.0), self.random.jitter(1.0), self.random.jitter(1.0) + 0.25) + Vec3::new(0.0, 0.0, 1e-4),
+                    Vec3::new(
+                        self.random.jitter(1.0),
+                        self.random.jitter(1.0),
+                        self.random.jitter(1.0) + 0.25,
+                    ) + Vec3::new(0.0, 0.0, 1e-4),
                 );
                 if upper_only && direction.z < -0.35 {
                     direction.z = -direction.z * 0.5;
@@ -355,7 +541,9 @@ impl<'a> Tree<'a> {
                 let radial = shell + (1.0 - shell) * self.random.next_f32().sqrt();
                 point = self.envelope.center + direction * self.envelope.radii * radial;
                 attempts += 1;
-                if !(attempts < 4 && point.z < self.envelope.center.z - self.envelope.radii.z * 0.95) {
+                if !(attempts < 4
+                    && point.z < self.envelope.center.z - self.envelope.radii.z * 0.95)
+                {
                     break;
                 }
             }
@@ -371,9 +559,21 @@ impl<'a> Tree<'a> {
             let reach = best.sqrt();
             // Long straight twigs would draw a wire frame through the crown; far clusters hang on hidden twigs.
             if reach > 0.05 && reach < 1.2 {
-                self.tube(nearest.0, point, nearest.1.min(0.012).max(0.004), 0.003, SurfaceKind::Bark, 4);
+                self.tube(
+                    nearest.0,
+                    point,
+                    nearest.1.clamp(0.004, 0.012),
+                    0.003,
+                    SurfaceKind::Bark,
+                    4,
+                );
             }
-            self.leaf_cluster(point, normalize(point - nearest.0 + Vec3::new(0.0, 0.0, 1e-4)), 0.4, None);
+            self.leaf_cluster(
+                point,
+                normalize(point - nearest.0 + Vec3::new(0.0, 0.0, 1e-4)),
+                0.4,
+                None,
+            );
         }
     }
 
@@ -382,18 +582,32 @@ impl<'a> Tree<'a> {
         let leaves = count.unwrap_or(self.leaves_per_twig);
         let radius = (self.leaf_size * 2.2).max((twig_length * 0.8).min(0.35));
         for _ in 0..leaves {
-            let mut offset = Vec3::new(self.random.jitter(1.0), self.random.jitter(1.0), self.random.jitter(1.0));
+            let mut offset = Vec3::new(
+                self.random.jitter(1.0),
+                self.random.jitter(1.0),
+                self.random.jitter(1.0),
+            );
             if offset.length_squared() > 1.0 {
                 offset = normalize(offset);
             }
-            let position = tip + offset * radius - heading * (radius * 0.3 * self.random.next_f32());
+            let position =
+                tip + offset * radius - heading * (radius * 0.3 * self.random.next_f32());
             let facing = normalize(
                 Vec3::Z * 0.7
                     + self.envelope.outward(position) * 0.6
-                    + Vec3::new(self.random.jitter(0.9), self.random.jitter(0.9), self.random.jitter(0.5)),
+                    + Vec3::new(
+                        self.random.jitter(0.9),
+                        self.random.jitter(0.9),
+                        self.random.jitter(0.5),
+                    ),
             );
             let size = self.leaf_size * (0.75 + 0.5 * self.random.next_f32());
-            self.leaf(position, facing, normalize(offset + heading * 0.5 + Vec3::new(0.0, 0.0, 0.0001)), size);
+            self.leaf(
+                position,
+                facing,
+                normalize(offset + heading * 0.5 + Vec3::new(0.0, 0.0, 0.0001)),
+                size,
+            );
         }
     }
 
@@ -406,11 +620,19 @@ impl<'a> Tree<'a> {
         let along = normalize(along);
         let side = normal.cross(along);
         let width = self.leaf_width;
-        let p = |x: f32, y: f32, lift: f32| base + along * (x * length) + side * (y * length * width) + normal * (lift * length);
+        let p = |x: f32, y: f32, lift: f32| {
+            base + along * (x * length) + side * (y * length * width) + normal * (lift * length)
+        };
         let mesh = &mut *self.mesh;
         if length < 0.08 {
             // Small leaves and needle blades: a folded diamond is all a pixel can resolve.
-            let (nb, nl, nt, nr, nm) = (p(0.0, 0.0, 0.0), p(0.45, 0.24, 0.06), p(1.0, 0.0, 0.02), p(0.45, -0.24, 0.06), p(0.45, 0.0, 0.0));
+            let (nb, nl, nt, nr, nm) = (
+                p(0.0, 0.0, 0.0),
+                p(0.45, 0.24, 0.06),
+                p(1.0, 0.0, 0.02),
+                p(0.45, -0.24, 0.06),
+                p(0.45, 0.0, 0.0),
+            );
             mesh.add_triangle(nb, nl, nm, SurfaceKind::Leaf);
             mesh.add_triangle(nl, nt, nm, SurfaceKind::Leaf);
             mesh.add_triangle(nb, nm, nr, SurfaceKind::Leaf);
@@ -442,14 +664,23 @@ impl<'a> Tree<'a> {
         }
         let steps = ((length / 0.14) as i32).max(1);
         for step in 0..=steps {
-            self.leaf_cluster(lerp(from, to, step as f32 / steps as f32), axis / length, 0.32, Some(self.leaves_per_twig));
+            self.leaf_cluster(
+                lerp(from, to, step as f32 / steps as f32),
+                axis / length,
+                0.32,
+                Some(self.leaves_per_twig),
+            );
         }
     }
 
     /// A palm frond: an arching rachis with long pinnae on both sides forming a shallow V.
     fn frond(&mut self, crown: Vec3, outward: Vec3, rise: f32, length: f32) {
         let side = normalize(Vec3::Z.cross(outward));
-        let spine = |t: f32| crown + outward * (length * t) + Vec3::new(0.0, 0.0, length * (rise * 0.5 * t - 0.55 * t * t));
+        let spine = |t: f32| {
+            crown
+                + outward * (length * t)
+                + Vec3::new(0.0, 0.0, length * (rise * 0.5 * t - 0.55 * t * t))
+        };
         const STEPS: i32 = 12;
         for step in 0..STEPS {
             self.tube(
@@ -468,20 +699,36 @@ impl<'a> Tree<'a> {
             let forward = normalize(spine((t + 0.02).min(1.0)) - spine((t - 0.02).max(0.0)));
             let leaf_length = length * 0.42 * (PI * (t * 1.1 + 0.05).min(1.0)).sin() + 0.05;
             for sign in [-1.0f32, 1.0] {
-                let direction = normalize(side * sign * 0.85 + forward * 0.45 + Vec3::new(0.0, 0.0, 0.18));
+                let direction =
+                    normalize(side * sign * 0.85 + forward * 0.45 + Vec3::new(0.0, 0.0, 0.18));
                 let droop = Vec3::new(0.0, 0.0, -leaf_length * 0.35);
                 let middle = at + direction * (leaf_length * 0.5) + droop * 0.35;
                 let tip = at + direction * leaf_length + droop;
                 let width = normalize(direction.cross(Vec3::Z)) * 0.022;
-                self.mesh.add_triangle(at - width, at + width, middle + width, SurfaceKind::Leaf);
-                self.mesh.add_triangle(at - width, middle + width, middle - width, SurfaceKind::Leaf);
-                self.mesh.add_triangle(middle - width, middle + width, tip, SurfaceKind::Leaf);
+                self.mesh
+                    .add_triangle(at - width, at + width, middle + width, SurfaceKind::Leaf);
+                self.mesh.add_triangle(
+                    at - width,
+                    middle + width,
+                    middle - width,
+                    SurfaceKind::Leaf,
+                );
+                self.mesh
+                    .add_triangle(middle - width, middle + width, tip, SurfaceKind::Leaf);
             }
         }
     }
 
     /// A smooth-shaded tapered cylinder.
-    fn tube(&mut self, from: Vec3, to: Vec3, start_radius: f32, end_radius: f32, kind: SurfaceKind, sides: i32) {
+    fn tube(
+        &mut self,
+        from: Vec3,
+        to: Vec3,
+        start_radius: f32,
+        end_radius: f32,
+        kind: SurfaceKind,
+        sides: i32,
+    ) {
         let axis = to - from;
         if axis.length_squared() < 1e-10 || start_radius <= 0.0 {
             return;
@@ -492,8 +739,24 @@ impl<'a> Tree<'a> {
             let a1 = (side + 1) as f32 * TAU / sides as f32;
             let n0 = u * a0.cos() + v * a0.sin();
             let n1 = u * a1.cos() + v * a1.sin();
-            self.mesh.add_smooth_triangle([from + n0 * start_radius, from + n1 * start_radius, to + n1 * end_radius], [n0, n1, n1], kind);
-            self.mesh.add_smooth_triangle([from + n0 * start_radius, to + n1 * end_radius, to + n0 * end_radius], [n0, n1, n0], kind);
+            self.mesh.add_smooth_triangle(
+                [
+                    from + n0 * start_radius,
+                    from + n1 * start_radius,
+                    to + n1 * end_radius,
+                ],
+                [n0, n1, n1],
+                kind,
+            );
+            self.mesh.add_smooth_triangle(
+                [
+                    from + n0 * start_radius,
+                    to + n1 * end_radius,
+                    to + n0 * end_radius,
+                ],
+                [n0, n1, n0],
+                kind,
+            );
         }
     }
 
@@ -502,15 +765,38 @@ impl<'a> Tree<'a> {
         const RINGS: i32 = 6;
         const SEGMENTS: i32 = 10;
         let normal = |ring: i32, segment: i32| {
-            let (polar, around) = (PI * ring as f32 / RINGS as f32, TAU * segment as f32 / SEGMENTS as f32);
-            Vec3::new(polar.sin() * around.cos(), polar.sin() * around.sin(), polar.cos())
+            let (polar, around) = (
+                PI * ring as f32 / RINGS as f32,
+                TAU * segment as f32 / SEGMENTS as f32,
+            );
+            Vec3::new(
+                polar.sin() * around.cos(),
+                polar.sin() * around.sin(),
+                polar.cos(),
+            )
         };
         for ring in 0..RINGS {
             for segment in 0..SEGMENTS {
                 let (a, b) = (normal(ring, segment), normal(ring + 1, segment));
                 let (c, d) = (normal(ring + 1, segment + 1), normal(ring, segment + 1));
-                self.mesh.add_smooth_triangle([center + a * radius, center + b * radius, center + c * radius], [a, b, c], kind);
-                self.mesh.add_smooth_triangle([center + a * radius, center + c * radius, center + d * radius], [a, c, d], kind);
+                self.mesh.add_smooth_triangle(
+                    [
+                        center + a * radius,
+                        center + b * radius,
+                        center + c * radius,
+                    ],
+                    [a, b, c],
+                    kind,
+                );
+                self.mesh.add_smooth_triangle(
+                    [
+                        center + a * radius,
+                        center + c * radius,
+                        center + d * radius,
+                    ],
+                    [a, c, d],
+                    kind,
+                );
             }
         }
     }
@@ -543,18 +829,40 @@ mod tests {
 
     #[test]
     fn every_species_fits_its_height_and_spread_and_stands_on_its_base() {
-        for style in [element_style::DEFAULT, element_style::GUANACASTE, element_style::PALM, element_style::CONIFER, element_style::SHRUB] {
+        for style in [
+            element_style::DEFAULT,
+            element_style::GUANACASTE,
+            element_style::PALM,
+            element_style::CONIFER,
+            element_style::SHRUB,
+        ] {
             let mut mesh = SceneMesh::default();
             add_plant(&mut mesh, &plant(style, 6.0, 4.0), 1.5);
-            assert!(mesh.triangle_count() > 1000, "style {style} grew only {} triangles", mesh.triangle_count());
+            assert!(
+                mesh.triangle_count() > 1000,
+                "style {style} grew only {} triangles",
+                mesh.triangle_count()
+            );
             let (min, max) = mesh.bounds();
-            assert!((min.z - 1.5).abs() < 1e-4 && (max.z - 7.5).abs() < 1e-3, "style {style}: {min:?} to {max:?}");
-            let half_width = (max.x - 3.0).max(3.0 - min.x).max((max.y + 2.0).max(-2.0 - min.y));
-            assert!((half_width - 2.0).abs() < 1e-3, "style {style} is {half_width} m from its axis");
+            assert!(
+                (min.z - 1.5).abs() < 1e-4 && (max.z - 7.5).abs() < 1e-3,
+                "style {style}: {min:?} to {max:?}"
+            );
+            let half_width = (max.x - 3.0)
+                .max(3.0 - min.x)
+                .max((max.y + 2.0).max(-2.0 - min.y));
+            assert!(
+                (half_width - 2.0).abs() < 1e-3,
+                "style {style} is {half_width} m from its axis"
+            );
             assert!(mesh.positions.iter().all(|p| p.is_finite()));
             let normals = mesh.normals.as_ref().expect("trunks are smooth-shaded");
             assert_eq!(normals.len(), mesh.positions.len());
-            assert!(normals.iter().all(|n| *n == Vec3::ZERO || (n.length() - 1.0).abs() < 1e-3));
+            assert!(
+                normals
+                    .iter()
+                    .all(|n| *n == Vec3::ZERO || (n.length() - 1.0).abs() < 1e-3)
+            );
         }
     }
 

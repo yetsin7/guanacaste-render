@@ -1,7 +1,9 @@
 //! Pipe runs, fixture traps, and vent stacks for the supported plumbing systems.
 
 use super::plumbing_routing::{PipeRun, PlumbingNode, SystemLayout, VentRun};
-use super::plumbing_specifications::{DRAIN_SIZES, SUPPLY_SIZES, drain_size, peak_flow, supply_size, vent_size};
+use super::plumbing_specifications::{
+    DRAIN_SIZES, SUPPLY_SIZES, drain_size, peak_flow, supply_size, vent_size,
+};
 use super::storm_runoff::{STORM_SIZES, storm_size};
 use crate::document::{PlumbingPoint, plumbing_point_kind, plumbing_system_kind as kind};
 use crate::plan::Point2;
@@ -71,24 +73,48 @@ pub(super) fn storm(nodes: &[PlumbingNode]) -> SystemLayout {
         let parent = parents[index];
         invert[index] = invert[parent] + 0.01 * manhattan(nodes[parent].point, nodes[index].point);
         let size = storm_size(flows[index]);
-        add_square_run(&mut runs, nodes[parent].point, invert[parent], nodes[index].point, invert[index], STORM_SIZES[size].1);
+        add_square_run(
+            &mut runs,
+            nodes[parent].point,
+            invert[parent],
+            nodes[index].point,
+            invert[index],
+            STORM_SIZES[size].1,
+        );
     }
     for index in 1..nodes.len() {
         let node = nodes[index];
         let size = storm_size(node.units);
-        runs.push(PipeRun { from: node.point, from_z: node.outlet_z, to: node.point, to_z: invert[index], outside: STORM_SIZES[size].1 });
+        runs.push(PipeRun {
+            from: node.point,
+            from_z: node.outlet_z,
+            to: node.point,
+            to_z: invert[index],
+            outside: STORM_SIZES[size].1,
+        });
     }
-    SystemLayout { kind: kind::STORM_WATER, runs, vents: Vec::new() }
+    SystemLayout {
+        kind: kind::STORM_WATER,
+        runs,
+        vents: Vec::new(),
+    }
 }
 
 /// Builds sloped sanitary branches, fixture traps, a cleanout, and the stacks serving those fixtures.
-pub(super) fn drain(nodes: &[PlumbingNode], points: &[PlumbingPoint], roof_top: f64) -> SystemLayout {
+pub(super) fn drain(
+    nodes: &[PlumbingNode],
+    points: &[PlumbingPoint],
+    roof_top: f64,
+) -> SystemLayout {
     let root = nodes[0];
     let (parents, order) = tree(nodes);
     let units = subtree(nodes, &parents, &order);
     let mut minimum = vec![0; nodes.len()];
     for index in 1..nodes.len() {
-        minimum[index] = nodes[index].spec.expect("fixture specification").minimum_drain;
+        minimum[index] = nodes[index]
+            .spec
+            .expect("fixture specification")
+            .minimum_drain;
     }
     for &index in order.iter().rev().filter(|&&index| index != 0) {
         minimum[parents[index]] = minimum[parents[index]].max(minimum[index]);
@@ -142,7 +168,9 @@ pub(super) fn drain(nodes: &[PlumbingNode], points: &[PlumbingPoint], roof_top: 
         if !vent_points.is_empty() {
             let mut nearest = 0;
             for candidate in 1..vent_points.len() {
-                if manhattan(vent_points[candidate].position, node.point) < manhattan(vent_points[nearest].position, node.point) {
+                if manhattan(vent_points[candidate].position, node.point)
+                    < manhattan(vent_points[nearest].position, node.point)
+                {
                     nearest = candidate;
                 }
             }
@@ -175,7 +203,11 @@ fn add_trap(runs: &mut Vec<PipeRun>, node: PlumbingNode, outside: f64) {
     let spec = node.spec.expect("fixture specification");
     let (dx, dy) = (node.center.x - node.point.x, node.center.y - node.point.y);
     let length = (dx * dx + dy * dy).sqrt();
-    let (fx, fy) = if length > 1e-6 { (dx / length, dy / length) } else { (0.0, -1.0) };
+    let (fx, fy) = if length > 1e-6 {
+        (dx / length, dy / length)
+    } else {
+        (0.0, -1.0)
+    };
     let out = |distance| Point2::new(node.point.x + fx * distance, node.point.y + fy * distance);
     let arm = node.outlet_z;
     let bottom = arm - 0.08;
@@ -211,7 +243,14 @@ fn add_trap(runs: &mut Vec<PipeRun>, node: PlumbingNode, outside: f64) {
 }
 
 /// Splits an orthogonal route at its X-then-Y corner, interpolating the drain elevation.
-fn add_square_run(runs: &mut Vec<PipeRun>, from: Point2, from_z: f64, to: Point2, to_z: f64, outside: f64) {
+fn add_square_run(
+    runs: &mut Vec<PipeRun>,
+    from: Point2,
+    from_z: f64,
+    to: Point2,
+    to_z: f64,
+    outside: f64,
+) {
     let corner = Point2::new(to.x, from.y);
     let total = manhattan(from, to);
     let corner_z = if total < 1e-9 {
@@ -261,7 +300,8 @@ fn tree(nodes: &[PlumbingNode]) -> (Vec<usize>, Vec<usize>) {
             if done[index] {
                 continue;
             }
-            let distance = manhattan(nodes[next].point, nodes[index].point) + (nodes[next].level - nodes[index].level).abs() * 2.0;
+            let distance = manhattan(nodes[next].point, nodes[index].point)
+                + (nodes[next].level - nodes[index].level).abs() * 2.0;
             if distance < best[index] {
                 best[index] = distance;
                 parents[index] = next;

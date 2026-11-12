@@ -59,14 +59,29 @@ pub fn add_part(mesh: &mut SceneMesh, part: &ElementPart, datum: f64) {
     let bottoms = [bottom, end_bottom, end_bottom, bottom];
     let (start_top, end_top) = ((datum + part.top) as f32, (datum + end_top) as f32);
     let tops = [start_top, end_top, end_top, start_top];
-    let plan: Vec<Point2> = outline.iter().map(|point| Point2::new(point.x as f64, point.y as f64)).collect();
+    let plan: Vec<Point2> = outline
+        .iter()
+        .map(|point| Point2::new(point.x as f64, point.y as f64))
+        .collect();
     let order = if signed_double_area(&plan) > 0.0 {
         [0, 1, 2, 3]
     } else {
         [3, 2, 1, 0]
     };
-    let top = |index: usize| Vec3::new(outline[order[index]].x, outline[order[index]].y, tops[order[index]]);
-    let under = |index: usize| Vec3::new(outline[order[index]].x, outline[order[index]].y, bottoms[order[index]]);
+    let top = |index: usize| {
+        Vec3::new(
+            outline[order[index]].x,
+            outline[order[index]].y,
+            tops[order[index]],
+        )
+    };
+    let under = |index: usize| {
+        Vec3::new(
+            outline[order[index]].x,
+            outline[order[index]].y,
+            bottoms[order[index]],
+        )
+    };
     mesh.add_quad(top(0), top(1), top(2), top(3), part.kind);
     mesh.add_quad(under(3), under(2), under(1), under(0), part.kind);
     for index in 0..4 {

@@ -7,7 +7,10 @@ use crate::document::component_shape as catalog;
 use std::f64::consts::PI;
 
 /// Selects supported task chairs and bar stools using the catalog's stored identifiers.
-pub(super) fn parts(geometry: &ComponentGeometry<'_>, component_shape: i32) -> Option<Vec<ElementPart>> {
+pub(super) fn parts(
+    geometry: &ComponentGeometry<'_>,
+    component_shape: i32,
+) -> Option<Vec<ElementPart>> {
     match component_shape {
         catalog::SECTIONAL => Some(sectional(geometry)),
         catalog::OFFICE_CHAIR => Some(office_chair(geometry)),
@@ -65,7 +68,10 @@ fn sectional(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
         parts.push(geometry.block(center, (0.04, 0.04), (0.0, 0.12), Surface::DoorLeaf));
     }
     parts.push(geometry.soft(
-        (-width / 2.0 + arm + (chaise - arm) / 2.0, -seat / 2.0 + 0.02),
+        (
+            -width / 2.0 + arm + (chaise - arm) / 2.0,
+            -seat / 2.0 + 0.02,
+        ),
         (chaise - arm - 0.02, depth - seat - 0.02),
         (0.38, 0.52),
         0.05,
@@ -127,8 +133,19 @@ fn office_chair(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     }
     parts.push(geometry.round((0.0, 0.0), 0.06, (0.09, 0.42), Surface::Metal));
     let seat = (geometry.width() * 0.8).min(0.52);
-    parts.push(geometry.soft((0.0, -0.02), (seat, seat * 0.95), (0.42, 0.50), 0.05, Surface::Upholstery));
-    parts.push(geometry.block((0.0, seat * 0.46), (0.06, 0.04), (0.45, 0.64), Surface::Metal));
+    parts.push(geometry.soft(
+        (0.0, -0.02),
+        (seat, seat * 0.95),
+        (0.42, 0.50),
+        0.05,
+        Surface::Upholstery,
+    ));
+    parts.push(geometry.block(
+        (0.0, seat * 0.46),
+        (0.06, 0.04),
+        (0.45, 0.64),
+        Surface::Metal,
+    ));
     parts.push(geometry.soft(
         (0.0, seat * 0.48),
         (seat * 0.9, 0.07),
@@ -137,15 +154,29 @@ fn office_chair(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
         Surface::Upholstery,
     ));
     for side in [-1.0, 1.0] {
-        parts.push(geometry.block((side * seat * 0.52, 0.0), (0.035, 0.035), (0.48, 0.66), Surface::Metal));
-        parts.push(geometry.soft((side * seat * 0.52, 0.0), (0.06, 0.26), (0.66, 0.69), 0.02, Surface::OpeningFrame));
+        parts.push(geometry.block(
+            (side * seat * 0.52, 0.0),
+            (0.035, 0.035),
+            (0.48, 0.66),
+            Surface::Metal,
+        ));
+        parts.push(geometry.soft(
+            (side * seat * 0.52, 0.0),
+            (0.06, 0.26),
+            (0.66, 0.69),
+            0.02,
+            Surface::OpeningFrame,
+        ));
     }
     parts
 }
 
 /// Builds a round stool with a central column, segmented footrest, and padded seat.
 fn bar_stool(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
-    let (diameter, height) = (geometry.width().min(geometry.depth()), geometry.element.height);
+    let (diameter, height) = (
+        geometry.width().min(geometry.depth()),
+        geometry.element.height,
+    );
     let mut parts = vec![
         geometry.round((0.0, 0.0), diameter * 0.9, (0.0, 0.02), Surface::Metal),
         geometry.round((0.0, 0.0), 0.05, (0.02, height - 0.06), Surface::Metal),
@@ -171,6 +202,11 @@ fn bar_stool(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             Surface::Metal,
         ));
     }
-    parts.push(geometry.round((0.0, 0.0), diameter, (height - 0.06, height), Surface::Upholstery));
+    parts.push(geometry.round(
+        (0.0, 0.0),
+        diameter,
+        (height - 0.06, height),
+        Surface::Upholstery,
+    ));
     parts
 }

@@ -7,7 +7,12 @@ use crate::document::{PlumbingPoint, plumbing_point_kind};
 use glam::Vec3;
 
 /// Builds a tank using its stored capacity or the standard capacity for the household's daily reserve.
-pub(super) fn add_tank(mesh: &mut SceneMesh, point: &PlumbingPoint, level: f64, occupants: i32) -> bool {
+pub(super) fn add_tank(
+    mesh: &mut SceneMesh,
+    point: &PlumbingPoint,
+    level: f64,
+    occupants: i32,
+) -> bool {
     let capacity = if point.capacity_liters > 0.0 {
         point.capacity_liters
     } else {
@@ -20,7 +25,11 @@ pub(super) fn add_tank(mesh: &mut SceneMesh, point: &PlumbingPoint, level: f64, 
     let diameter = (4.0 * volume / std::f64::consts::PI).cbrt();
     let height = volume / (std::f64::consts::PI * diameter * diameter / 4.0);
     let radius = diameter as f32 / 2.0;
-    let at = Vec3::new(point.position.x as f32, point.position.y as f32, level as f32);
+    let at = Vec3::new(
+        point.position.x as f32,
+        point.position.y as f32,
+        level as f32,
+    );
     let frame = BlockFrame {
         origin: at,
         direction: Vec3::X,
@@ -67,7 +76,14 @@ pub(super) fn add_tank(mesh: &mut SceneMesh, point: &PlumbingPoint, level: f64, 
             (floor - at.z - 0.08, floor - at.z),
             SurfaceKind::Metal,
         );
-        add_tube_sides(mesh, at + Vec3::new(0.0, 0.0, floor - at.z), at, 0.025, SurfaceKind::PipeCold, 8);
+        add_tube_sides(
+            mesh,
+            at + Vec3::new(0.0, 0.0, floor - at.z),
+            at,
+            0.025,
+            SurfaceKind::PipeCold,
+            8,
+        );
     } else {
         add_block(
             mesh,

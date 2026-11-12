@@ -9,7 +9,10 @@ use crate::plan::Point2;
 use std::f64::consts::TAU;
 
 /// Selects the supported bathroom fixture recipes by their project catalog identifiers.
-pub(super) fn parts(geometry: &ComponentGeometry<'_>, component_shape: i32) -> Option<Vec<ElementPart>> {
+pub(super) fn parts(
+    geometry: &ComponentGeometry<'_>,
+    component_shape: i32,
+) -> Option<Vec<ElementPart>> {
     match component_shape {
         catalog::TOILET => Some(toilet(geometry)),
         catalog::VANITY => Some(vanity(geometry)),
@@ -29,8 +32,18 @@ fn bathtub(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let wall = 0.08;
     let rim = 0.12;
     vec![
-        geometry.block((0.0, -depth / 2.0 + wall / 2.0), (width, wall), (0.0, height), Surface::Ceramic),
-        geometry.block((0.0, depth / 2.0 - wall / 2.0), (width, wall), (0.0, height), Surface::Ceramic),
+        geometry.block(
+            (0.0, -depth / 2.0 + wall / 2.0),
+            (width, wall),
+            (0.0, height),
+            Surface::Ceramic,
+        ),
+        geometry.block(
+            (0.0, depth / 2.0 - wall / 2.0),
+            (width, wall),
+            (0.0, height),
+            Surface::Ceramic,
+        ),
         geometry.block(
             (-width / 2.0 + wall / 2.0, 0.0),
             (wall, depth - 2.0 * wall),
@@ -43,7 +56,12 @@ fn bathtub(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             (0.0, height),
             Surface::Ceramic,
         ),
-        geometry.block((0.0, 0.0), (width - 2.0 * rim, depth - 2.0 * rim), (0.0, 0.05), Surface::Ceramic),
+        geometry.block(
+            (0.0, 0.0),
+            (width - 2.0 * rim, depth - 2.0 * rim),
+            (0.0, 0.05),
+            Surface::Ceramic,
+        ),
     ]
 }
 
@@ -98,8 +116,18 @@ fn toilet(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
         0.03,
         Surface::Ceramic,
     ));
-    parts.push(geometry.round((0.0, depth * 0.34), 0.045, (height, height + 0.008), Surface::Metal));
-    parts.push(geometry.round((0.0, depth / 2.0 - 0.06), 0.035, (0.18, 0.23), Surface::Metal));
+    parts.push(geometry.round(
+        (0.0, depth * 0.34),
+        0.045,
+        (height, height + 0.008),
+        Surface::Metal,
+    ));
+    parts.push(geometry.round(
+        (0.0, depth / 2.0 - 0.06),
+        0.035,
+        (0.18, 0.23),
+        Surface::Metal,
+    ));
     parts
 }
 
@@ -123,7 +151,12 @@ fn toilet_rim(
             )
         };
         parts.push(ElementPart::block(
-            vec![point(outer, first), point(outer, next), point(inner, next), point(inner, first)],
+            vec![
+                point(outer, first),
+                point(outer, next),
+                point(inner, next),
+                point(inner, first),
+            ],
             geometry.element.offset + levels.0,
             geometry.element.offset + levels.1,
             surface,
@@ -136,7 +169,11 @@ fn toilet_rim(
 fn vanity(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let mut parts = cabinet(geometry, false);
-    let basins = if width >= 1.3 { vec![-width / 4.0, width / 4.0] } else { vec![0.0] };
+    let basins = if width >= 1.3 {
+        vec![-width / 4.0, width / 4.0]
+    } else {
+        vec![0.0]
+    };
     let basin_width = (width / basins.len() as f64 * 0.62).min(0.50);
     for x in basins {
         parts.push(geometry.soft(
@@ -163,8 +200,18 @@ fn shower(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     vec![
         geometry.block((0.0, 0.0), (width, depth), (0.0, 0.08), Surface::Ceramic),
-        geometry.block((0.0, depth / 2.0 - 0.01), (width, 0.02), (0.08, height), Surface::Glass),
-        geometry.block((width / 2.0 - 0.01, 0.0), (0.02, depth), (0.08, height), Surface::Glass),
+        geometry.block(
+            (0.0, depth / 2.0 - 0.01),
+            (width, 0.02),
+            (0.08, height),
+            Surface::Glass,
+        ),
+        geometry.block(
+            (width / 2.0 - 0.01, 0.0),
+            (0.02, depth),
+            (0.08, height),
+            Surface::Glass,
+        ),
     ]
 }
 
@@ -180,7 +227,13 @@ fn pedestal_sink(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             0.06,
             Surface::Ceramic,
         ),
-        geometry.soft((0.0, 0.0), (width, depth), (basin, basin + 0.05), 0.08, Surface::Ceramic),
+        geometry.soft(
+            (0.0, 0.0),
+            (width, depth),
+            (basin, basin + 0.05),
+            0.08,
+            Surface::Ceramic,
+        ),
     ];
     parts.extend(geometry.frame(
         (0.0, -0.01),
@@ -204,7 +257,13 @@ fn bidet(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             0.06,
             Surface::Ceramic,
         ),
-        geometry.soft((0.0, 0.0), (width, depth), (height - 0.10, height - 0.07), 0.12, Surface::Ceramic),
+        geometry.soft(
+            (0.0, 0.0),
+            (width, depth),
+            (height - 0.10, height - 0.07),
+            0.12,
+            Surface::Ceramic,
+        ),
     ];
     parts.extend(geometry.frame(
         (0.0, -0.02),
@@ -221,8 +280,19 @@ fn bidet(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 fn urinal(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let mut parts = vec![
-        geometry.block((0.0, depth / 2.0 - 0.04), (width, 0.08), (0.0, height), Surface::Ceramic),
-        geometry.soft((0.0, 0.0), (width, depth), (0.0, 0.06), 0.10, Surface::Ceramic),
+        geometry.block(
+            (0.0, depth / 2.0 - 0.04),
+            (width, 0.08),
+            (0.0, height),
+            Surface::Ceramic,
+        ),
+        geometry.soft(
+            (0.0, 0.0),
+            (width, depth),
+            (0.0, 0.06),
+            0.10,
+            Surface::Ceramic,
+        ),
     ];
     for side in [-1.0, 1.0] {
         parts.push(geometry.soft(
@@ -233,9 +303,24 @@ fn urinal(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             Surface::Ceramic,
         ));
     }
-    parts.push(geometry.block((0.0, -depth / 2.0 + 0.03), (width - 0.08, 0.06), (0.06, 0.24), Surface::Ceramic));
-    parts.push(geometry.round((0.0, depth / 2.0 - 0.03), 0.03, (height, height + 0.38), Surface::Metal));
-    parts.push(geometry.round((0.0, depth / 2.0 - 0.06), 0.07, (height + 0.20, height + 0.30), Surface::Metal));
+    parts.push(geometry.block(
+        (0.0, -depth / 2.0 + 0.03),
+        (width - 0.08, 0.06),
+        (0.06, 0.24),
+        Surface::Ceramic,
+    ));
+    parts.push(geometry.round(
+        (0.0, depth / 2.0 - 0.03),
+        0.03,
+        (height, height + 0.38),
+        Surface::Metal,
+    ));
+    parts.push(geometry.round(
+        (0.0, depth / 2.0 - 0.06),
+        0.07,
+        (height + 0.20, height + 0.30),
+        Surface::Metal,
+    ));
     parts
 }
 
@@ -243,7 +328,12 @@ fn urinal(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 fn mirror(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     vec![
-        geometry.block((0.0, 0.004), (width, depth - 0.008), (0.0, height), Surface::Metal),
+        geometry.block(
+            (0.0, 0.004),
+            (width, depth - 0.008),
+            (0.0, height),
+            Surface::Metal,
+        ),
         geometry.block(
             (0.0, -depth / 2.0 + 0.003),
             (width - 0.03, 0.006),

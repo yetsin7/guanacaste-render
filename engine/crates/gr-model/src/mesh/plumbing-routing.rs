@@ -1,10 +1,13 @@
 //! Routes supported supply, sanitary, and storm systems through their connected fixtures.
 
 use super::plumbing_paths::{drain, storm, supply};
-use super::storm_runoff::downspout_flows;
 use super::plumbing_specifications::{FixtureSpec, fixture_spec};
+use super::storm_runoff::downspout_flows;
 use crate::document::component_shape as catalog;
-use crate::document::{Document, Id, PlumbingSystem, StructuralElement, element_kind, plumbing_point_kind, plumbing_system_kind as kind};
+use crate::document::{
+    Document, Id, PlumbingSystem, StructuralElement, element_kind, plumbing_point_kind,
+    plumbing_system_kind as kind,
+};
 use crate::plan::Point2;
 use std::collections::{HashMap, HashSet};
 
@@ -45,7 +48,11 @@ pub(super) struct SystemLayout {
 }
 
 /// Routes one system or returns none when its source or system kind still needs the application.
-pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevations: &HashMap<Id, f64>) -> Option<SystemLayout> {
+pub(super) fn route_system(
+    document: &Document,
+    system: &PlumbingSystem,
+    elevations: &HashMap<Id, f64>,
+) -> Option<SystemLayout> {
     let components: HashMap<Id, &StructuralElement> = document
         .structural_elements
         .iter()
@@ -54,10 +61,21 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
         .collect();
     let root = match system.kind {
         kind::COLD_WATER | kind::SANITARY | kind::STORM_WATER => {
-            let point = document.plumbing_points.iter().find(|point| point.id == system.source_id)?;
+            let point = document
+                .plumbing_points
+                .iter()
+                .find(|point| point.id == system.source_id)?;
             let supported = match system.kind {
-                kind::COLD_WATER => matches!(point.kind, plumbing_point_kind::WATER_METER | plumbing_point_kind::CISTERN | plumbing_point_kind::ELEVATED_TANK),
-                kind::SANITARY => matches!(point.kind, plumbing_point_kind::SEWER_OUTLET | plumbing_point_kind::SEPTIC_TANK),
+                kind::COLD_WATER => matches!(
+                    point.kind,
+                    plumbing_point_kind::WATER_METER
+                        | plumbing_point_kind::CISTERN
+                        | plumbing_point_kind::ELEVATED_TANK
+                ),
+                kind::SANITARY => matches!(
+                    point.kind,
+                    plumbing_point_kind::SEWER_OUTLET | plumbing_point_kind::SEPTIC_TANK
+                ),
                 _ => point.kind == plumbing_point_kind::STORM_OUTLET,
             };
             if !supported {
@@ -70,7 +88,11 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
                 level,
                 units: 0.0,
                 spec: None,
-                inlet_z: if point.kind == plumbing_point_kind::ELEVATED_TANK { level + point.tank_height } else { level },
+                inlet_z: if point.kind == plumbing_point_kind::ELEVATED_TANK {
+                    level + point.tank_height
+                } else {
+                    level
+                },
                 outlet_z: level - point.invert_depth,
             }
         }
@@ -94,16 +116,33 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
     };
     if system.kind == kind::STORM_WATER {
         let flows = downspout_flows(document);
-        let spouts: HashMap<Id, &StructuralElement> = document.structural_elements.iter()
-            .filter(|element| element.kind == element_kind::DOWNSPOUT).map(|element| (element.id, element)).collect();
+        let spouts: HashMap<Id, &StructuralElement> = document
+            .structural_elements
+            .iter()
+            .filter(|element| element.kind == element_kind::DOWNSPOUT)
+            .map(|element| (element.id, element))
+            .collect();
         let mut nodes = vec![root];
         let mut seen = HashSet::new();
         for id in &system.fixtures {
-            if !seen.insert(*id) { continue; }
-            let Some(spout) = spouts.get(id) else { continue };
-            let Some(&level) = elevations.get(&spout.level_id) else { continue };
-            nodes.push(PlumbingNode { point: spout.start, center: spout.start, level, units: flows.get(id).copied().unwrap_or(0.0),
-                spec: None, inlet_z: level, outlet_z: level + spout.offset });
+            if !seen.insert(*id) {
+                continue;
+            }
+            let Some(spout) = spouts.get(id) else {
+                continue;
+            };
+            let Some(&level) = elevations.get(&spout.level_id) else {
+                continue;
+            };
+            nodes.push(PlumbingNode {
+                point: spout.start,
+                center: spout.start,
+                level,
+                units: flows.get(id).copied().unwrap_or(0.0),
+                spec: None,
+                inlet_z: level,
+                outlet_z: level + spout.offset,
+            });
         }
         return Some(storm(&nodes));
     }
@@ -127,15 +166,21 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
         if !seen.insert(*id) {
             continue;
         }
-        let Some(element) = components.get(id) else { continue };
-        let Some(spec) = fixture_spec(element) else { continue };
+        let Some(element) = components.get(id) else {
+            continue;
+        };
+        let Some(spec) = fixture_spec(element) else {
+            continue;
+        };
         let Some(&level) = elevations.get(&element.level_id) else {
             continue;
         };
         let units = match system.kind {
-            kind::COLD_WATER if element.component_shape == catalog::WATER_HEATER => {
-                heater_units.get(id).copied().filter(|units| *units > 0.0).unwrap_or(1.4)
-            }
+            kind::COLD_WATER if element.component_shape == catalog::WATER_HEATER => heater_units
+                .get(id)
+                .copied()
+                .filter(|units| *units > 0.0)
+                .unwrap_or(1.4),
             kind::COLD_WATER => spec.cold,
             kind::HOT_WATER => spec.hot,
             _ => spec.drain,
@@ -157,7 +202,11 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
         let wall_top = document
             .walls
             .iter()
-            .filter_map(|wall| elevations.get(&wall.level_id).map(|level| level + wall.height))
+            .filter_map(|wall| {
+                elevations
+                    .get(&wall.level_id)
+                    .map(|level| level + wall.height)
+            })
             .fold(f64::NEG_INFINITY, f64::max);
         let roof_level = document
             .levels
@@ -169,7 +218,12 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
         let roof_top = if highest.is_finite() {
             highest
         } else {
-            document.levels.iter().map(|level| level.elevation).reduce(f64::max)? + 3.0
+            document
+                .levels
+                .iter()
+                .map(|level| level.elevation)
+                .reduce(f64::max)?
+                + 3.0
         } + 0.30;
         Some(drain(&nodes, &document.plumbing_points, roof_top))
     } else {
@@ -179,7 +233,11 @@ pub(super) fn route_system(document: &Document, system: &PlumbingSystem, elevati
 
 /// Finds the back-wall connection of a rotated fixture.
 fn connection(element: &StructuralElement) -> Point2 {
-    let depth = if element.depth > 0.0 { element.depth } else { element.width };
+    let depth = if element.depth > 0.0 {
+        element.depth
+    } else {
+        element.width
+    };
     let back = (depth / 2.0 - 0.06).max(0.0);
     Point2::new(
         element.start.x - element.rotation.sin() * back,

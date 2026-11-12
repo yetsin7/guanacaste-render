@@ -6,14 +6,19 @@ use super::scene_mesh::SurfaceKind as Surface;
 use crate::document::component_shape as catalog;
 
 /// Dispatches the furniture recipes whose numeric identifiers are stored in project files.
-pub(super) fn parts(geometry: &ComponentGeometry<'_>, component_shape: i32) -> Option<Vec<ElementPart>> {
+pub(super) fn parts(
+    geometry: &ComponentGeometry<'_>,
+    component_shape: i32,
+) -> Option<Vec<ElementPart>> {
     match component_shape {
         catalog::TABLE => Some(table(geometry)),
         catalog::CHAIR => Some(chair(geometry)),
         catalog::SOFA => Some(sofa(geometry)),
         catalog::BED => Some(bed(geometry)),
         catalog::PLANT => Some(plant(geometry)),
-        catalog::CABINET | catalog::WALL_CABINET => Some(cabinet(geometry, component_shape == catalog::WALL_CABINET)),
+        catalog::CABINET | catalog::WALL_CABINET => {
+            Some(cabinet(geometry, component_shape == catalog::WALL_CABINET))
+        }
         catalog::DESK => Some(desk(geometry)),
         catalog::DRESSER => Some(dresser(geometry)),
         catalog::BOOKSHELF => Some(bookshelf(geometry)),
@@ -33,24 +38,52 @@ pub(super) fn parts(geometry: &ComponentGeometry<'_>, component_shape: i32) -> O
 fn television(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     vec![
-        geometry.block((0.0, 0.0), (width, depth), (0.0, height), Surface::OpeningFrame),
+        geometry.block(
+            (0.0, 0.0),
+            (width, depth),
+            (0.0, height),
+            Surface::OpeningFrame,
+        ),
         geometry.block(
             (0.0, -depth / 2.0 - 0.006),
             (width * 0.94, 0.012),
             (height * 0.06, height * 0.94),
             Surface::Glass,
         ),
-        geometry.block((0.0, 0.0), (0.05, depth), (-0.18, 0.0), Surface::OpeningFrame),
-        geometry.block((0.0, 0.0), (width * 0.30, depth * 1.8), (-0.20, -0.18), Surface::OpeningFrame),
+        geometry.block(
+            (0.0, 0.0),
+            (0.05, depth),
+            (-0.18, 0.0),
+            Surface::OpeningFrame,
+        ),
+        geometry.block(
+            (0.0, 0.0),
+            (width * 0.30, depth * 1.8),
+            (-0.20, -0.18),
+            Surface::OpeningFrame,
+        ),
     ]
 }
 
 /// Builds a round tabletop, narrow column, and weighted round foot.
 fn round_table(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
-    let (diameter, height) = (geometry.width().min(geometry.depth()), geometry.element.height);
+    let (diameter, height) = (
+        geometry.width().min(geometry.depth()),
+        geometry.element.height,
+    );
     vec![
-        geometry.round((0.0, 0.0), diameter, (height - 0.035, height), Surface::DoorLeaf),
-        geometry.round((0.0, 0.0), diameter * 0.12, (height - 0.06, height - 0.035), Surface::DoorLeaf),
+        geometry.round(
+            (0.0, 0.0),
+            diameter,
+            (height - 0.035, height),
+            Surface::DoorLeaf,
+        ),
+        geometry.round(
+            (0.0, 0.0),
+            diameter * 0.12,
+            (height - 0.06, height - 0.035),
+            Surface::DoorLeaf,
+        ),
         geometry.round((0.0, 0.0), 0.08, (0.04, height - 0.06), Surface::Metal),
         geometry.round((0.0, 0.0), diameter * 0.52, (0.0, 0.04), Surface::Metal),
     ]
@@ -61,7 +94,12 @@ fn table(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let top = (height * 0.08).clamp(0.035, 0.08);
     let leg = (width.min(depth) * 0.08).clamp(0.035, 0.09);
-    let mut parts = vec![geometry.block((0.0, 0.0), (width, depth), (height - top, height), Surface::DoorLeaf)];
+    let mut parts = vec![geometry.block(
+        (0.0, 0.0),
+        (width, depth),
+        (height - top, height),
+        Surface::DoorLeaf,
+    )];
     for center in geometry.corners(leg * 1.7) {
         parts.push(geometry.block(center, (leg, leg), (0.0, height - top), Surface::DoorLeaf));
     }
@@ -73,9 +111,19 @@ fn chair(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let seat = 0.48_f64.min(height * 0.55);
     let member = (width.min(depth) * 0.09).clamp(0.025, 0.05);
-    let mut parts = vec![geometry.block((0.0, 0.0), (width, depth), (seat - 0.07, seat), Surface::DoorLeaf)];
+    let mut parts = vec![geometry.block(
+        (0.0, 0.0),
+        (width, depth),
+        (seat - 0.07, seat),
+        Surface::DoorLeaf,
+    )];
     for center in geometry.corners(member * 1.5) {
-        parts.push(geometry.block(center, (member, member), (0.0, seat - 0.07), Surface::DoorLeaf));
+        parts.push(geometry.block(
+            center,
+            (member, member),
+            (0.0, seat - 0.07),
+            Surface::DoorLeaf,
+        ));
     }
     parts.push(geometry.block(
         (0.0, depth / 2.0 - member),
@@ -91,7 +139,13 @@ fn sofa(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let arm = (width * 0.08).clamp(0.09, 0.18);
     let mut parts = vec![
-        geometry.soft((0.0, 0.0), (width, depth), (0.12, 0.38), 0.04, Surface::Upholstery),
+        geometry.soft(
+            (0.0, 0.0),
+            (width, depth),
+            (0.12, 0.38),
+            0.04,
+            Surface::Upholstery,
+        ),
         geometry.soft(
             (0.0, depth * 0.34),
             (width, depth * 0.28),
@@ -139,9 +193,26 @@ fn bed(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let mut parts = vec![
         geometry.block((0.0, 0.0), (width, depth), (0.08, 0.25), Surface::DoorLeaf),
-        geometry.soft((0.0, 0.0), (width * 0.96, depth * 0.91), (0.25, 0.48), 0.06, Surface::Bedding),
-        geometry.soft((0.0, -depth * 0.12), (width, depth * 0.66), (0.30, 0.52), 0.05, Surface::Upholstery),
-        geometry.block((0.0, depth / 2.0 - 0.055), (width, 0.11), (0.08, height), Surface::DoorLeaf),
+        geometry.soft(
+            (0.0, 0.0),
+            (width * 0.96, depth * 0.91),
+            (0.25, 0.48),
+            0.06,
+            Surface::Bedding,
+        ),
+        geometry.soft(
+            (0.0, -depth * 0.12),
+            (width, depth * 0.66),
+            (0.30, 0.52),
+            0.05,
+            Surface::Upholstery,
+        ),
+        geometry.block(
+            (0.0, depth / 2.0 - 0.055),
+            (width, 0.11),
+            (0.08, height),
+            Surface::DoorLeaf,
+        ),
     ];
     let count = if width >= 1.30 { 2 } else { 1 };
     for index in 0..count {
@@ -164,17 +235,30 @@ fn bed(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 
 /// Builds the pot, trunk, and three foliage masses of a small ornamental plant.
 fn plant(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
-    let (diameter, height) = (geometry.width().min(geometry.depth()), geometry.element.height);
+    let (diameter, height) = (
+        geometry.width().min(geometry.depth()),
+        geometry.element.height,
+    );
     let pot_top = (height * 0.28).min(diameter * 0.75);
     vec![
-        geometry.round((0.0, 0.0), diameter * 0.58, (0.0, pot_top), Surface::DoorLeaf),
+        geometry.round(
+            (0.0, 0.0),
+            diameter * 0.58,
+            (0.0, pot_top),
+            Surface::DoorLeaf,
+        ),
         geometry.round(
             (0.0, 0.0),
             0.025_f64.max(diameter * 0.10),
             (pot_top * 0.7, height * 0.78),
             Surface::DoorLeaf,
         ),
-        geometry.round((0.0, 0.0), diameter, (height * 0.48, height), Surface::Structure),
+        geometry.round(
+            (0.0, 0.0),
+            diameter,
+            (height * 0.48, height),
+            Surface::Structure,
+        ),
         geometry.round(
             (-diameter * 0.20, diameter * 0.12),
             diameter * 0.62,
@@ -193,12 +277,31 @@ fn plant(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 /// Builds a cabinet carcass, optional toe kick, top, and paired door fronts.
 pub(super) fn cabinet(geometry: &ComponentGeometry<'_>, wall_mounted: bool) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
-    let toe = if wall_mounted { 0.0 } else { 0.10_f64.min(height / 6.0) };
-    let mut parts = vec![geometry.block((0.0, 0.0), (width, depth), (toe, height - 0.04), Surface::DoorLeaf)];
+    let toe = if wall_mounted {
+        0.0
+    } else {
+        0.10_f64.min(height / 6.0)
+    };
+    let mut parts = vec![geometry.block(
+        (0.0, 0.0),
+        (width, depth),
+        (toe, height - 0.04),
+        Surface::DoorLeaf,
+    )];
     if toe > 0.0 {
-        parts.push(geometry.block((0.0, depth * 0.08), (width * 0.88, depth * 0.82), (0.0, toe), Surface::Structure));
+        parts.push(geometry.block(
+            (0.0, depth * 0.08),
+            (width * 0.88, depth * 0.82),
+            (0.0, toe),
+            Surface::Structure,
+        ));
     }
-    parts.push(geometry.block((0.0, 0.0), (width + 0.04, depth + 0.04), (height - 0.04, height), Surface::Floor));
+    parts.push(geometry.block(
+        (0.0, 0.0),
+        (width + 0.04, depth + 0.04),
+        (height - 0.04, height),
+        Surface::Floor,
+    ));
     for side in [-1.0, 1.0] {
         parts.push(geometry.block(
             (side * width * 0.25, -depth / 2.0 - 0.006),
@@ -213,7 +316,12 @@ pub(super) fn cabinet(geometry: &ComponentGeometry<'_>, wall_mounted: bool) -> V
 /// Builds a desktop, two supports, and a shallow drawer bank.
 fn desk(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
-    let mut parts = vec![geometry.block((0.0, 0.0), (width, depth), (height - 0.06, height), Surface::DoorLeaf)];
+    let mut parts = vec![geometry.block(
+        (0.0, 0.0),
+        (width, depth),
+        (height - 0.06, height),
+        Surface::DoorLeaf,
+    )];
     for side in [-1.0, 1.0] {
         parts.push(geometry.block(
             (side * width * 0.43, 0.0),
@@ -235,8 +343,18 @@ fn desk(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
 fn dresser(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
     let (width, depth, height) = (geometry.width(), geometry.depth(), geometry.element.height);
     let mut parts = vec![
-        geometry.block((0.0, 0.0), (width, depth), (0.06, height - 0.04), Surface::DoorLeaf),
-        geometry.block((0.0, 0.0), (width + 0.03, depth + 0.03), (height - 0.04, height), Surface::DoorLeaf),
+        geometry.block(
+            (0.0, 0.0),
+            (width, depth),
+            (0.06, height - 0.04),
+            Surface::DoorLeaf,
+        ),
+        geometry.block(
+            (0.0, 0.0),
+            (width + 0.03, depth + 0.03),
+            (height - 0.04, height),
+            Surface::DoorLeaf,
+        ),
     ];
     for index in 0..3 {
         let bottom = 0.10 + index as f64 * (height - 0.16) / 3.0;
@@ -264,11 +382,21 @@ fn bookshelf(geometry: &ComponentGeometry<'_>) -> Vec<ElementPart> {
             Surface::DoorLeaf,
         ));
     }
-    parts.push(geometry.block((0.0, depth / 2.0 - PANEL / 2.0), (width, PANEL), (0.0, height), Surface::DoorLeaf));
+    parts.push(geometry.block(
+        (0.0, depth / 2.0 - PANEL / 2.0),
+        (width, PANEL),
+        (0.0, height),
+        Surface::DoorLeaf,
+    ));
     let count = ((height / 0.38).round_ties_even() as i32).max(3);
     for index in 0..=count {
         let level = height * index as f64 / count as f64;
-        parts.push(geometry.block((0.0, 0.0), (width, depth), (0.0_f64.max(level - PANEL), level), Surface::DoorLeaf));
+        parts.push(geometry.block(
+            (0.0, 0.0),
+            (width, depth),
+            (0.0_f64.max(level - PANEL), level),
+            Surface::DoorLeaf,
+        ));
     }
     parts
 }

@@ -86,7 +86,10 @@ fn what_is_not_ported_is_reported_and_drafting_has_no_solid() {
         .is_none()
     );
     assert!(element_parts(&element(kind::ELEVATOR, 0, 2.0)).is_none());
-    assert_eq!(element_parts(&element(kind::OPENING, 0, 2.0)), Some(Vec::new()));
+    assert_eq!(
+        element_parts(&element(kind::OPENING, 0, 2.0)),
+        Some(Vec::new())
+    );
 }
 
 #[test]

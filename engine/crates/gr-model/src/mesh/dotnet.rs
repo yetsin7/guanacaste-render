@@ -20,7 +20,11 @@ pub struct DotNetRandom {
 impl DotNetRandom {
     pub fn new(seed: i32) -> DotNetRandom {
         let mut state = [0i32; 56];
-        let subtraction = if seed == i32::MIN { i32::MAX } else { seed.abs() };
+        let subtraction = if seed == i32::MIN {
+            i32::MAX
+        } else {
+            seed.abs()
+        };
         let mut mj = SEED - subtraction;
         state[55] = mj;
         let mut mk = 1i32;
@@ -49,12 +53,24 @@ impl DotNetRandom {
                 }
             }
         }
-        DotNetRandom { state, next: 0, next_p: 21 }
+        DotNetRandom {
+            state,
+            next: 0,
+            next_p: 21,
+        }
     }
 
     fn sample(&mut self) -> i32 {
-        self.next = if self.next + 1 >= 56 { 1 } else { self.next + 1 };
-        self.next_p = if self.next_p + 1 >= 56 { 1 } else { self.next_p + 1 };
+        self.next = if self.next + 1 >= 56 {
+            1
+        } else {
+            self.next + 1
+        };
+        self.next_p = if self.next_p + 1 >= 56 {
+            1
+        } else {
+            self.next_p + 1
+        };
         let mut value = self.state[self.next].wrapping_sub(self.state[self.next_p]);
         if value == BIG {
             value -= 1;

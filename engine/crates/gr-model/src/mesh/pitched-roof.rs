@@ -8,8 +8,15 @@ use glam::Vec3;
 const EPSILON: f64 = 1e-9;
 
 /// Builds a supported pitched roof over its grown boundary, then closes rising edges when requested.
-pub(super) fn add_pitched_roof(mesh: &mut SceneMesh, roof: &FloorSlab, boundary: &[Point2], level: f64) {
-    let Some(extent) = PlanRectangle::of(boundary) else { return };
+pub(super) fn add_pitched_roof(
+    mesh: &mut SceneMesh,
+    roof: &FloorSlab,
+    boundary: &[Point2],
+    level: f64,
+) {
+    let Some(extent) = PlanRectangle::of(boundary) else {
+        return;
+    };
     let rise = |point| rise_at(roof, &extent, point);
     let dropped_eave = if boundary != roof.boundary.as_slice() {
         roof.overhang * roof.pitch.to_radians().tan()
@@ -18,9 +25,17 @@ pub(super) fn add_pitched_roof(mesh: &mut SceneMesh, roof: &FloorSlab, boundary:
     };
     let eave_top = level + roof.elevation_offset - dropped_eave;
     let ordered = counter_clockwise(boundary);
-    let surface = |point: Point2, drop: f64| Vec3::new(point.x as f32, point.y as f32, (eave_top + rise(point) - drop) as f32);
+    let surface = |point: Point2, drop: f64| {
+        Vec3::new(
+            point.x as f32,
+            point.y as f32,
+            (eave_top + rise(point) - drop) as f32,
+        )
+    };
     for facet in facets(roof, &ordered, &extent) {
-        let Ok(triangles) = triangulate(&facet) else { continue };
+        let Ok(triangles) = triangulate(&facet) else {
+            continue;
+        };
         for [a, b, c] in triangles {
             mesh.add_triangle(
                 surface(facet[a], 0.0),
@@ -153,7 +168,9 @@ fn clip(polygon: &[Point2], a: f64, b: f64, c: f64) -> Vec<Point2> {
     result
         .iter()
         .enumerate()
-        .filter_map(|(index, &point)| (point.distance_to(result[(index + 1) % result.len()]) > EPSILON).then_some(point))
+        .filter_map(|(index, &point)| {
+            (point.distance_to(result[(index + 1) % result.len()]) > EPSILON).then_some(point)
+        })
         .collect()
 }
 
@@ -175,7 +192,9 @@ fn lies_on_boundary(boundary: &[Point2], point: Point2) -> bool {
 /// Closes rising edges of the original, unextended footprint with inside and outside wall faces.
 fn add_gable_walls(mesh: &mut SceneMesh, roof: &FloorSlab, eave_top: f64) {
     let boundary = counter_clockwise(&roof.boundary);
-    let Some(extent) = PlanRectangle::of(&boundary) else { return };
+    let Some(extent) = PlanRectangle::of(&boundary) else {
+        return;
+    };
     let bottom = (eave_top - roof.thickness) as f32;
     let lift = |point: Point2, z: f32| Vec3::new(point.x as f32, point.y as f32, z);
     for index in 0..boundary.len() {
@@ -197,7 +216,10 @@ fn add_gable_walls(mesh: &mut SceneMesh, roof: &FloorSlab, eave_top: f64) {
         if profile.iter().map(|(_, rise)| *rise).fold(0.0, f64::max) < 0.05 {
             continue;
         }
-        let inward = Point2::new(-(to.y - from.y) / length * 0.20, (to.x - from.x) / length * 0.20);
+        let inward = Point2::new(
+            -(to.y - from.y) / length * 0.20,
+            (to.x - from.x) / length * 0.20,
+        );
         for pair in profile.windows(2) {
             let ((a, rise_a), (b, rise_b)) = (pair[0], pair[1]);
             let top_a = (eave_top + rise_a - roof.thickness) as f32;
@@ -207,7 +229,13 @@ fn add_gable_walls(mesh: &mut SceneMesh, roof: &FloorSlab, eave_top: f64) {
             }
             let inner_a = Point2::new(a.x + inward.x, a.y + inward.y);
             let inner_b = Point2::new(b.x + inward.x, b.y + inward.y);
-            mesh.add_quad(lift(a, bottom), lift(b, bottom), lift(b, top_b), lift(a, top_a), SurfaceKind::Wall);
+            mesh.add_quad(
+                lift(a, bottom),
+                lift(b, bottom),
+                lift(b, top_b),
+                lift(a, top_a),
+                SurfaceKind::Wall,
+            );
             mesh.add_quad(
                 lift(inner_b, bottom),
                 lift(inner_a, bottom),

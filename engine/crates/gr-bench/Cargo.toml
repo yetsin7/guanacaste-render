@@ -33,3 +33,7 @@ path = "src/mesh.rs"
 [[bin]]
 name = "denoise"
 path = "src/denoise.rs"
+
+[[bin]]
+name = "raster"
+path = "src/raster.rs"

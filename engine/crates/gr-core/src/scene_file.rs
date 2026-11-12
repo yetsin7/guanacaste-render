@@ -69,7 +69,7 @@ pub struct Environment {
     pub exposure: f32,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Material {
     pub base_color: Vec3,
     pub roughness: f32,
@@ -92,7 +92,7 @@ pub struct Light {
 }
 
 /// A triangulated scene: indexed triangles with one material each.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Scene {
     pub positions: Vec<Vec3>,
     pub indices: Vec<[u32; 3]>,
