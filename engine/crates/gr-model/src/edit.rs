@@ -327,6 +327,47 @@ mod tests {
     }
 
     #[test]
+    fn consecutive_project_saves_keep_the_previous_version_as_backup() {
+        let folder = std::env::temp_dir().join(format!(
+            "gr-model-consecutive-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&folder).expect("folder");
+        let path = folder.join("jardin.gr");
+        std::fs::write(&path, GARDEN).expect("fixture");
+        let document = garden();
+        let planting = Planting::new(Id(43), "Palma", Point2::new(2.0, 1.0), 2.0, 3.0, 10)
+            .rooted(&document, 0.0);
+
+        save_plantings(&path, std::slice::from_ref(&planting), &[])
+            .expect("first save");
+        let first_version = std::fs::read(&path).expect("first version");
+        assert_eq!(std::fs::read(backup_path(&path)).expect("backup"), GARDEN);
+
+        save_plantings(&path, std::slice::from_ref(&planting), &[])
+            .expect("second save replaces existing file");
+        assert_eq!(
+            std::fs::read(backup_path(&path)).expect("backup"),
+            first_version
+        );
+        let saved = Document::load(&path).expect("reads after second save");
+        assert_eq!(
+            saved
+                .structural_elements
+                .iter()
+                .filter(|element| element.id == planting.id)
+                .count(),
+            1,
+            "saving the same planting twice must not duplicate it"
+        );
+        std::fs::remove_dir_all(folder).expect("cleanup");
+    }
+
+    #[test]
     fn a_project_file_is_saved_verified_and_backed_up() {
         let folder = std::env::temp_dir().join(format!("gr-model-edit-{}", std::process::id()));
         std::fs::create_dir_all(&folder).expect("folder");
