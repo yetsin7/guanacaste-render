@@ -343,8 +343,7 @@ mod tests {
         let planting = Planting::new(Id(43), "Palma", Point2::new(2.0, 1.0), 2.0, 3.0, 10)
             .rooted(&document, 0.0);
 
-        save_plantings(&path, std::slice::from_ref(&planting), &[])
-            .expect("first save");
+        save_plantings(&path, std::slice::from_ref(&planting), &[]).expect("first save");
         let first_version = std::fs::read(&path).expect("first version");
         assert_eq!(std::fs::read(backup_path(&path)).expect("backup"), GARDEN);
 
