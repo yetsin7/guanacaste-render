@@ -181,7 +181,21 @@ pub fn save_plantings(path: &Path, add: &[Planting], remove: &[Id]) -> Result<()
     let mut staging = path.as_os_str().to_owned();
     staging.push(".guardando");
     let staging = PathBuf::from(staging);
-    std::fs::write(&staging, &bytes).map_err(EditError::Write)?;
+    // Never overwrite a leftover staging file from an interrupted save.
+    // A caller can inspect or recover it before trying again.
+    {
+        use std::io::Write;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&staging)
+            .map_err(EditError::Write)?;
+        if let Err(error) = file.write_all(&bytes) {
+            drop(file);
+            let _ = std::fs::remove_file(&staging);
+            return Err(EditError::Write(error));
+        }
+    }
     // Validate the complete native container before touching the project or its backup.
     if let Err(error) = Document::load(&staging) {
         let _ = std::fs::remove_file(&staging);
@@ -438,6 +452,41 @@ mod tests {
         assert!(
             staging.is_dir(),
             "preexisting staging directory is preserved"
+        );
+        std::fs::remove_dir_all(folder).expect("cleanup");
+    }
+
+    #[test]
+    fn existing_staging_file_is_not_overwritten() {
+        let folder = std::env::temp_dir().join(format!(
+            "gr-model-staging-existing-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&folder).expect("folder");
+        let path = folder.join("jardin.gr");
+        std::fs::write(&path, GARDEN).expect("fixture");
+        let backup = backup_path(&path);
+        std::fs::write(&backup, b"previous backup").expect("backup");
+        let mut staging = path.as_os_str().to_owned();
+        staging.push(".guardando");
+        let staging = PathBuf::from(staging);
+        std::fs::write(&staging, b"interrupted save").expect("staging");
+        let planting = Planting::new(Id(47), "Palma", Point2::new(2.0, 1.0), 2.0, 3.0, 10)
+            .rooted(&garden(), 0.0);
+
+        assert!(matches!(
+            save_plantings(&path, &[planting], &[]),
+            Err(EditError::Write(_))
+        ));
+        assert_eq!(std::fs::read(&path).expect("original"), GARDEN);
+        assert_eq!(std::fs::read(&backup).expect("backup"), b"previous backup");
+        assert_eq!(
+            std::fs::read(&staging).expect("staging preserved"),
+            b"interrupted save"
         );
         std::fs::remove_dir_all(folder).expect("cleanup");
     }
