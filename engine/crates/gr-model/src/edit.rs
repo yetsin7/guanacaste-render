@@ -123,6 +123,8 @@ pub enum EditError {
     Unexpected(&'static str),
     /// The written file did not read back; the original was restored from the backup.
     Verification(DocumentError),
+    /// The staged project could not be opened; the original has not been replaced.
+    StagingVerification(DocumentError),
 }
 
 impl fmt::Display for EditError {
@@ -131,6 +133,10 @@ impl fmt::Display for EditError {
             EditError::Read(error) => write!(f, "{error}"),
             EditError::Write(error) => write!(f, "cannot write the project file: {error}"),
             EditError::Unexpected(reason) => write!(f, "unexpected project contents: {reason}"),
+            EditError::StagingVerification(error) => write!(
+                f,
+                "the staged project did not read back ({error}); the original was not replaced"
+            ),
             EditError::Verification(error) => write!(
                 f,
                 "the saved file did not read back ({error}); the original was restored"
@@ -163,8 +169,16 @@ pub fn save_plantings(path: &Path, add: &[Planting], remove: &[Id]) -> Result<()
     let mut staging = path.as_os_str().to_owned();
     staging.push(".guardando");
     let staging = PathBuf::from(staging);
-    std::fs::write(&backup, &original).map_err(EditError::Write)?;
     std::fs::write(&staging, &bytes).map_err(EditError::Write)?;
+    // Validate the complete native container before touching the project or its backup.
+    if let Err(error) = Document::load(&staging) {
+        let _ = std::fs::remove_file(&staging);
+        return Err(EditError::StagingVerification(error));
+    }
+    if let Err(error) = std::fs::write(&backup, &original) {
+        let _ = std::fs::remove_file(&staging);
+        return Err(EditError::Write(error));
+    }
     if let Err(error) = std::fs::rename(&staging, path) {
         let _ = std::fs::remove_file(&staging);
         return Err(EditError::Write(error));
@@ -352,6 +366,12 @@ mod tests {
         assert_eq!(
             std::fs::read(backup_path(&path)).expect("backup"),
             first_version
+        );
+        let mut staging = path.as_os_str().to_owned();
+        staging.push(".guardando");
+        assert!(
+            !PathBuf::from(staging).exists(),
+            "staging file must be moved away"
         );
         let saved = Document::load(&path).expect("reads after second save");
         assert_eq!(
