@@ -435,7 +435,10 @@ mod tests {
             std::fs::read(&backup).expect("backup preserved"),
             b"previous backup"
         );
-        assert!(staging.is_dir(), "preexisting staging directory is preserved");
+        assert!(
+            staging.is_dir(),
+            "preexisting staging directory is preserved"
+        );
         std::fs::remove_dir_all(folder).expect("cleanup");
     }
 
