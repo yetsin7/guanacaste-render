@@ -404,6 +404,45 @@ mod tests {
     }
 
     #[test]
+    fn blocked_staging_path_keeps_original_and_existing_backup() {
+        let folder = std::env::temp_dir().join(format!(
+            "gr-model-staging-blocked-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&folder).expect("folder");
+        let path = folder.join("jardin.gr");
+        std::fs::write(&path, GARDEN).expect("fixture");
+        let backup = backup_path(&path);
+        std::fs::write(&backup, b"previous backup").expect("backup");
+        let mut staging = path.as_os_str().to_owned();
+        staging.push(".guardando");
+        let staging = PathBuf::from(staging);
+        // A directory blocks staging writes on Windows and Unix alike.
+        std::fs::create_dir(&staging).expect("blocking directory");
+        let planting = Planting::new(Id(46), "Palma", Point2::new(2.0, 1.0), 2.0, 3.0, 10)
+            .rooted(&garden(), 0.0);
+
+        assert!(matches!(
+            save_plantings(&path, &[planting], &[]),
+            Err(EditError::Write(_))
+        ));
+        assert_eq!(std::fs::read(&path).expect("original"), GARDEN);
+        assert_eq!(
+            std::fs::read(&backup).expect("backup preserved"),
+            b"previous backup"
+        );
+        assert!(
+            staging.is_dir(),
+            "preexisting staging directory is preserved"
+        );
+        std::fs::remove_dir_all(folder).expect("cleanup");
+    }
+
+    #[test]
     fn backup_write_failure_keeps_original_project_and_removes_staging() {
         let folder = std::env::temp_dir().join(format!(
             "gr-model-backup-failure-{}-{}",
