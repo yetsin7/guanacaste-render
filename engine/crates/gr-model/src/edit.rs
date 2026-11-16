@@ -124,7 +124,10 @@ pub enum EditError {
     /// The written file did not read back; the original was restored from the backup.
     Verification(DocumentError),
     /// The saved file failed verification and restoring the original also failed.
-    Restoration { verification: DocumentError, restore: std::io::Error },
+    Restoration {
+        verification: DocumentError,
+        restore: std::io::Error,
+    },
     /// The staged project could not be opened; the original has not been replaced.
     StagingVerification(DocumentError),
 }
@@ -143,7 +146,10 @@ impl fmt::Display for EditError {
                 f,
                 "the saved file did not read back ({error}); the original was restored"
             ),
-            EditError::Restoration { verification, restore } => write!(
+            EditError::Restoration {
+                verification,
+                restore,
+            } => write!(
                 f,
                 "the saved file did not read back ({verification}) and restoring the original failed ({restore}); recover from the .bak backup"
             ),
@@ -191,7 +197,10 @@ pub fn save_plantings(path: &Path, add: &[Planting], remove: &[Id]) -> Result<()
     }
     if let Err(error) = Document::load(path) {
         if let Err(restore) = std::fs::write(path, &original) {
-            return Err(EditError::Restoration { verification: error, restore });
+            return Err(EditError::Restoration {
+                verification: error,
+                restore,
+            });
         }
         return Err(EditError::Verification(error));
     }
