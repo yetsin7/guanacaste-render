@@ -369,7 +369,10 @@ mod tests {
         );
         let mut staging = path.as_os_str().to_owned();
         staging.push(".guardando");
-        assert!(!PathBuf::from(staging).exists(), "staging file must be moved away");
+        assert!(
+            !PathBuf::from(staging).exists(),
+            "staging file must be moved away"
+        );
         let saved = Document::load(&path).expect("reads after second save");
         assert_eq!(
             saved
