@@ -190,7 +190,9 @@ pub fn save_plantings(path: &Path, add: &[Planting], remove: &[Id]) -> Result<()
             .create_new(true)
             .open(&staging)
             .map_err(EditError::Write)?;
-        if let Err(error) = file.write_all(&bytes) {
+        // Flush staged bytes to storage before validating or replacing the project.
+        // This narrows the window for losing a successfully reported save on power loss.
+        if let Err(error) = file.write_all(&bytes).and_then(|()| file.sync_all()) {
             drop(file);
             let _ = std::fs::remove_file(&staging);
             return Err(EditError::Write(error));
