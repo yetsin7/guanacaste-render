@@ -392,6 +392,25 @@ mod tests {
     }
 
     #[test]
+    fn ambiguous_existing_planting_ids_are_rejected() {
+        let id = Id(987654323);
+        let input = json!({
+            "StructuralElements": [
+                {"Id": id.to_string(), "Kind": element_kind::PLANTING},
+                {"Id": id.to_string(), "Kind": element_kind::PLANTING}
+            ]
+        });
+        let bytes = serde_json::to_vec(&input).expect("json");
+        let planting = Planting::new(id, "Updated", Point2::new(0.0, 0.0), 2.0, 3.0, 10);
+        assert!(matches!(
+            edit_json(&bytes, &[planting], &[]),
+            Err(EditError::Unexpected(
+                "planting identifier matches multiple existing elements"
+            ))
+        ));
+    }
+
+    #[test]
     fn everything_else_in_the_project_is_kept_in_order() {
         let container = Container::parse(GARDEN).expect("valid");
         let unchanged = edit_json(&container.json, &[], &[]).expect("edits");
