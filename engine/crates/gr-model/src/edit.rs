@@ -415,6 +415,23 @@ mod tests {
     }
 
     #[test]
+    fn removing_a_plant_does_not_remove_a_non_plant_with_the_same_id() {
+        let id = Id(987654325);
+        let input = json!({
+            "StructuralElements": [
+                {"Id": id.to_string(), "Kind": 1, "Name": "Keep wall"},
+                {"Id": id.to_string(), "Kind": element_kind::PLANTING, "Name": "Remove tree"}
+            ]
+        });
+        let bytes = serde_json::to_vec(&input).expect("json");
+        let output = edit_json(&bytes, &[], &[id]).expect("remove planting only");
+        let parsed: Value = serde_json::from_slice(&output).expect("json");
+        let elements = parsed["StructuralElements"].as_array().expect("elements");
+        assert_eq!(elements.len(), 1);
+        assert_eq!(elements[0]["Name"], "Keep wall");
+    }
+
+    #[test]
     fn removing_ambiguous_existing_planting_ids_is_rejected() {
         let id = Id(987654324);
         let input = json!({
