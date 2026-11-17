@@ -254,6 +254,23 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
         ));
     }
     for planting in add {
+        // An ambiguous existing document must not be silently repaired by deleting
+        // multiple elements with the same identifier during an update.
+        let matches = elements
+            .iter()
+            .filter(|element| {
+                element
+                    .get("Id")
+                    .and_then(Value::as_str)
+                    .and_then(Id::parse)
+                    == Some(planting.id)
+            })
+            .count();
+        if matches > 1 {
+            return Err(EditError::Unexpected(
+                "planting identifier matches multiple existing elements",
+            ));
+        }
         // A planting must never replace a wall, slab, or another non-plant element
         // that happens to have the same identifier.
         if elements.iter().any(|element| {
