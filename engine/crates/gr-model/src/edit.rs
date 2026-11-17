@@ -237,6 +237,27 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
     let elements = elements
         .as_array_mut()
         .ok_or(EditError::Unexpected("StructuralElements is not a list"))?;
+    // Removal must not silently delete multiple elements sharing an identifier.
+    // A corrupt or ambiguous project should be repaired explicitly instead.
+    for id in remove {
+        let matches = elements
+            .iter()
+            .filter(|element| {
+                element
+                    .get("Id")
+                    .and_then(Value::as_str)
+                    .and_then(Id::parse)
+                    == Some(*id)
+                    && element.get("Kind").and_then(Value::as_i64)
+                        == Some(element_kind::PLANTING as i64)
+            })
+            .count();
+        if matches > 1 {
+            return Err(EditError::Unexpected(
+                "planting removal matches multiple existing elements",
+            ));
+        }
+    }
     elements.retain(|element| {
         let id = element
             .get("Id")
@@ -387,6 +408,24 @@ mod tests {
             edit_json(input, &[first, second], &[]),
             Err(EditError::Unexpected(
                 "duplicate planting identifier in add batch"
+            ))
+        ));
+    }
+
+    #[test]
+    fn removing_ambiguous_existing_planting_ids_is_rejected() {
+        let id = Id(987654324);
+        let input = json!({
+            "StructuralElements": [
+                {"Id": id.to_string(), "Kind": element_kind::PLANTING},
+                {"Id": id.to_string(), "Kind": element_kind::PLANTING}
+            ]
+        });
+        let bytes = serde_json::to_vec(&input).expect("json");
+        assert!(matches!(
+            edit_json(&bytes, &[], &[id]),
+            Err(EditError::Unexpected(
+                "planting removal matches multiple existing elements"
             ))
         ));
     }
