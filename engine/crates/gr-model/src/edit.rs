@@ -243,7 +243,11 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
         let matches = elements
             .iter()
             .filter(|element| {
-                element.get("Id").and_then(Value::as_str).and_then(Id::parse) == Some(*id)
+                element
+                    .get("Id")
+                    .and_then(Value::as_str)
+                    .and_then(Id::parse)
+                    == Some(*id)
                     && element.get("Kind").and_then(Value::as_i64)
                         == Some(element_kind::PLANTING as i64)
             })
