@@ -246,6 +246,11 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
             element.get("Kind").and_then(Value::as_i64) == Some(element_kind::PLANTING as i64);
         !(is_plant && id.is_some_and(|id| remove.contains(&id)))
     });
+    // Reject ambiguous batches instead of silently keeping only the last planting.
+    let mut added_ids = std::collections::HashSet::new();
+    if add.iter().any(|planting| !added_ids.insert(planting.id)) {
+        return Err(EditError::Unexpected("duplicate planting identifier in add batch"));
+    }
     for planting in add {
         // A planting must never replace a wall, slab, or another non-plant element
         // that happens to have the same identifier.
@@ -351,6 +356,18 @@ mod tests {
         ));
         let unchanged: Value = serde_json::from_slice(&bytes).expect("json");
         assert_eq!(unchanged["StructuralElements"][0]["Name"], "Existing wall");
+    }
+
+    #[test]
+    fn duplicate_planting_ids_in_one_batch_are_rejected() {
+        let id = Id(987654322);
+        let first = Planting::new(id, "First", Point2::new(0.0, 0.0), 2.0, 3.0, 10);
+        let second = Planting::new(id, "Second", Point2::new(1.0, 1.0), 4.0, 5.0, 10);
+        let input = br#"{"StructuralElements":[]}"#;
+        assert!(matches!(
+            edit_json(input, &[first, second], &[]),
+            Err(EditError::Unexpected("duplicate planting identifier in add batch"))
+        ));
     }
 
     #[test]
