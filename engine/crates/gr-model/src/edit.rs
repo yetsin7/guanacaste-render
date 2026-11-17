@@ -249,7 +249,9 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
     // Reject ambiguous batches instead of silently keeping only the last planting.
     let mut added_ids = std::collections::HashSet::new();
     if add.iter().any(|planting| !added_ids.insert(planting.id)) {
-        return Err(EditError::Unexpected("duplicate planting identifier in add batch"));
+        return Err(EditError::Unexpected(
+            "duplicate planting identifier in add batch",
+        ));
     }
     for planting in add {
         // A planting must never replace a wall, slab, or another non-plant element
@@ -366,7 +368,9 @@ mod tests {
         let input = br#"{"StructuralElements":[]}"#;
         assert!(matches!(
             edit_json(input, &[first, second], &[]),
-            Err(EditError::Unexpected("duplicate planting identifier in add batch"))
+            Err(EditError::Unexpected(
+                "duplicate planting identifier in add batch"
+            ))
         ));
     }
 
