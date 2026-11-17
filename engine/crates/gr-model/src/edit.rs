@@ -247,6 +247,21 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
         !(is_plant && id.is_some_and(|id| remove.contains(&id)))
     });
     for planting in add {
+        // A planting must never replace a wall, slab, or another non-plant element
+        // that happens to have the same identifier.
+        if elements.iter().any(|element| {
+            element
+                .get("Id")
+                .and_then(Value::as_str)
+                .and_then(Id::parse)
+                == Some(planting.id)
+                && element.get("Kind").and_then(Value::as_i64)
+                    != Some(element_kind::PLANTING as i64)
+        }) {
+            return Err(EditError::Unexpected(
+                "planting identifier belongs to a non-plant element",
+            ));
+        }
         // Saving twice must not duplicate a plant.
         elements.retain(|element| {
             element
@@ -316,6 +331,26 @@ mod tests {
                 .len(),
             before
         );
+    }
+
+    #[test]
+    fn adding_planting_never_replaces_non_plant_with_same_id() {
+        let id = Id(987654321);
+        let mut source: Value =
+            serde_json::from_slice(br#"{"StructuralElements":[]}"#).expect("json");
+        source["StructuralElements"] = json!([{
+            "Id": id.to_string(),
+            "Kind": 1,
+            "Name": "Existing wall"
+        }]);
+        let bytes = serde_json::to_vec(&source).expect("json");
+        let planting = Planting::new(id, "Tree", Point2::new(0.0, 0.0), 2.0, 3.0, 10);
+        assert!(matches!(
+            edit_json(&bytes, &[planting], &[]),
+            Err(EditError::Unexpected(_))
+        ));
+        let unchanged: Value = serde_json::from_slice(&bytes).expect("json");
+        assert_eq!(unchanged["StructuralElements"][0]["Name"], "Existing wall");
     }
 
     #[test]
