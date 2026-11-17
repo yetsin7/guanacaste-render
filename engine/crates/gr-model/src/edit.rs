@@ -254,6 +254,23 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
         ));
     }
     for planting in add {
+        // An ambiguous existing document must not be silently repaired by deleting
+        // multiple elements with the same identifier during an update.
+        let matches = elements
+            .iter()
+            .filter(|element| {
+                element
+                    .get("Id")
+                    .and_then(Value::as_str)
+                    .and_then(Id::parse)
+                    == Some(planting.id)
+            })
+            .count();
+        if matches > 1 {
+            return Err(EditError::Unexpected(
+                "planting identifier matches multiple existing elements",
+            ));
+        }
         // A planting must never replace a wall, slab, or another non-plant element
         // that happens to have the same identifier.
         if elements.iter().any(|element| {
@@ -370,6 +387,25 @@ mod tests {
             edit_json(input, &[first, second], &[]),
             Err(EditError::Unexpected(
                 "duplicate planting identifier in add batch"
+            ))
+        ));
+    }
+
+    #[test]
+    fn ambiguous_existing_planting_ids_are_rejected() {
+        let id = Id(987654323);
+        let input = json!({
+            "StructuralElements": [
+                {"Id": id.to_string(), "Kind": element_kind::PLANTING},
+                {"Id": id.to_string(), "Kind": element_kind::PLANTING}
+            ]
+        });
+        let bytes = serde_json::to_vec(&input).expect("json");
+        let planting = Planting::new(id, "Updated", Point2::new(0.0, 0.0), 2.0, 3.0, 10);
+        assert!(matches!(
+            edit_json(&bytes, &[planting], &[]),
+            Err(EditError::Unexpected(
+                "planting identifier matches multiple existing elements"
             ))
         ));
     }
