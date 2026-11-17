@@ -269,6 +269,17 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
             element.get("Kind").and_then(Value::as_i64) == Some(element_kind::PLANTING as i64);
         !(is_plant && id.is_some_and(|id| remove.contains(&id)))
     });
+    // JSON cannot represent NaN or infinity. Reject them instead of silently
+    // serializing invalid coordinates or dimensions as null.
+    if add.iter().any(|planting| {
+        !planting.at.x.is_finite()
+            || !planting.at.y.is_finite()
+            || !planting.offset.is_finite()
+            || !planting.width.is_finite()
+            || !planting.height.is_finite()
+    }) {
+        return Err(EditError::Unexpected("planting contains non-finite geometry"));
+    }
     // Reject ambiguous batches instead of silently keeping only the last planting.
     let mut added_ids = std::collections::HashSet::new();
     if add.iter().any(|planting| !added_ids.insert(planting.id)) {
@@ -465,6 +476,34 @@ mod tests {
             Err(EditError::Unexpected(
                 "planting identifier matches multiple existing elements"
             ))
+        ));
+    }
+
+    #[test]
+    fn non_finite_planting_geometry_is_rejected() {
+        let input = br#"{"StructuralElements":[]}"#;
+        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let mut planting = Planting::new(
+                Id(123), "Invalid", Point2::new(0.0, 0.0), 2.0, 3.0, 10,
+            );
+            planting.width = invalid;
+            assert!(matches!(
+                edit_json(input, &[planting], &[]),
+                Err(EditError::Unexpected("planting contains non-finite geometry"))
+            ));
+        }
+        let mut planting = Planting::new(
+            Id(124), "Invalid", Point2::new(f64::NAN, 0.0), 2.0, 3.0, 10,
+        );
+        assert!(matches!(
+            edit_json(input, &[planting.clone()], &[]),
+            Err(EditError::Unexpected("planting contains non-finite geometry"))
+        ));
+        planting.at.x = 0.0;
+        planting.offset = f64::INFINITY;
+        assert!(matches!(
+            edit_json(input, &[planting], &[]),
+            Err(EditError::Unexpected("planting contains non-finite geometry"))
         ));
     }
 
