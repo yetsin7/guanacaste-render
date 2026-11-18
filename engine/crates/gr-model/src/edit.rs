@@ -282,6 +282,13 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
             "planting contains non-finite geometry",
         ));
     }
+    // A zero or negative canopy size cannot produce meaningful plant geometry.
+    // Reject it before serializing, leaving the original project untouched.
+    if add.iter().any(|planting| planting.width <= 0.0 || planting.height <= 0.0) {
+        return Err(EditError::Unexpected(
+            "planting dimensions must be positive",
+        ));
+    }
     // Reject ambiguous batches instead of silently keeping only the last planting.
     let mut added_ids = std::collections::HashSet::new();
     if add.iter().any(|planting| !added_ids.insert(planting.id)) {
@@ -555,6 +562,26 @@ mod tests {
                 ));
             }
         }
+    }
+
+    #[test]
+    fn non_positive_planting_dimensions_are_rejected() {
+        let input = br#"{\"StructuralElements\":[]}"#;
+        for (width, height) in [(0.0, 3.0), (-1.0, 3.0), (2.0, 0.0), (2.0, -1.0)] {
+            let planting = Planting::new(
+                Id(131),
+                "Invalid dimensions",
+                Point2::new(0.0, 0.0),
+                width,
+                height,
+                10,
+            );
+            assert!(matches!(
+                edit_json(input, &[planting], &[]),
+                Err(EditError::Unexpected("planting dimensions must be positive"))
+            ));
+        }
+        assert_eq!(input, br#"{\"StructuralElements\":[]}"#);
     }
 
     #[test]
