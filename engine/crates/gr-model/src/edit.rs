@@ -284,7 +284,10 @@ pub fn edit_json(json: &[u8], add: &[Planting], remove: &[Id]) -> Result<Vec<u8>
     }
     // A zero or negative canopy size cannot produce meaningful plant geometry.
     // Reject it before serializing, leaving the original project untouched.
-    if add.iter().any(|planting| planting.width <= 0.0 || planting.height <= 0.0) {
+    if add
+        .iter()
+        .any(|planting| planting.width <= 0.0 || planting.height <= 0.0)
+    {
         return Err(EditError::Unexpected(
             "planting dimensions must be positive",
         ));
@@ -578,7 +581,9 @@ mod tests {
             );
             assert!(matches!(
                 edit_json(input, &[planting], &[]),
-                Err(EditError::Unexpected("planting dimensions must be positive"))
+                Err(EditError::Unexpected(
+                    "planting dimensions must be positive"
+                ))
             ));
         }
         assert_eq!(input, br#"{"StructuralElements":[]}"#);
