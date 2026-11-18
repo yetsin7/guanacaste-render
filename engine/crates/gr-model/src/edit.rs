@@ -500,16 +500,16 @@ mod tests {
         assert!(matches!(
             edit_json(input, &[planting.clone()], &[]),
             Err(EditError::Unexpected(
-                    "planting contains non-finite geometry"
-                ))
+                "planting contains non-finite geometry"
+            ))
         ));
         planting.at.x = 0.0;
         planting.offset = f64::INFINITY;
         assert!(matches!(
             edit_json(input, &[planting], &[]),
             Err(EditError::Unexpected(
-                    "planting contains non-finite geometry"
-                ))
+                "planting contains non-finite geometry"
+            ))
         ));
     }
 
