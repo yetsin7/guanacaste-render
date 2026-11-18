@@ -566,7 +566,7 @@ mod tests {
 
     #[test]
     fn non_positive_planting_dimensions_are_rejected() {
-        let input = br#"{\"StructuralElements\":[]}"#;
+        let input = br#"{"StructuralElements":[]}"#;
         for (width, height) in [(0.0, 3.0), (-1.0, 3.0), (2.0, 0.0), (2.0, -1.0)] {
             let planting = Planting::new(
                 Id(131),
@@ -581,7 +581,7 @@ mod tests {
                 Err(EditError::Unexpected("planting dimensions must be positive"))
             ));
         }
-        assert_eq!(input, br#"{\"StructuralElements\":[]}"#);
+        assert_eq!(input, br#"{"StructuralElements":[]}"#);
     }
 
     #[test]
