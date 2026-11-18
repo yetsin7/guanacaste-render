@@ -514,6 +514,28 @@ mod tests {
     }
 
     #[test]
+    fn non_finite_y_and_height_are_rejected_without_changing_input() {
+        let input = br#"{"StructuralElements":[]}"#;
+        for (id, bad_y, bad_height) in [
+            (Id(125), f64::INFINITY, 3.0),
+            (Id(126), f64::NEG_INFINITY, 3.0),
+            (Id(127), 0.0, f64::NAN),
+            (Id(128), 0.0, f64::INFINITY),
+            (Id(129), 0.0, f64::NEG_INFINITY),
+        ] {
+            let planting =
+                Planting::new(id, "Invalid", Point2::new(0.0, bad_y), 2.0, bad_height, 10);
+            assert!(matches!(
+                edit_json(input, &[planting], &[]),
+                Err(EditError::Unexpected(
+                    "planting contains non-finite geometry"
+                ))
+            ));
+            assert_eq!(input, br#"{"StructuralElements":[]}"#);
+        }
+    }
+
+    #[test]
     fn everything_else_in_the_project_is_kept_in_order() {
         let container = Container::parse(GARDEN).expect("valid");
         let unchanged = edit_json(&container.json, &[], &[]).expect("edits");
