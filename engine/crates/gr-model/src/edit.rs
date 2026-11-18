@@ -536,6 +536,28 @@ mod tests {
     }
 
     #[test]
+    fn all_non_finite_coordinate_and_offset_variants_are_rejected() {
+        let input = br#"{"StructuralElements":[]}"#;
+        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            for field in 0..3 {
+                let mut planting =
+                    Planting::new(Id(130), "Invalid", Point2::new(0.0, 0.0), 2.0, 3.0, 10);
+                match field {
+                    0 => planting.at.x = invalid,
+                    1 => planting.at.y = invalid,
+                    _ => planting.offset = invalid,
+                }
+                assert!(matches!(
+                    edit_json(input, &[planting], &[]),
+                    Err(EditError::Unexpected(
+                        "planting contains non-finite geometry"
+                    ))
+                ));
+            }
+        }
+    }
+
+    #[test]
     fn everything_else_in_the_project_is_kept_in_order() {
         let container = Container::parse(GARDEN).expect("valid");
         let unchanged = edit_json(&container.json, &[], &[]).expect("edits");
