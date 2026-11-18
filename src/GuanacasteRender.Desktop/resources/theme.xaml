@@ -4,31 +4,31 @@
     xmlns:controls="clr-namespace:Guanacaste3D.Desktop.Controls">
   <!-- Palette sampled from the classic light BIM workstation look: grey chrome, near-white ribbon,
        white property grid and canvas, system-blue selection. -->
-  <SolidColorBrush x:Key="AppBackgroundBrush" Color="#F0F0F0"/>
-  <SolidColorBrush x:Key="ChromeBrush" Color="#D9D9D9"/>
+  <SolidColorBrush x:Key="AppBackgroundBrush" Color="#F5F5F7"/>
+  <SolidColorBrush x:Key="ChromeBrush" Color="#E5E7EB"/>
   <SolidColorBrush x:Key="RibbonBrush" Color="#F5F5F5"/>
   <SolidColorBrush x:Key="RibbonSeparatorBrush" Color="#E2E2E2"/>
   <SolidColorBrush x:Key="PanelBrush" Color="#F5F5F5"/>
-  <SolidColorBrush x:Key="PanelHeaderBrush" Color="#D9D9D9"/>
-  <SolidColorBrush x:Key="PanelToolbarBrush" Color="#CCCCCC"/>
-  <SolidColorBrush x:Key="PanelBorderBrush" Color="#C1C1C1"/>
+  <SolidColorBrush x:Key="PanelHeaderBrush" Color="#E5E7EB"/>
+  <SolidColorBrush x:Key="PanelToolbarBrush" Color="#D8DCE3"/>
+  <SolidColorBrush x:Key="PanelBorderBrush" Color="#D2D7DF"/>
   <SolidColorBrush x:Key="PropertyGroupBrush" Color="#E6E6E6"/>
   <SolidColorBrush x:Key="PropertyGridLineBrush" Color="#ECECEC"/>
   <SolidColorBrush x:Key="SidebarCardBrush" Color="#FFFFFF"/>
   <SolidColorBrush x:Key="SidebarQuietBrush" Color="#FAFAFA"/>
   <SolidColorBrush x:Key="SidebarHoverBrush" Color="#EEF6FC"/>
-  <SolidColorBrush x:Key="ViewTabStripBrush" Color="#CCCCCC"/>
+  <SolidColorBrush x:Key="ViewTabStripBrush" Color="#D8DCE3"/>
   <SolidColorBrush x:Key="ViewControlBarBrush" Color="#E6E6E6"/>
   <SolidColorBrush x:Key="FileTabBrush" Color="#2B7BB3"/>
   <SolidColorBrush x:Key="FileTabHoverBrush" Color="#3A8CC6"/>
   <SolidColorBrush x:Key="ContextualTabBrush" Color="#87B340"/>
   <SolidColorBrush x:Key="ContextualTabSoftBrush" Color="#EAEFE3"/>
   <SolidColorBrush x:Key="ContextualTabTextBrush" Color="#4F6B2A"/>
-  <SolidColorBrush x:Key="AccentBrush" Color="#0078D4"/>
+  <SolidColorBrush x:Key="AccentBrush" Color="#2469CB"/>
   <SolidColorBrush x:Key="AccentHoverBrush" Color="#005A9E"/>
   <SolidColorBrush x:Key="AccentSoftBrush" Color="#E5F3FB"/>
   <SolidColorBrush x:Key="SelectionBrush" Color="#0078D7"/>
-  <SolidColorBrush x:Key="InactiveSelectionBrush" Color="#D9D9D9"/>
+  <SolidColorBrush x:Key="InactiveSelectionBrush" Color="#E5E7EB"/>
   <SolidColorBrush x:Key="RibbonHoverBrush" Color="#E5F3FB"/>
   <SolidColorBrush x:Key="RibbonHoverBorderBrush" Color="#9ACDEB"/>
   <SolidColorBrush x:Key="RibbonPressedBrush" Color="#C2E3F2"/>
@@ -38,9 +38,9 @@
   </LinearGradientBrush>
   <SolidColorBrush x:Key="RibbonCheckedBorderBrush" Color="#79C4E7"/>
   <SolidColorBrush x:Key="ContextualBarBrush" Color="#F5F5F5"/>
-  <SolidColorBrush x:Key="PrimaryTextBrush" Color="#1E1E1E"/>
+  <SolidColorBrush x:Key="PrimaryTextBrush" Color="#20242C"/>
   <SolidColorBrush x:Key="RibbonTextBrush" Color="#3C3C3C"/>
-  <SolidColorBrush x:Key="SecondaryTextBrush" Color="#6D6D6D"/>
+  <SolidColorBrush x:Key="SecondaryTextBrush" Color="#616B7A"/>
   <SolidColorBrush x:Key="CanvasBrush" Color="#FFFFFF"/>
   <SolidColorBrush x:Key="ControlBorderBrush" Color="#ABADB3"/>
   <SolidColorBrush x:Key="ControlHoverBrush" Color="#E5F3FB"/>
@@ -54,7 +54,7 @@
     <Setter Property="Margin" Value="3"/>
     <Setter Property="MinHeight" Value="24"/>
     <Setter Property="Background" Value="#FDFDFD"/>
-    <Setter Property="BorderBrush" Value="#CCCCCC"/>
+    <Setter Property="BorderBrush" Value="#D8DCE3"/>
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
     <Setter Property="FontSize" Value="12"/>
@@ -66,7 +66,7 @@
         <ControlTemplate TargetType="Button">
           <Border x:Name="ButtonSurface" Background="{TemplateBinding Background}"
                   BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
-                  CornerRadius="3" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                  CornerRadius="7" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                               RecognizesAccessKey="True"/>
@@ -656,7 +656,7 @@
   <ControlTemplate x:Key="FlatComboBoxToggleTemplate" TargetType="ToggleButton">
     <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
             BorderThickness="1" SnapsToDevicePixels="True">
-      <TextBlock Text="&#xE70D;" FontFamily="{StaticResource GlyphFont}" FontSize="9" Foreground="#3C3C3C"
+      <TextBlock Text="&#xE70D;" FontFamily="{StaticResource GlyphFont}" FontSize="9" Foreground="{TemplateBinding Foreground}"
                  HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,1,6,0"/>
     </Border>
     <ControlTemplate.Triggers>
@@ -687,7 +687,7 @@
                           IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
             <ContentPresenter IsHitTestVisible="False" Margin="{TemplateBinding Padding}"
                               VerticalAlignment="Center" HorizontalAlignment="Left"
-                              Content="{TemplateBinding SelectionBoxItem}"
+                              TextElement.Foreground="{TemplateBinding Foreground}" Content="{TemplateBinding SelectionBoxItem}"
                               ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                               ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
                               ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"/>
