@@ -523,14 +523,8 @@ mod tests {
             (Id(128), 0.0, f64::INFINITY),
             (Id(129), 0.0, f64::NEG_INFINITY),
         ] {
-            let planting = Planting::new(
-                id,
-                "Invalid",
-                Point2::new(0.0, bad_y),
-                2.0,
-                bad_height,
-                10,
-            );
+            let planting =
+                Planting::new(id, "Invalid", Point2::new(0.0, bad_y), 2.0, bad_height, 10);
             assert!(matches!(
                 edit_json(input, &[planting], &[]),
                 Err(EditError::Unexpected(
